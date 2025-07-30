@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Quality Dashboard - Bangkok</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .map-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        #map {
+            height: 500px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .stats-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .stat-item {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .aqi-good { color: #27ae60; }
+        .aqi-moderate { color: #f39c12; }
+        .aqi-unhealthy-sensitive { color: #e67e22; }
+        .aqi-unhealthy { color: #e74c3c; }
+        .aqi-very-unhealthy { color: #8e44ad; }
+        .aqi-hazardous { color: #2c3e50; }
+
+        .legend {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin-top: 20px;
+        }
+
+        .legend-title {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .legend-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.7);
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #fcc;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .container {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌬️ Air Quality Dashboard</h1>
+            <p class="subtitle">Real-time air quality monitoring for Bangkok, Thailand</p>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+            <div class="stats-panel">
+                <h3 class="stats-title">📊 Statistics</h3>
+                <div id="stats-content" class="loading">Loading air quality data...</div>
+            </div>
+        </div>
+
+        <div class="legend">
+            <h3 class="legend-title">🎨 AQI Color Legend</h3>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #27ae60;"></div>
+                    <span>Good (0-50)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #f39c12;"></div>
+                    <span>Moderate (51-100)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e67e22;"></div>
+                    <span>Unhealthy for Sensitive (101-150)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e74c3c;"></div>
+                    <span>Unhealthy (151-200)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #8e44ad;"></div>
+                    <span>Very Unhealthy (201-300)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #2c3e50;"></div>
+                    <span>Hazardous (301+)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    
+    <script>
+        // Configuration
+        const API_TOKEN = '354eb1b871693ef55f777c69e44e81bcaf215d40';
+        const BANGKOK_BOUNDS = {
+            southwest: { lat: 13.5, lng: 100.3 },
+            northeast: { lat: 14.0, lng: 100.9 }
+        };
+
+        // Initialize map
+        const map = L.map('map').setView([13.7563, 100.5018], 11);
+
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // AQI color mapping
+        function getAQIColor(aqi) {
+            if (aqi <= 50) return '#27ae60';
+            if (aqi <= 100) return '#f39c12';
+            if (aqi <= 150) return '#e67e22';
+            if (aqi <= 200) return '#e74c3c';
+            if (aqi <= 300) return '#8e44ad';
+            return '#2c3e50';
+        }
+
+        // AQI category mapping
+        function getAQICategory(aqi) {
+            if (aqi <= 50) return 'Good';
+            if (aqi <= 100) return 'Moderate';
+            if (aqi <= 150) return 'Unhealthy for Sensitive Groups';
+            if (aqi <= 200) return 'Unhealthy';
+            if (aqi <= 300) return 'Very Unhealthy';
+            return 'Hazardous';
+        }
+
+        // AQI CSS class mapping
+        function getAQIClass(aqi) {
+            if (aqi <= 50) return 'aqi-good';
+            if (aqi <= 100) return 'aqi-moderate';
+            if (aqi <= 150) return 'aqi-unhealthy-sensitive';
+            if (aqi <= 200) return 'aqi-unhealthy';
+            if (aqi <= 300) return 'aqi-very-unhealthy';
+            return 'aqi-hazardous';
+        }
+
+        // Format bounds for API
+        function formatBounds(bounds) {
+            return `${bounds.southwest.lat},${bounds.southwest.lng},${bounds.northeast.lat},${bounds.northeast.lng}`;
+        }
+
+        // Fetch air quality data
+        async function fetchAirQualityData() {
+            try {
+                const boundsStr = formatBounds(BANGKOK_BOUNDS);
+                const url = `https://api.waqi.info/map/bounds?token=${API_TOKEN}&latlng=${boundsStr}`;
+                
+                console.log('Fetching data from:', url);
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('API Response:', data);
+                
+                if (data.status !== 'ok') {
+                    throw new Error(`API Error: ${data.message || 'Unknown error'}`);
+                }
+                
+                return data.data || [];
+            } catch (error) {
+                console.error('Error fetching air quality data:', error);
+                document.getElementById('stats-content').innerHTML = `
+                    <div class="error">
+                        Error loading data: ${error.message}
+                        <br><br>
+                        Please check the console for more details.
+                    </div>
+                `;
+                throw error;
+            }
+        }
+
+        // Add markers to map
+        function addMarkersToMap(stations) {
+            stations.forEach(station => {
+                if (!station.lat || !station.lon || station.aqi === '-') return;
+                
+                const aqi = parseInt(station.aqi);
+                const color = getAQIColor(aqi);
+                const category = getAQICategory(aqi);
+                
+                // Create custom icon
+                const icon = L.divIcon({
+                    className: 'custom-marker',
+                    html: `<div style="
+                        background-color: ${color};
+                        width: 25px;
+                        height: 25px;
+                        border-radius: 50%;
+                        border: 3px solid white;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-weight: bold;
+                        font-size: 10px;
+                        color: white;
+                        text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+                    ">${aqi}</div>`,
+                    iconSize: [25, 25],
+                    iconAnchor: [12.5, 12.5]
+                });
+                
+                // Create marker
+                const marker = L.marker([station.lat, station.lon], { icon }).addTo(map);
+                
+                // Create popup content
+                const popupContent = `
+                    <div style="text-align: center; min-width: 200px;">
+                        <h4 style="margin: 0 0 10px 0; color: #2c3e50;">${station.station?.name || 'Unknown Station'}</h4>
+                        <div style="background: ${color}; color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
+                            <div style="font-size: 24px; font-weight: bold;">${aqi}</div>
+                            <div style="font-size: 12px; opacity: 0.9;">AQI</div>
+                        </div>
+                        <div style="background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
+                            <strong>Category:</strong> ${category}
+                        </div>
+                        ${station.station?.time ? `
+                        <div style="font-size: 11px; color: #666;">
+                            Last updated: ${new Date(station.station.time).toLocaleString()}
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                marker.bindPopup(popupContent);
+            });
+        }
+
+        // Update statistics panel
+        function updateStatistics(stations) {
+            const validStations = stations.filter(s => s.aqi !== '-' && !isNaN(parseInt(s.aqi)));
+            
+            if (validStations.length === 0) {
+                document.getElementById('stats-content').innerHTML = '<div class="error">No valid air quality data available</div>';
+                return;
+            }
+            
+            const aqiValues = validStations.map(s => parseInt(s.aqi));
+            const avgAQI = Math.round(aqiValues.reduce((a, b) => a + b, 0) / aqiValues.length);
+            const maxAQI = Math.max(...aqiValues);
+            const minAQI = Math.min(...aqiValues);
+            
+            // Count by category
+            const categories = {
+                good: aqiValues.filter(aqi => aqi <= 50).length,
+                moderate: aqiValues.filter(aqi => aqi > 50 && aqi <= 100).length,
+                unhealthySensitive: aqiValues.filter(aqi => aqi > 100 && aqi <= 150).length,
+                unhealthy: aqiValues.filter(aqi => aqi > 150 && aqi <= 200).length,
+                veryUnhealthy: aqiValues.filter(aqi => aqi > 200 && aqi <= 300).length,
+                hazardous: aqiValues.filter(aqi => aqi > 300).length
+            };
+            
+            const statsHTML = `
+                <div class="stat-item">
+                    <div class="stat-label">Total Stations</div>
+                    <div class="stat-value">${validStations.length}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Average AQI</div>
+                    <div class="stat-value ${getAQIClass(avgAQI)}">${avgAQI}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Highest AQI</div>
+                    <div class="stat-value ${getAQIClass(maxAQI)}">${maxAQI}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Lowest AQI</div>
+                    <div class="stat-value ${getAQIClass(minAQI)}">${minAQI}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Good Quality</div>
+                    <div class="stat-value aqi-good">${categories.good} stations</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Moderate Quality</div>
+                    <div class="stat-value aqi-moderate">${categories.moderate} stations</div>
+                </div>
+                ${categories.unhealthySensitive > 0 ? `
+                <div class="stat-item">
+                    <div class="stat-label">Unhealthy for Sensitive</div>
+                    <div class="stat-value aqi-unhealthy-sensitive">${categories.unhealthySensitive} stations</div>
+                </div>
+                ` : ''}
+                ${categories.unhealthy > 0 ? `
+                <div class="stat-item">
+                    <div class="stat-label">Unhealthy</div>
+                    <div class="stat-value aqi-unhealthy">${categories.unhealthy} stations</div>
+                </div>
+                ` : ''}
+                ${categories.veryUnhealthy > 0 ? `
+                <div class="stat-item">
+                    <div class="stat-label">Very Unhealthy</div>
+                    <div class="stat-value aqi-very-unhealthy">${categories.veryUnhealthy} stations</div>
+                </div>
+                ` : ''}
+                ${categories.hazardous > 0 ? `
+                <div class="stat-item">
+                    <div class="stat-label">Hazardous</div>
+                    <div class="stat-value aqi-hazardous">${categories.hazardous} stations</div>
+                </div>
+                ` : ''}
+                <div class="stat-item">
+                    <div class="stat-label">Last Updated</div>
+                    <div class="stat-value" style="font-size: 1rem;">${new Date().toLocaleString()}</div>
+                </div>
+            `;
+            
+            document.getElementById('stats-content').innerHTML = statsHTML;
+        }
+
+        // Initialize dashboard
+        async function initDashboard() {
+            try {
+                const stations = await fetchAirQualityData();
+                console.log('Stations loaded:', stations.length);
+                
+                if (stations.length === 0) {
+                    document.getElementById('stats-content').innerHTML = '<div class="error">No air quality stations found in the Bangkok area</div>';
+                    return;
+                }
+                
+                addMarkersToMap(stations);
+                updateStatistics(stations);
+                
+                // Auto-refresh every 10 minutes
+                setInterval(async () => {
+                    try {
+                        const updatedStations = await fetchAirQualityData();
+                        map.eachLayer(layer => {
+                            if (layer instanceof L.Marker) {
+                                map.removeLayer(layer);
+                            }
+                        });
+                        addMarkersToMap(updatedStations);
+                        updateStatistics(updatedStations);
+                    } catch (error) {
+                        console.error('Error during auto-refresh:', error);
+                    }
+                }, 600000); // 10 minutes
+                
+            } catch (error) {
+                console.error('Failed to initialize dashboard:', error);
+            }
+        }
+
+        // Start the dashboard when page loads
+        document.addEventListener('DOMContentLoaded', initDashboard);
+    </script>
+</body>
+</html>

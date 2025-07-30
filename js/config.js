@@ -1,4 +1,4 @@
-// Configuration constants
+// Modern Air Quality Dashboard Configuration
 export const CONFIG = {
     API_TOKEN: '354eb1b871693ef55f777c69e44e81bcaf215d40',
     
@@ -17,15 +17,56 @@ export const CONFIG = {
     TILE_LAYER: {
         url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
         attribution: '© OpenStreetMap contributors'
+    },
+
+    // Modern color scheme matching IQAir
+    COLORS: {
+        primary: '#1e40af',
+        secondary: '#3b82f6',
+        success: '#10b981',
+        warning: '#f59e0b',
+        danger: '#ef4444',
+        purple: '#8b5cf6',
+        gray: '#6b7280'
     }
 };
 
-// AQI thresholds and colors
+// AQI thresholds and modern colors
 export const AQI_LEVELS = {
-    GOOD: { max: 50, color: '#27ae60', label: 'Good' },
-    MODERATE: { max: 100, color: '#f39c12', label: 'Moderate' },
-    UNHEALTHY_SENSITIVE: { max: 150, color: '#e67e22', label: 'Unhealthy for Sensitive Groups' },
-    UNHEALTHY: { max: 200, color: '#e74c3c', label: 'Unhealthy' },
-    VERY_UNHEALTHY: { max: 300, color: '#8e44ad', label: 'Very Unhealthy' },
-    HAZARDOUS: { max: Infinity, color: '#2c3e50', label: 'Hazardous' }
+    GOOD: { 
+        max: 50, 
+        color: '#10b981', 
+        label: 'Good',
+        description: 'Air quality is satisfactory, and air pollution poses little or no risk.'
+    },
+    MODERATE: { 
+        max: 100, 
+        color: '#f59e0b', 
+        label: 'Moderate',
+        description: 'Air quality is acceptable. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution.'
+    },
+    UNHEALTHY_SENSITIVE: { 
+        max: 150, 
+        color: '#f97316', 
+        label: 'Unhealthy for Sensitive Groups',
+        description: 'Members of sensitive groups may experience health effects. The general public is less likely to be affected.'
+    },
+    UNHEALTHY: { 
+        max: 200, 
+        color: '#ef4444', 
+        label: 'Unhealthy',
+        description: 'Some members of the general public may experience health effects; members of sensitive groups may experience more serious health effects.'
+    },
+    VERY_UNHEALTHY: { 
+        max: 300, 
+        color: '#8b5cf6', 
+        label: 'Very Unhealthy',
+        description: 'Health alert: The risk of health effects is increased for everyone.'
+    },
+    HAZARDOUS: { 
+        max: Infinity, 
+        color: '#6b7280', 
+        label: 'Hazardous',
+        description: 'Health warning of emergency conditions: everyone is more likely to be affected.'
+    }
 };

@@ -1,56 +1,44 @@
 import { getMap } from './map.js';
-import { getAQIColor, getAQICategory, formatDateTime, isValidStation } from './utils.js';
+import { getAQIColor, isValidStation } from './utils.js';
+import { uiManager } from './ui.js';
 
-// Marker creation and management
+// Modern marker creation and management
 
-export function createMarkerIcon(aqi, color) {
+export function createModernMarkerIcon(aqi, color) {
     return L.divIcon({
         className: 'custom-marker',
-        html: `<div style="
-            background-color: ${color};
-            width: 25px;
-            height: 25px;
-            border-radius: 50%;
-            border: 3px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 10px;
-            color: white;
-            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
-        ">${aqi}</div>`,
-        iconSize: [25, 25],
-        iconAnchor: [12.5, 12.5]
+        html: `
+            <div style="
+                background-color: ${color};
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                border: 3px solid white;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 700;
+                font-size: 11px;
+                color: white;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-family: 'Inter', sans-serif;
+            " 
+            onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.2)'" 
+            onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
+            >${aqi}</div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
     });
-}
-
-export function createPopupContent(station, aqi, color, category) {
-    return `
-        <div style="text-align: center; min-width: 200px;">
-            <h4 style="margin: 0 0 10px 0; color: #2c3e50;">${station.station?.name || 'Unknown Station'}</h4>
-            <div style="background: ${color}; color: white; padding: 10px; border-radius: 8px; margin-bottom: 10px;">
-                <div style="font-size: 24px; font-weight: bold;">${aqi}</div>
-                <div style="font-size: 12px; opacity: 0.9;">AQI</div>
-            </div>
-            <div style="background: #f8f9fa; padding: 8px; border-radius: 6px; margin-bottom: 8px;">
-                <strong>Category:</strong> ${category}
-            </div>
-            ${station.station?.time ? `
-            <div style="font-size: 11px; color: #666;">
-                Last updated: ${formatDateTime(station.station.time)}
-            </div>
-            ` : ''}
-        </div>
-    `;
 }
 
 export function addMarkersToMap(stations) {
     const map = getMap();
     if (!map) {
         console.error('Map not initialized');
-        return;
+        return [];
     }
 
     const markers = [];
@@ -60,24 +48,33 @@ export function addMarkersToMap(stations) {
         
         const aqi = parseInt(station.aqi);
         const color = getAQIColor(aqi);
-        const category = getAQICategory(aqi);
         
-        // Create custom icon
-        const icon = createMarkerIcon(aqi, color);
+        // Create modern marker icon
+        const icon = createModernMarkerIcon(aqi, color);
         
         // Create marker
         const marker = L.marker([station.lat, station.lon], { icon }).addTo(map);
         
-        // Create popup content
-        const popupContent = createPopupContent(station, aqi, color, category);
-        marker.bindPopup(popupContent);
+        // Add click handler to show station info
+        marker.on('click', () => {
+            uiManager.showStationInfo(station);
+        });
+
+        // Add hover effects
+        marker.on('mouseover', function() {
+            // Optional: Add hover popup or tooltip
+        });
+
+        marker.on('mouseout', function() {
+            // Optional: Remove hover effects
+        });
         
         // Store reference for potential future use
         marker.stationData = station;
         markers.push(marker);
     });
 
-    console.log(`Added ${markers.length} markers to map`);
+    console.log(`Added ${markers.length} modern markers to map`);
     return markers;
 }
 
@@ -89,14 +86,70 @@ export function addSingleMarker(station) {
     
     const aqi = parseInt(station.aqi);
     const color = getAQIColor(aqi);
-    const category = getAQICategory(aqi);
     
-    const icon = createMarkerIcon(aqi, color);
+    const icon = createModernMarkerIcon(aqi, color);
     const marker = L.marker([station.lat, station.lon], { icon }).addTo(map);
     
-    const popupContent = createPopupContent(station, aqi, color, category);
-    marker.bindPopup(popupContent);
+    // Add click handler
+    marker.on('click', () => {
+        uiManager.showStationInfo(station);
+    });
     
     marker.stationData = station;
     return marker;
+}
+
+// Create a cluster of markers for better performance with many points
+export function createMarkerCluster(stations) {
+    // This would require additional clustering library
+    // For now, we'll use the standard approach
+    return addMarkersToMap(stations);
+}
+
+// Animate marker changes
+export function animateMarkerUpdate(marker, newAqi) {
+    if (!marker || !marker.stationData) return;
+    
+    const newColor = getAQIColor(newAqi);
+    const icon = createModernMarkerIcon(newAqi, newColor);
+    
+    // Add animation class temporarily
+    const markerElement = marker.getElement();
+    if (markerElement) {
+        markerElement.style.transition = 'all 0.3s ease';
+        setTimeout(() => {
+            marker.setIcon(icon);
+        }, 150);
+    } else {
+        marker.setIcon(icon);
+    }
+    
+    // Update stored data
+    marker.stationData.aqi = newAqi.toString();
+}
+
+// Highlight a specific marker
+export function highlightMarker(marker) {
+    const markerElement = marker.getElement();
+    if (markerElement) {
+        const markerDiv = markerElement.querySelector('div');
+        if (markerDiv) {
+            markerDiv.style.transform = 'scale(1.2)';
+            markerDiv.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
+            markerDiv.style.zIndex = '1000';
+        }
+    }
+}
+
+// Remove highlight from marker
+export function unhighlightMarker(marker) {
+    const markerElement = marker.getElement();
+    if (markerElement) {
+        const markerDiv = markerElement.querySelector('div');
+        if (markerDiv) {
+            markerDiv.style.transform = 'scale(1)';
+            markerDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+            markerDiv.style.zIndex = 'auto';
+        }
+    }
 }

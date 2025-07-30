@@ -8,52 +8,157 @@
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
     
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🌬️ Air Quality Dashboard</h1>
-            <p class="subtitle">Real-time air quality monitoring for Bangkok, Thailand</p>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="app-title">
+                    🌬️ AirWatch
+                </h1>
+                <p class="app-subtitle">Real-time air quality monitoring</p>
+            </div>
+
+            <div class="current-location">
+                <div class="location-header">
+                    <span>📍</span>
+                    <span>CURRENT LOCATION</span>
+                </div>
+                <div class="location-name">Bangkok, Thailand</div>
+                
+                <div class="current-aqi">
+                    <div class="aqi-circle aqi-good" id="main-aqi-circle">
+                        <div class="aqi-value" id="main-aqi-value">--</div>
+                        <div class="aqi-label">US AQI</div>
+                    </div>
+                    <div class="aqi-details">
+                        <div class="aqi-category" id="main-aqi-category">Loading...</div>
+                        <div class="aqi-description" id="main-aqi-description">Fetching air quality data...</div>
+                    </div>
+                </div>
+
+                <div class="weather-info">
+                    <div class="weather-item">
+                        <span class="weather-icon">🌡️</span>
+                        <div>
+                            <div class="weather-value" id="temperature">--°C</div>
+                            <div class="weather-label">Temperature</div>
+                        </div>
+                    </div>
+                    <div class="weather-item">
+                        <span class="weather-icon">💧</span>
+                        <div>
+                            <div class="weather-value" id="humidity">--%</div>
+                            <div class="weather-label">Humidity</div>
+                        </div>
+                    </div>
+                    <div class="weather-item">
+                        <span class="weather-icon">💨</span>
+                        <div>
+                            <div class="weather-value" id="wind">-- km/h</div>
+                            <div class="weather-label">Wind Speed</div>
+                        </div>
+                    </div>
+                    <div class="weather-item">
+                        <span class="weather-icon">🔄</span>
+                        <div>
+                            <div class="weather-value" id="last-update">--</div>
+                            <div class="weather-label">Last Update</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3 class="section-title">
+                    📊 Statistics
+                </h3>
+                <div id="stats-content">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        Loading statistics...
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h3 class="section-title">
+                    🎯 Air Quality Breakdown
+                </h3>
+                <div class="category-stats" id="category-stats">
+                    <div class="loading">
+                        <div class="loading-spinner"></div>
+                        Loading breakdown...
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="dashboard-grid">
-            <div class="map-container">
-                <div id="map"></div>
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <button class="control-button" id="refresh-btn" title="Refresh Data">
+                    🔄
+                </button>
+                <button class="control-button" id="fullscreen-btn" title="Toggle Fullscreen">
+                    ⛶
+                </button>
             </div>
-            <div class="stats-panel">
-                <h3 class="stats-title">📊 Statistics</h3>
-                <div id="stats-content" class="loading">Loading air quality data...</div>
-            </div>
-        </div>
 
-        <div class="legend">
-            <h3 class="legend-title">🎨 AQI Color Legend</h3>
-            <div class="legend-items">
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #27ae60;"></div>
-                    <span>Good (0-50)</span>
+            <!-- Map Legend -->
+            <div class="map-legend">
+                <div class="legend-title">Air Quality Index</div>
+                <div class="legend-items">
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #10b981;"></div>
+                        <span>Good (0-50)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #f59e0b;"></div>
+                        <span>Moderate (51-100)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #f97316;"></div>
+                        <span>Unhealthy for Sensitive (101-150)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #ef4444;"></div>
+                        <span>Unhealthy (151-200)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #8b5cf6;"></div>
+                        <span>Very Unhealthy (201-300)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: #6b7280;"></div>
+                        <span>Hazardous (301+)</span>
+                    </div>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #f39c12;"></div>
-                    <span>Moderate (51-100)</span>
+            </div>
+
+            <!-- Station Info Panel -->
+            <div class="station-info" id="station-info">
+                <div class="station-header">
+                    <div class="station-name" id="station-name">Station Name</div>
+                    <button class="close-button" id="close-station-btn">×</button>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #e67e22;"></div>
-                    <span>Unhealthy for Sensitive (101-150)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #e74c3c;"></div>
-                    <span>Unhealthy (151-200)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #8e44ad;"></div>
-                    <span>Very Unhealthy (201-300)</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #2c3e50;"></div>
-                    <span>Hazardous (301+)</span>
+                <div class="station-aqi">
+                    <div class="station-aqi-circle aqi-good" id="station-aqi-circle">
+                        <span id="station-aqi-value">--</span>
+                    </div>
+                    <div class="station-details">
+                        <div class="station-category" id="station-category">Category</div>
+                        <div class="station-time" id="station-time">Last updated: --</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -68,6 +173,7 @@
     <script type="module" src="js/api.js"></script>
     <script type="module" src="js/map.js"></script>
     <script type="module" src="js/markers.js"></script>
+    <script type="module" src="js/ui.js"></script>
     <script type="module" src="js/statistics.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>

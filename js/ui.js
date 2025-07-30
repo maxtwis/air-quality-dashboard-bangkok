@@ -1,10 +1,13 @@
 import { getAQILevel, getAQIClass, formatDateTime } from './utils.js';
+import { fetchStationDetails } from './api.js';
+import { POLLUTANTS, WEATHER_PARAMS } from './config.js';
 
 // UI management functions for the modern dashboard
 
 export class UIManager {
     constructor() {
         this.setupEventListeners();
+        this.currentStationDetails = null;
     }
 
     setupEventListeners() {
@@ -79,13 +82,13 @@ export class UIManager {
         });
     }
 
-    // Show station information panel
-    showStationInfo(station) {
+    // Enhanced station information panel with pollutant data
+    async showStationInfo(station) {
         const aqi = parseInt(station.aqi);
         const aqiLevel = getAQILevel(aqi);
         const aqiClass = getAQIClass(aqi);
         
-        // Update station info panel
+        // Update basic station info
         const stationName = document.getElementById('station-name');
         const stationAqiValue = document.getElementById('station-aqi-value');
         const stationCategory = document.getElementById('station-category');
@@ -115,11 +118,167 @@ export class UIManager {
             stationAqiCircle.className = `station-aqi-circle ${aqiClass}`;
         }
 
-        // Show the panel
+        // Show the panel first
         const stationInfo = document.getElementById('station-info');
         if (stationInfo) {
             stationInfo.style.display = 'block';
         }
+
+        // Fetch and display detailed pollutant data
+        this.showLoadingInStationInfo();
+        
+        try {
+            const detailsData = await fetchStationDetails(station.uid);
+            if (detailsData) {
+                this.currentStationDetails = detailsData;
+                this.updateStationInfoWithDetails(detailsData);
+            } else {
+                this.showErrorInStationInfo('Could not load detailed data');
+            }
+        } catch (error) {
+            console.error('Error loading station details:', error);
+            this.showErrorInStationInfo('Error loading details');
+        }
+    }
+
+    showLoadingInStationInfo() {
+        // Add loading indicator to station info panel
+        let existingDetails = document.getElementById('station-details-container');
+        if (!existingDetails) {
+            existingDetails = document.createElement('div');
+            existingDetails.id = 'station-details-container';
+            document.getElementById('station-info').appendChild(existingDetails);
+        }
+        
+        existingDetails.innerHTML = `
+            <div class="loading" style="padding: 20px;">
+                <div class="loading-spinner"></div>
+                Loading detailed data...
+            </div>
+        `;
+    }
+
+    showErrorInStationInfo(message) {
+        const container = document.getElementById('station-details-container');
+        if (container) {
+            container.innerHTML = `
+                <div class="error" style="margin-top: 16px; padding: 12px; font-size: 0.875rem;">
+                    ${message}
+                </div>
+            `;
+        }
+    }
+
+    updateStationInfoWithDetails(detailsData) {
+        let container = document.getElementById('station-details-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'station-details-container';
+            document.getElementById('station-info').appendChild(container);
+        }
+
+        let pollutantHTML = '';
+        let weatherHTML = '';
+
+        // Process pollutant data
+        if (detailsData.iaqi) {
+            const pollutantData = [];
+            const weatherData = [];
+
+            Object.entries(detailsData.iaqi).forEach(([key, data]) => {
+                if (POLLUTANTS[key]) {
+                    pollutantData.push({
+                        key,
+                        config: POLLUTANTS[key],
+                        value: data.v
+                    });
+                } else if (WEATHER_PARAMS[key]) {
+                    weatherData.push({
+                        key,
+                        config: WEATHER_PARAMS[key],
+                        value: data.v
+                    });
+                }
+            });
+
+            // Generate pollutant HTML
+            if (pollutantData.length > 0) {
+                pollutantHTML = `
+                    <div class="pollutant-section">
+                        <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; color: var(--gray-700);">
+                            🌫️ Pollutants
+                        </h4>
+                        <div class="pollutant-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            ${pollutantData.map(item => `
+                                <div class="pollutant-item" style="
+                                    background: var(--gray-50);
+                                    padding: 8px;
+                                    border-radius: 6px;
+                                    border-left: 3px solid ${item.config.color};
+                                ">
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <span style="font-size: 0.75rem;">${item.config.icon}</span>
+                                        <span style="font-size: 0.75rem; font-weight: 500;">${item.config.name}</span>
+                                    </div>
+                                    <div style="font-size: 0.875rem; font-weight: 600; color: ${item.config.color};">
+                                        ${item.value} ${item.config.unit}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Generate weather HTML
+            if (weatherData.length > 0) {
+                weatherHTML = `
+                    <div class="weather-section" style="margin-top: 16px;">
+                        <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; color: var(--gray-700);">
+                            🌤️ Weather
+                        </h4>
+                        <div class="weather-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            ${weatherData.map(item => `
+                                <div class="weather-item" style="
+                                    background: var(--gray-50);
+                                    padding: 8px;
+                                    border-radius: 6px;
+                                ">
+                                    <div style="display: flex; align-items: center; gap: 4px;">
+                                        <span style="font-size: 0.75rem;">${item.config.icon}</span>
+                                        <span style="font-size: 0.75rem; font-weight: 500;">${item.config.name}</span>
+                                    </div>
+                                    <div style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700);">
+                                        ${item.value}${item.config.unit}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Add attribution if available
+        let attributionHTML = '';
+        if (detailsData.attributions && detailsData.attributions.length > 0) {
+            attributionHTML = `
+                <div class="attribution-section" style="margin-top: 16px;">
+                    <h4 style="font-size: 0.75rem; font-weight: 500; margin-bottom: 8px; color: var(--gray-600);">
+                        Data Sources
+                    </h4>
+                    <div style="font-size: 0.7rem; color: var(--gray-500);">
+                        ${detailsData.attributions.map(attr => `
+                            <a href="${attr.url}" target="_blank" style="color: var(--primary-color); text-decoration: none;">
+                                ${attr.name}
+                            </a>
+                        `).join(' • ')}
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = pollutantHTML + weatherHTML + attributionHTML;
     }
 
     // Close station information panel
@@ -128,6 +287,7 @@ export class UIManager {
         if (stationInfo) {
             stationInfo.style.display = 'none';
         }
+        this.currentStationDetails = null;
     }
 
     // Toggle fullscreen mode

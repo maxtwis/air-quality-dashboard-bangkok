@@ -70,3 +70,89 @@ export const AQI_LEVELS = {
         description: 'Health warning of emergency conditions: everyone is more likely to be affected.'
     }
 };
+
+// Pollutant configuration
+export const POLLUTANTS = {
+    pm25: {
+        name: 'PM2.5',
+        fullName: 'Fine Particulate Matter',
+        unit: 'μg/m³',
+        description: 'Fine particles with diameter less than 2.5 micrometers',
+        icon: '🌫️',
+        color: '#ef4444'
+    },
+    pm10: {
+        name: 'PM10',
+        fullName: 'Coarse Particulate Matter',
+        unit: 'μg/m³',
+        description: 'Particles with diameter less than 10 micrometers',
+        icon: '💨',
+        color: '#f59e0b'
+    },
+    o3: {
+        name: 'O₃',
+        fullName: 'Ozone',
+        unit: 'μg/m³',
+        description: 'Ground-level ozone',
+        icon: '☀️',
+        color: '#3b82f6'
+    },
+    no2: {
+        name: 'NO₂',
+        fullName: 'Nitrogen Dioxide',
+        unit: 'μg/m³',
+        description: 'Nitrogen dioxide gas',
+        icon: '🏭',
+        color: '#8b5cf6'
+    },
+    so2: {
+        name: 'SO₂',
+        fullName: 'Sulfur Dioxide',
+        unit: 'μg/m³',
+        description: 'Sulfur dioxide gas',
+        icon: '🌋',
+        color: '#f97316'
+    },
+    co: {
+        name: 'CO',
+        fullName: 'Carbon Monoxide',
+        unit: 'mg/m³',
+        description: 'Carbon monoxide gas',
+        icon: '🚗',
+        color: '#6b7280'
+    }
+};
+
+// Weather parameters
+export const WEATHER_PARAMS = {
+    t: {
+        name: 'Temperature',
+        unit: '°C',
+        icon: '🌡️',
+        color: '#f59e0b'
+    },
+    h: {
+        name: 'Humidity',
+        unit: '%',
+        icon: '💧',
+        color: '#3b82f6'
+    },
+    p: {
+        name: 'Pressure',
+        unit: 'hPa',
+        icon: '🌊',
+        color: '#6b7280'
+    },
+    w: {
+        name: 'Wind Speed',
+        unit: 'm/s',
+        icon: '💨',
+        color: '#10b981'
+    },
+    wd: {
+        name: 'Wind Direction',
+        unit: '°',
+        icon: '🧭',
+        color: '#8b5cf6'
+    }
+};

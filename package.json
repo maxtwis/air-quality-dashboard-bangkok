@@ -4,9 +4,9 @@
   "description": "Real-time air quality dashboard for Bangkok using AQICN API and Leaflet maps",
   "main": "index.html",
   "scripts": {
-    "dev": "npx serve .",
-    "build": "echo 'No build step required for static HTML'",
-    "start": "npx serve ."
+    "dev": "live-server --port=3000",
+    "format": "prettier --write .",
+    "lint": "eslint js/**/*.js"
   },
   "keywords": [
     "air-quality",

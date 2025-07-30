@@ -1,0 +1,29 @@
+{
+  "name": "air-quality-dashboard-bangkok",
+  "version": "1.0.0",
+  "description": "Real-time air quality dashboard for Bangkok using AQICN API and Leaflet maps",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'No build step required for static HTML'",
+    "start": "npx serve ."
+  },
+  "keywords": [
+    "air-quality",
+    "dashboard",
+    "bangkok",
+    "leaflet",
+    "aqicn",
+    "environmental",
+    "pollution"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

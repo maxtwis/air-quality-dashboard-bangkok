@@ -2,6 +2,7 @@
   "name": "air-quality-dashboard-bangkok",
   "version": "1.0.0",
   "description": "Real-time air quality dashboard for Bangkok using AQICN API and Leaflet maps",
+  "type": "module",
   "main": "index.html",
   "scripts": {
     "dev": "live-server --port=3000",
@@ -22,10 +23,16 @@
   "devDependencies": {
     "eslint": "^9.32.0",
     "live-server": "^1.2.2",
+    "mcp-context-manager": "^7.5.0",
+    "mcp-playwright": "^0.0.1",
     "prettier": "^3.6.2",
     "serve": "^14.2.1"
   },
   "engines": {
     "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.3",
+    "dotenv": "^17.2.2"
   }
 }

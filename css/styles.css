@@ -46,6 +46,47 @@ body {
     overflow: hidden;
 }
 
+/* Indicator Toggle */
+.indicator-toggle {
+    display: flex;
+    gap: 0;
+    background: var(--gray-100);
+    border-radius: 8px;
+    padding: 4px;
+    margin: 15px 0;
+}
+
+.toggle-label {
+    flex: 1;
+    position: relative;
+}
+
+.toggle-label input[type="radio"] {
+    display: none;
+}
+
+.toggle-btn {
+    display: block;
+    padding: 8px 16px;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--gray-600);
+}
+
+.toggle-label input[type="radio"]:checked + .toggle-btn {
+    background: white;
+    color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.toggle-btn:hover {
+    color: var(--gray-800);
+}
+
 /* Sidebar */
 .sidebar {
     width: 400px;

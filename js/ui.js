@@ -1,16 +1,28 @@
 import { getAQILevel, getAQIClass, formatDateTime } from './utils.js';
 import { fetchStationDetails } from './api.js';
-import { POLLUTANTS, WEATHER_PARAMS } from './config.js';
+import { POLLUTANTS, WEATHER_PARAMS, CONFIG } from './config.js';
+import { getAQHILevel, formatAQHI } from './aqhi-realistic.js';
+import { calculateAQHIStatistics } from './aqhi.js';
 
 // UI management functions for the modern dashboard
 
 export class UIManager {
     constructor() {
+        this.currentIndicator = CONFIG.DEFAULT_INDICATOR;
         this.setupEventListeners();
         this.currentStationDetails = null;
     }
 
     setupEventListeners() {
+        // Indicator toggle
+        const indicatorRadios = document.querySelectorAll('input[name="indicator"]');
+        indicatorRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                this.currentIndicator = e.target.value;
+                window.refreshDashboard && window.refreshDashboard();
+            });
+        });
+
         // Refresh button
         const refreshBtn = document.getElementById('refresh-btn');
         if (refreshBtn) {
@@ -45,6 +57,16 @@ export class UIManager {
 
     // Update main location display
     updateMainDisplay(stations) {
+        if (this.currentIndicator === 'AQHI') {
+            this.updateMainDisplayAQHI(stations);
+        } else {
+            this.updateMainDisplayAQI(stations);
+        }
+        // Update weather info
+        this.updateWeatherInfo();
+    }
+
+    updateMainDisplayAQI(stations) {
         const validStations = stations.filter(s => s.aqi !== '-' && !isNaN(parseInt(s.aqi)));
         if (validStations.length === 0) return;
 
@@ -53,19 +75,67 @@ export class UIManager {
         const aqiLevel = getAQILevel(avgAQI);
         const aqiClass = getAQIClass(avgAQI);
 
-        // Update main AQI display
-        const mainAqiValue = document.getElementById('main-aqi-value');
-        const mainAqiCategory = document.getElementById('main-aqi-category');
-        const mainAqiDescription = document.getElementById('main-aqi-description');
-        const mainAqiCircle = document.getElementById('main-aqi-circle');
+        // Update main display
+        const mainValue = document.getElementById('main-aqi-value');
+        const mainCategory = document.getElementById('main-aqi-category');
+        const mainDescription = document.getElementById('main-aqi-description');
+        const mainCircle = document.getElementById('main-aqi-circle');
+        const mainLabel = document.querySelector('.aqi-label');
 
-        if (mainAqiValue) mainAqiValue.textContent = avgAQI;
-        if (mainAqiCategory) mainAqiCategory.textContent = aqiLevel.label;
-        if (mainAqiDescription) mainAqiDescription.textContent = aqiLevel.description;
-        if (mainAqiCircle) mainAqiCircle.className = `aqi-circle ${aqiClass}`;
+        if (mainValue) mainValue.textContent = avgAQI;
+        if (mainCategory) mainCategory.textContent = aqiLevel.label;
+        if (mainDescription) mainDescription.textContent = aqiLevel.description;
+        if (mainCircle) mainCircle.className = `aqi-circle ${aqiClass}`;
+        if (mainLabel) mainLabel.textContent = 'US AQI';
+    }
 
-        // Update weather info (mock data for now)
-        this.updateWeatherInfo();
+    updateMainDisplayAQHI(stations) {
+        const stats = calculateAQHIStatistics(stations);
+        if (!stats) return;
+
+        const aqhiLevel = getAQHILevel(stats.average);
+        
+        // Map AQHI colors to existing AQI classes
+        const getAQHIClass = (level) => {
+            switch(level.key) {
+                case 'LOW': return 'aqi-good';
+                case 'MODERATE': return 'aqi-moderate';
+                case 'HIGH': return 'aqi-unhealthy-sensitive';
+                case 'VERY_HIGH': return 'aqi-unhealthy';
+                default: return 'aqi-moderate';
+            }
+        };
+
+        // Update main display
+        const mainValue = document.getElementById('main-aqi-value');
+        const mainCategory = document.getElementById('main-aqi-category');
+        const mainDescription = document.getElementById('main-aqi-description');
+        const mainCircle = document.getElementById('main-aqi-circle');
+        const mainLabel = document.querySelector('.aqi-label');
+
+        if (mainValue) mainValue.textContent = formatAQHI(stats.average);
+        if (mainCategory) mainCategory.textContent = aqhiLevel.label;
+        if (mainDescription) {
+            // Check data quality for AQHI with realistic approach
+            let dataQualityNote = '';
+            if (stations.length > 0 && stations[0].aqhi) {
+                const avgTimeSpan = stations.reduce((sum, s) => 
+                    sum + (s.aqhi?.timeSpanHours || 0), 0) / stations.length;
+                const commonMethod = stations[0].aqhi?.calculationMethod || 'current';
+                
+                if (commonMethod === 'estimated') {
+                    dataQualityNote = ' (Estimated from current readings)';
+                } else if (avgTimeSpan < 1) {
+                    dataQualityNote = ' (Building moving average...)';
+                } else if (avgTimeSpan < 3) {
+                    dataQualityNote = ` (${avgTimeSpan.toFixed(1)}h average)`;
+                }
+            }
+            mainDescription.textContent = aqhiLevel.description + dataQualityNote;
+        }
+        if (mainCircle) mainCircle.className = `aqi-circle ${getAQHIClass(aqhiLevel)}`;
+        if (mainLabel) mainLabel.textContent = 'AQHI';
+
     }
 
     updateWeatherInfo() {

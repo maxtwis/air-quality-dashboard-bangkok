@@ -1,7 +1,8 @@
 import { CONFIG } from './config.js';
 import { formatBounds } from './utils.js';
+import { calculateStationAQHIRealistic, initializeRealisticAQHI } from './aqhi-realistic.js';
 
-// Enhanced API handling functions with pollutant data
+// Enhanced API handling functions with pollutant data and AQHI calculations
 
 export async function fetchAirQualityData() {
     try {
@@ -22,7 +23,19 @@ export async function fetchAirQualityData() {
             throw new Error(`API Error: ${data.data || 'Unknown error'}`);
         }
         
-        return data.data || [];
+        // Initialize realistic AQHI on first call
+        if (!fetchAirQualityData._initialized) {
+            const stationsWithData = initializeRealisticAQHI();
+            console.log(`🔄 Initialized realistic AQHI with data from ${stationsWithData} stations`);
+            fetchAirQualityData._initialized = true;
+        }
+        
+        // Enhance stations with realistic AQHI calculations
+        const stations = data.data || [];
+        return stations.map(station => ({
+            ...station,
+            aqhi: calculateStationAQHIRealistic(station)
+        }));
     } catch (error) {
         console.error('Error fetching air quality data:', error);
         throw error;
@@ -46,7 +59,12 @@ export async function fetchStationDetails(stationUID) {
             throw new Error(`API Error: ${data.reason || 'Unknown error'}`);
         }
         
-        return data.data;
+        // Enhance station details with realistic AQHI
+        const stationData = data.data;
+        return {
+            ...stationData,
+            aqhi: calculateStationAQHIRealistic(stationData)
+        };
     } catch (error) {
         console.error('Error fetching station details:', error);
         return null;

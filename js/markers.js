@@ -1,10 +1,11 @@
 import { getMap } from './map.js';
 import { getAQIColor, isValidStation } from './utils.js';
 import { uiManager } from './ui.js';
+import { formatAQHI } from './aqhi.js';
 
 // Modern marker creation and management
 
-export function createModernMarkerIcon(aqi, color) {
+export function createModernMarkerIcon(value, color) {
     return L.divIcon({
         className: 'custom-marker',
         html: `
@@ -27,7 +28,7 @@ export function createModernMarkerIcon(aqi, color) {
             " 
             onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.2)'" 
             onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
-            >${aqi}</div>
+            >${value}</div>
         `,
         iconSize: [32, 32],
         iconAnchor: [16, 16]
@@ -42,15 +43,26 @@ export function addMarkersToMap(stations) {
     }
 
     const markers = [];
+    const isAQHI = uiManager.currentIndicator === 'AQHI';
 
     stations.forEach(station => {
         if (!isValidStation(station)) return;
         
-        const aqi = parseInt(station.aqi);
-        const color = getAQIColor(aqi);
+        let value, color;
+        
+        if (isAQHI && station.aqhi) {
+            // Use AQHI if available
+            value = formatAQHI(station.aqhi.value);
+            color = station.aqhi.level.color;
+        } else {
+            // Fall back to AQI
+            const aqi = parseInt(station.aqi);
+            value = aqi;
+            color = getAQIColor(aqi);
+        }
         
         // Create modern marker icon
-        const icon = createModernMarkerIcon(aqi, color);
+        const icon = createModernMarkerIcon(value, color);
         
         // Create marker
         const marker = L.marker([station.lat, station.lon], { icon }).addTo(map);
@@ -84,10 +96,19 @@ export function addSingleMarker(station) {
     const map = getMap();
     if (!map) return null;
     
-    const aqi = parseInt(station.aqi);
-    const color = getAQIColor(aqi);
+    const isAQHI = uiManager.currentIndicator === 'AQHI';
+    let value, color;
     
-    const icon = createModernMarkerIcon(aqi, color);
+    if (isAQHI && station.aqhi) {
+        value = formatAQHI(station.aqhi.value);
+        color = station.aqhi.level.color;
+    } else {
+        const aqi = parseInt(station.aqi);
+        value = aqi;
+        color = getAQIColor(aqi);
+    }
+    
+    const icon = createModernMarkerIcon(value, color);
     const marker = L.marker([station.lat, station.lon], { icon }).addTo(map);
     
     // Add click handler
@@ -107,11 +128,15 @@ export function createMarkerCluster(stations) {
 }
 
 // Animate marker changes
-export function animateMarkerUpdate(marker, newAqi) {
+export function animateMarkerUpdate(marker, newValue, newColor) {
     if (!marker || !marker.stationData) return;
     
-    const newColor = getAQIColor(newAqi);
-    const icon = createModernMarkerIcon(newAqi, newColor);
+    // If only AQI value provided (backward compatibility)
+    if (typeof newValue === 'number' && !newColor) {
+        newColor = getAQIColor(newValue);
+    }
+    
+    const icon = createModernMarkerIcon(newValue, newColor);
     
     // Add animation class temporarily
     const markerElement = marker.getElement();

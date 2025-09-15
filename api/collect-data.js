@@ -5,10 +5,22 @@ export const config = {
   runtime: 'edge',
 };
 
-// This would be triggered by Vercel Cron Jobs every 10 minutes
+// This can be triggered by external cron services or Vercel daily cron
 export default async function handler(request) {
-  // Only allow POST requests and verify it's from a cron job
-  if (request.method !== 'POST' && request.method !== 'GET') {
+  // Allow external cron services and manual triggers
+  const allowedMethods = ['POST', 'GET'];
+  const userAgent = request.headers.get('user-agent') || '';
+  const origin = request.headers.get('origin') || '';
+
+  // Check for known cron services
+  const isExternalCron = [
+    'cron-job.org',
+    'uptimerobot',
+    'github',
+    'easycron'
+  ].some(service => userAgent.toLowerCase().includes(service));
+
+  if (!allowedMethods.includes(request.method) && !isExternalCron) {
     return new Response('Method not allowed', { status: 405 });
   }
   try {

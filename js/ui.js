@@ -153,12 +153,34 @@ export class UIManager {
         });
     }
 
+    // Helper method to get AQHI CSS class
+    getAQHIClass(aqhi) {
+        if (aqhi <= 3) return 'good';
+        if (aqhi <= 6) return 'moderate';
+        if (aqhi <= 10) return 'unhealthy-sensitive';
+        return 'hazardous';
+    }
+
     // Enhanced station information panel with pollutant data
     async showStationInfo(station) {
-        const aqi = parseInt(station.aqi);
-        const aqiLevel = getAQILevel(aqi);
-        const aqiClass = getAQIClass(aqi);
-        
+        const isAQHI = this.currentIndicator === 'AQHI';
+        let value, level, cssClass, label;
+
+        if (isAQHI && station.aqhi) {
+            // Use AQHI data
+            value = formatAQHI(station.aqhi.value);
+            level = station.aqhi.level;
+            cssClass = this.getAQHIClass(station.aqhi.value);
+            label = level.label;
+        } else {
+            // Use AQI data
+            const aqi = parseInt(station.aqi);
+            value = aqi;
+            level = getAQILevel(aqi);
+            cssClass = getAQIClass(aqi);
+            label = level.label;
+        }
+
         // Update basic station info
         const stationName = document.getElementById('station-name');
         const stationAqiValue = document.getElementById('station-aqi-value');
@@ -169,24 +191,24 @@ export class UIManager {
         if (stationName) {
             stationName.textContent = station.station?.name || 'Unknown Station';
         }
-        
+
         if (stationAqiValue) {
-            stationAqiValue.textContent = aqi;
+            stationAqiValue.textContent = value;
         }
-        
+
         if (stationCategory) {
-            stationCategory.textContent = aqiLevel.label;
-            stationCategory.className = `station-category text-${aqiClass}`;
+            stationCategory.textContent = label;
+            stationCategory.className = `station-category text-${cssClass}`;
         }
-        
+
         if (stationTime) {
-            const timeStr = station.station?.time ? 
+            const timeStr = station.station?.time ?
                 formatDateTime(station.station.time) : 'Unknown';
             stationTime.textContent = `Last updated: ${timeStr}`;
         }
-        
+
         if (stationAqiCircle) {
-            stationAqiCircle.className = `station-aqi-circle ${aqiClass}`;
+            stationAqiCircle.className = `station-aqi-circle ${cssClass}`;
         }
 
         // Show the panel first
@@ -197,12 +219,25 @@ export class UIManager {
 
         // Fetch and display detailed pollutant data
         this.showLoadingInStationInfo();
-        
+
         try {
             const detailsData = await fetchStationDetails(station.uid);
             if (detailsData) {
                 this.currentStationDetails = detailsData;
-                this.updateStationInfoWithDetails(detailsData);
+
+                // If in AQHI mode, try to get 3-hour averages for display
+                let averageData = null;
+                if (isAQHI && station.aqhi) {
+                    try {
+                        // Import supabaseAQHI to get 3-hour averages
+                        const { supabaseAQHI } = await import('./aqhi-supabase.js');
+                        averageData = await supabaseAQHI.get3HourAverages(station.uid?.toString());
+                    } catch (avgError) {
+                        console.warn('Could not fetch 3-hour averages:', avgError);
+                    }
+                }
+
+                this.updateStationInfoWithDetails(detailsData, isAQHI, averageData);
             } else {
                 this.showErrorInStationInfo('Could not load detailed data');
             }
@@ -240,7 +275,7 @@ export class UIManager {
         }
     }
 
-    updateStationInfoWithDetails(detailsData) {
+    updateStationInfoWithDetails(detailsData, isAQHI = false, averageData = null) {
         let container = document.getElementById('station-details-container');
         if (!container) {
             container = document.createElement('div');
@@ -256,28 +291,46 @@ export class UIManager {
             const pollutantData = [];
             const weatherData = [];
 
-            Object.entries(detailsData.iaqi).forEach(([key, data]) => {
-                if (POLLUTANTS[key]) {
-                    pollutantData.push({
-                        key,
-                        config: POLLUTANTS[key],
-                        value: data.v
-                    });
-                } else if (WEATHER_PARAMS[key]) {
-                    weatherData.push({
-                        key,
-                        config: WEATHER_PARAMS[key],
-                        value: data.v
-                    });
-                }
-            });
+            // Use 3-hour averages if in AQHI mode and available, otherwise use API data
+            const dataSource = isAQHI && averageData ? averageData : detailsData.iaqi;
+            const dataLabel = isAQHI && averageData ? '3-Hour Average' : 'Current';
+
+            if (isAQHI && averageData) {
+                // For AQHI mode with averages, process the average data structure
+                Object.entries(averageData).forEach(([key, value]) => {
+                    if (POLLUTANTS[key] && value !== null && value !== undefined) {
+                        pollutantData.push({
+                            key,
+                            config: POLLUTANTS[key],
+                            value: Math.round(value * 10) / 10 // Round to 1 decimal place
+                        });
+                    }
+                });
+            } else {
+                // Standard processing for API data
+                Object.entries(detailsData.iaqi).forEach(([key, data]) => {
+                    if (POLLUTANTS[key]) {
+                        pollutantData.push({
+                            key,
+                            config: POLLUTANTS[key],
+                            value: data.v
+                        });
+                    } else if (WEATHER_PARAMS[key]) {
+                        weatherData.push({
+                            key,
+                            config: WEATHER_PARAMS[key],
+                            value: data.v
+                        });
+                    }
+                });
+            }
 
             // Generate pollutant HTML
             if (pollutantData.length > 0) {
                 pollutantHTML = `
                     <div class="pollutant-section">
                         <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; color: var(--gray-700);">
-                            🌫️ Pollutants
+                            🌫️ Pollutants (${dataLabel})
                         </h4>
                         <div class="pollutant-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                             ${pollutantData.map(item => `

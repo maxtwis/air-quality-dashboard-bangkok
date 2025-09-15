@@ -23,28 +23,28 @@ export const AQHI_LEVELS = {
     LOW: {
         min: 0,
         max: 3,
-        color: '#00e400',
+        color: '#00d700',
         label: 'Low',
         description: 'Ideal air quality for outdoor activities'
     },
     MODERATE: {
         min: 4,
         max: 6,
-        color: '#ffff00',
+        color: '#ffa500',
         label: 'Moderate',
         description: 'No need to modify outdoor activities unless experiencing symptoms'
     },
     HIGH: {
         min: 7,
         max: 10,
-        color: '#ff7e00',
+        color: '#ff6347',
         label: 'High',
         description: 'Consider reducing or rescheduling strenuous outdoor activities'
     },
     VERY_HIGH: {
         min: 11,
         max: Infinity,
-        color: '#ff0000',
+        color: '#dc143c',
         label: 'Very High',
         description: 'Reduce or reschedule strenuous outdoor activities'
     }

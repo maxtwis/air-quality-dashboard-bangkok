@@ -1,16 +1,11 @@
-// Vercel Edge Function to collect and store air quality data
-// This runs on Vercel's edge network every 10 minutes via cron
-
-export const config = {
-  runtime: 'edge',
-};
+// Vercel Serverless Function to collect and store air quality data
+// This runs server-side via cron (changed from edge to serverless for full module support)
 
 // This can be triggered by external cron services or Vercel daily cron
-export default async function handler(request) {
+export default async function handler(req, res) {
   // Allow external cron services and manual triggers
   const allowedMethods = ['POST', 'GET'];
-  const userAgent = request.headers.get('user-agent') || '';
-  const origin = request.headers.get('origin') || '';
+  const userAgent = req.headers['user-agent'] || '';
 
   // Check for known cron services
   const isExternalCron = [
@@ -20,8 +15,8 @@ export default async function handler(request) {
     'easycron'
   ].some(service => userAgent.toLowerCase().includes(service));
 
-  if (!allowedMethods.includes(request.method) && !isExternalCron) {
-    return new Response('Method not allowed', { status: 405 });
+  if (!allowedMethods.includes(req.method) && !isExternalCron) {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
   try {
     // 1. Fetch current data from WAQI API
@@ -52,75 +47,16 @@ export default async function handler(request) {
     };
     
     console.log('✅ Data collection completed:', result);
-    
-    return new Response(JSON.stringify(result), {
-      status: 200,
-      headers: { 
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache'
-      }
-    });
+
+    return res.status(200).json(result);
 
   } catch (error) {
     console.error('Data collection error:', error);
-    return new Response(JSON.stringify({ 
+    return res.status(500).json({
       error: error.message,
       timestamp: new Date().toISOString()
-    }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
     });
   }
-}
-
-// Database storage options (choose one):
-
-// Option A: Vercel Postgres
-async function storeHistoricalDataPostgres(stations) {
-  const { sql } = await import('@vercel/postgres');
-  
-  for (const station of stations) {
-    await sql`
-      INSERT INTO air_quality_readings (
-        station_uid, timestamp, lat, lon, aqi,
-        pm25, no2, o3, so2, pm10, co, station_name
-      ) VALUES (
-        ${station.uid}, ${station.timestamp}, ${station.lat}, ${station.lon}, ${station.aqi},
-        ${station.pollutants.pm25}, ${station.pollutants.no2}, ${station.pollutants.o3},
-        ${station.pollutants.so2}, ${station.pollutants.pm10}, ${station.pollutants.co},
-        ${station.station_name}
-      )
-    `;
-  }
-}
-
-// Option B: Planetscale MySQL
-async function storeHistoricalDataPlanetscale(stations) {
-  const mysql = await import('mysql2/promise');
-  
-  const connection = await mysql.createConnection({
-    host: process.env.DATABASE_HOST,
-    username: process.env.DATABASE_USERNAME,
-    password: process.env.DATABASE_PASSWORD,
-    database: process.env.DATABASE_NAME,
-    ssl: { rejectUnauthorized: true }
-  });
-
-  const query = `
-    INSERT INTO air_quality_readings 
-    (station_uid, timestamp, lat, lon, aqi, pm25, no2, o3, so2, pm10, co, station_name)
-    VALUES ?
-  `;
-
-  const values = stations.map(station => [
-    station.uid, station.timestamp, station.lat, station.lon, station.aqi,
-    station.pollutants.pm25, station.pollutants.no2, station.pollutants.o3,
-    station.pollutants.so2, station.pollutants.pm10, station.pollutants.co,
-    station.station_name
-  ]);
-
-  await connection.execute(query, [values]);
-  await connection.end();
 }
 
 // Option C: Supabase (Updated to match your schema)

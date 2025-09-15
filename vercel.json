@@ -9,10 +9,5 @@
       "path": "/api/collect-data",
       "schedule": "0 0 * * *"
     }
-  ],
-  "env": {
-    "AQICN_API_TOKEN": "@aqicn-api-token",
-    "SUPABASE_URL": "@supabase-url",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-key"
-  }
+  ]
 }

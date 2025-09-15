@@ -47,9 +47,9 @@ export function addMarkersToMap(stations) {
 
     stations.forEach(station => {
         if (!isValidStation(station)) return;
-        
+
         let value, color;
-        
+
         if (isAQHI && station.aqhi) {
             // Use AQHI if available
             value = formatAQHI(station.aqhi.value);

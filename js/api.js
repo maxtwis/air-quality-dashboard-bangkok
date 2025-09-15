@@ -1,6 +1,7 @@
 import { CONFIG } from './config.js';
 import { formatBounds } from './utils.js';
 import { calculateStationAQHIRealistic, initializeRealisticAQHI } from './aqhi-realistic.js';
+import { supabaseAQHI } from './aqhi-supabase.js';
 
 // Enhanced API handling functions with pollutant data and AQHI calculations
 
@@ -30,15 +31,15 @@ export async function fetchAirQualityData() {
             fetchAirQualityData._initialized = true;
         }
         
-        // Enhance stations with realistic AQHI calculations
+        // Enhance stations with enhanced AQHI calculations using stored data
         const stations = data.data || [];
-        const enhancedStations = stations.map(station => ({
-            ...station,
-            aqhi: calculateStationAQHIRealistic(station)
-        }));
 
-        // Client-side storage disabled - using server-side collection only
+        // Try enhanced AQHI with 3-hour averages from Supabase, fallback to realistic
+        console.log('🔄 Calculating enhanced AQHI using stored 3-hour averages...');
+        const enhancedStations = await supabaseAQHI.enhanceStationsWithAQHI(stations);
+
         console.log('📊 Server-side collection active - client storage disabled');
+        console.log(`✅ Enhanced AQHI calculated for ${enhancedStations.length} stations`);
 
         return enhancedStations;
     } catch (error) {

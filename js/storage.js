@@ -1,5 +1,17 @@
 // Air Quality Data Storage Service
-import { AirQualityDB } from '../lib/supabase.js';
+let AirQualityDB = null;
+
+// Function to load Supabase module
+async function loadSupabase() {
+    try {
+        const supabaseModule = await import('../lib/supabase.js');
+        AirQualityDB = supabaseModule.AirQualityDB;
+        return true;
+    } catch (error) {
+        console.warn('⚠️ Supabase module not available, storage disabled:', error.message);
+        return false;
+    }
+}
 
 export class AirQualityStorage {
     constructor() {
@@ -11,6 +23,14 @@ export class AirQualityStorage {
 
     async init() {
         try {
+            // Try to load Supabase module
+            const supabaseLoaded = await loadSupabase();
+            if (!supabaseLoaded || !AirQualityDB) {
+                console.warn('⚠️ Storage service disabled - Supabase not available');
+                this.isEnabled = false;
+                return;
+            }
+
             // Test database connection
             this.isEnabled = await AirQualityDB.testConnection();
             if (this.isEnabled) {
@@ -71,11 +91,21 @@ export class AirQualityStorage {
 
                 stationsToStore.push(stationData);
 
+                // Debug: Log the first station's data structure
+                if (readings.length === 0) {
+                    console.log('🔍 Sample station data structure:', {
+                        uid: station.uid,
+                        aqi: station.aqi,
+                        iaqi: station.iaqi,
+                        station: station.station
+                    });
+                }
+
                 // Prepare reading data
                 const reading = {
                     station_uid: stationData.station_uid,
                     timestamp: timestamp,
-                    aqi: station.aqi || null,
+                    aqi: typeof station.aqi === 'number' ? station.aqi : null,
 
                     // Pollutant data (extract from iaqi object)
                     pm25: this.extractPollutantValue(station, 'pm25'),
@@ -93,13 +123,25 @@ export class AirQualityStorage {
                     wind_direction: this.extractPollutantValue(station, 'wd'),
 
                     // Store AQHI if calculated
-                    aqhi: station.aqhi || null,
+                    aqhi: typeof station.aqhi === 'number' ? station.aqhi : null,
 
-                    // Store raw data for debugging
-                    raw_data: JSON.stringify(station)
+                    // Store raw data for debugging (limit size)
+                    raw_data: JSON.stringify({
+                        uid: station.uid,
+                        aqi: station.aqi,
+                        lat: station.lat,
+                        lon: station.lon,
+                        iaqi: station.iaqi,
+                        time: station.time
+                    })
                 };
 
-                readings.push(reading);
+                // Validate reading before adding
+                if (reading.station_uid && reading.timestamp) {
+                    readings.push(reading);
+                } else {
+                    console.warn('⚠️ Skipping invalid reading:', reading);
+                }
             }
 
             // Store stations first (with upsert logic)
@@ -133,9 +175,29 @@ export class AirQualityStorage {
      */
     extractPollutantValue(station, pollutant) {
         try {
-            const value = station.iaqi?.[pollutant]?.v;
-            return (value !== undefined && value !== null) ? parseFloat(value) : null;
+            let value = station.iaqi?.[pollutant]?.v;
+
+            // Handle case where value might be an object
+            if (typeof value === 'object' && value !== null) {
+                if (value.value !== undefined) {
+                    value = value.value;
+                } else if (value.v !== undefined) {
+                    value = value.v;
+                } else {
+                    // If it's an object we can't parse, return null
+                    return null;
+                }
+            }
+
+            // Convert to number
+            if (value !== undefined && value !== null && value !== '') {
+                const numValue = parseFloat(value);
+                return isNaN(numValue) ? null : numValue;
+            }
+
+            return null;
         } catch (error) {
+            console.warn(`⚠️ Error extracting ${pollutant}:`, error);
             return null;
         }
     }

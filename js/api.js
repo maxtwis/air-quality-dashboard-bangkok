@@ -1,7 +1,6 @@
 import { CONFIG } from './config.js';
 import { formatBounds } from './utils.js';
 import { calculateStationAQHIRealistic, initializeRealisticAQHI } from './aqhi-realistic.js';
-import { airQualityStorage } from './storage.js';
 
 // Enhanced API handling functions with pollutant data and AQHI calculations
 
@@ -38,10 +37,17 @@ export async function fetchAirQualityData() {
             aqhi: calculateStationAQHIRealistic(station)
         }));
 
-        // Store data in Supabase (async, non-blocking)
+        // Try to store data in Supabase (async, non-blocking)
         try {
-            airQualityStorage.storeStationData(enhancedStations).catch(error => {
-                console.warn('Storage failed (non-critical):', error.message);
+            // Dynamic import to avoid breaking the app if Supabase isn't available
+            import('./storage.js').then(({ airQualityStorage }) => {
+                if (airQualityStorage) {
+                    airQualityStorage.storeStationData(enhancedStations).catch(error => {
+                        console.warn('📊 Storage failed (non-critical):', error.message);
+                    });
+                }
+            }).catch(() => {
+                // Silently ignore if storage module can't be loaded
             });
         } catch (error) {
             // Non-blocking storage failure

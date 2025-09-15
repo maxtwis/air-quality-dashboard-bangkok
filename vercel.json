@@ -11,9 +11,8 @@
     }
   ],
   "env": {
-    "WAQI_API_TOKEN": "@waqi-api-token",
-    "DATABASE_URL": "@database-url",
+    "AQICN_API_TOKEN": "@aqicn-api-token",
     "SUPABASE_URL": "@supabase-url",
-    "SUPABASE_ANON_KEY": "@supabase-anon-key"
+    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-key"
   }
 }

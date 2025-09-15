@@ -31,7 +31,66 @@ class SupabaseAQHI {
     }
 
     /**
-     * Get 3-hour averages for a station
+     * Get 3-hour averages for multiple stations at once (batch query)
+     */
+    async getBatch3HourAverages(stationIds) {
+        if (!this.supabase || !stationIds.length) return {};
+
+        try {
+            const { data, error } = await this.supabase
+                .from('air_quality_readings')
+                .select('station_uid, pm25, pm10, o3, no2, so2, co, timestamp')
+                .in('station_uid', stationIds)
+                .gte('timestamp', new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString())
+                .order('timestamp', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching batch 3h averages:', error);
+                return {};
+            }
+
+            if (!data || data.length === 0) {
+                console.log(`ℹ️ No stored data for ${stationIds.length} stations`);
+                return {};
+            }
+
+            // Group by station and calculate averages
+            const stationAverages = {};
+            const groupedData = data.reduce((acc, reading) => {
+                if (!acc[reading.station_uid]) acc[reading.station_uid] = [];
+                acc[reading.station_uid].push(reading);
+                return acc;
+            }, {});
+
+            Object.entries(groupedData).forEach(([stationId, readings]) => {
+                const validReadings = readings.filter(reading =>
+                    reading.pm25 !== null || reading.o3 !== null || reading.no2 !== null
+                );
+
+                if (validReadings.length > 0) {
+                    stationAverages[stationId] = {
+                        pm25: this.calculateAverage(validReadings, 'pm25'),
+                        pm10: this.calculateAverage(validReadings, 'pm10'),
+                        o3: this.calculateAverage(validReadings, 'o3'),
+                        no2: this.calculateAverage(validReadings, 'no2'),
+                        so2: this.calculateAverage(validReadings, 'so2'),
+                        co: this.calculateAverage(validReadings, 'co'),
+                        readingCount: validReadings.length
+                    };
+                }
+            });
+
+            console.log(`📊 Batch processed ${Object.keys(stationAverages).length}/${stationIds.length} stations with data`);
+            return stationAverages;
+
+        } catch (error) {
+            console.error('Error in getBatch3HourAverages:', error);
+            return {};
+        }
+    }
+
+    /**
+     * Get 3-hour averages for a single station (fallback)
      */
     async get3HourAverages(stationId) {
         if (!this.supabase) return null;
@@ -50,7 +109,6 @@ class SupabaseAQHI {
             }
 
             if (!data || data.length === 0) {
-                console.log(`ℹ️ No stored data for station ${stationId}`);
                 return null;
             }
 
@@ -60,7 +118,6 @@ class SupabaseAQHI {
             );
 
             if (validReadings.length === 0) {
-                console.log(`ℹ️ No pollutant data for station ${stationId}`);
                 return null;
             }
 
@@ -74,7 +131,6 @@ class SupabaseAQHI {
                 readingCount: validReadings.length
             };
 
-            console.log(`📊 Station ${stationId}: ${validReadings.length} readings, averages:`, averages);
             return averages;
 
         } catch (error) {
@@ -163,20 +219,70 @@ class SupabaseAQHI {
     }
 
     /**
-     * Process multiple stations
+     * Process multiple stations with optimized batch database queries
      */
     async enhanceStationsWithAQHI(stations) {
-        const enhancedStations = [];
+        console.log(`🔄 Processing ${stations.length} stations with batch optimization...`);
+        const startTime = Date.now();
 
-        for (const station of stations) {
-            const aqhi = await this.calculateAQHI(station);
-            enhancedStations.push({
-                ...station,
-                aqhi: aqhi
-            });
-        }
+        // Extract all station IDs for batch query
+        const stationIds = stations
+            .map(station => station.uid?.toString())
+            .filter(id => id);
 
-        console.log(`✅ Enhanced ${enhancedStations.length} stations with AQHI calculations`);
+        // Fetch all 3-hour averages in one batch query
+        const batchAverages = await this.getBatch3HourAverages(stationIds);
+
+        // Process all stations in parallel with pre-fetched data
+        const enhancedStations = await Promise.all(
+            stations.map(async (station) => {
+                const stationId = station.uid?.toString();
+                const averages = stationId ? batchAverages[stationId] : null;
+
+                let aqhi;
+                if (averages && (averages.pm25 || averages.o3 || averages.no2)) {
+                    // Calculate AQHI using Health Canada formula
+                    aqhi = 0;
+                    if (averages.pm25) aqhi += (Math.exp(0.000487 * averages.pm25) - 1);
+                    if (averages.o3) aqhi += (Math.exp(0.000871 * averages.o3) - 1);
+                    if (averages.no2) aqhi += (Math.exp(0.000537 * averages.no2) - 1);
+                    aqhi = (10.0 / 10.4) * 100 * aqhi;
+                    aqhi = Math.max(0, Math.round(aqhi * 10) / 10);
+
+                    // Cache the result
+                    if (stationId) {
+                        this.cache.set(`aqhi_${stationId}`, {
+                            value: aqhi,
+                            timestamp: Date.now(),
+                            source: 'batch_stored_3h_avg',
+                            readingCount: averages.readingCount
+                        });
+                    }
+                } else {
+                    // Fallback to realistic calculation
+                    const { calculateStationAQHIRealistic } = await import('./aqhi-realistic.js');
+                    aqhi = calculateStationAQHIRealistic(station);
+
+                    if (stationId) {
+                        this.cache.set(`aqhi_${stationId}`, {
+                            value: aqhi,
+                            timestamp: Date.now(),
+                            source: 'fallback',
+                            readingCount: 0
+                        });
+                    }
+                }
+
+                return {
+                    ...station,
+                    aqhi: aqhi
+                };
+            })
+        );
+
+        const duration = Date.now() - startTime;
+        const storedCount = Object.keys(batchAverages).length;
+        console.log(`✅ Enhanced ${enhancedStations.length} stations (${storedCount} from stored data) in ${duration}ms`);
         return enhancedStations;
     }
 

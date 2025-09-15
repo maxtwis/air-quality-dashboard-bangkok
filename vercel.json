@@ -3,7 +3,7 @@
   "outputDirectory": ".",
   "functions": {
     "api/collect-data.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
   },
   "crons": [

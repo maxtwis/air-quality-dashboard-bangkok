@@ -72,9 +72,9 @@ export default async function handler(req, res) {
       console.log('🔍 First station iaqi:', stations[0].iaqi);
     }
 
-    // 3. Fetch detailed data for first 10 stations (for pollutant data)
-    console.log('🔄 Fetching detailed pollutant data for sample stations...');
-    const detailedStations = await fetchDetailedStationData(stations.slice(0, 10), apiToken);
+    // 3. Fetch detailed data for ALL stations (for pollutant data)
+    console.log('🔄 Fetching detailed pollutant data for ALL stations...');
+    const detailedStations = await fetchDetailedStationData(stations, apiToken);
 
     // 4. Merge detailed data with all stations
     const enhancedStations = stations.map(station => {
@@ -246,46 +246,62 @@ async function storeHistoricalDataSupabase(stations) {
 // Function to fetch detailed station data with pollutants
 async function fetchDetailedStationData(stations, apiToken) {
   const detailedStations = [];
+  const totalStations = stations.length;
 
-  // Limit concurrent requests to avoid rate limiting
-  const batchSize = 3;
+  console.log(`🚀 Starting to fetch detailed data for ${totalStations} stations...`);
+
+  // Optimized batch processing for all stations
+  const batchSize = 5; // Slightly larger batches
+  let processedCount = 0;
+
   for (let i = 0; i < stations.length; i += batchSize) {
     const batch = stations.slice(i, i + batchSize);
+    const batchNum = Math.floor(i / batchSize) + 1;
+    const totalBatches = Math.ceil(stations.length / batchSize);
+
+    console.log(`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} stations)`);
 
     const promises = batch.map(async (station) => {
       try {
         const url = `https://api.waqi.info/feed/@${station.uid}/?token=${apiToken}`;
-        console.log(`🔍 Fetching detailed data for station ${station.uid}...`);
 
         const response = await fetch(url);
         const data = await response.json();
 
-        if (data.status === 'ok' && data.data) {
-          console.log(`✅ Got detailed data for station ${station.uid}`);
+        if (data.status === 'ok' && data.data && data.data.iaqi) {
+          const pollutantCount = Object.keys(data.data.iaqi).length;
+          console.log(`✅ Station ${station.uid}: ${pollutantCount} pollutants`);
           return {
             uid: station.uid,
-            iaqi: data.data.iaqi || null
+            iaqi: data.data.iaqi
           };
         } else {
-          console.log(`⚠️ No detailed data for station ${station.uid}: ${data.status}`);
+          console.log(`⚠️ Station ${station.uid}: No pollutant data`);
           return null;
         }
       } catch (error) {
-        console.error(`❌ Error fetching station ${station.uid}:`, error.message);
+        console.error(`❌ Station ${station.uid}: ${error.message}`);
         return null;
       }
     });
 
     const batchResults = await Promise.all(promises);
-    detailedStations.push(...batchResults.filter(result => result !== null));
+    const validResults = batchResults.filter(result => result !== null);
+    detailedStations.push(...validResults);
 
-    // Small delay between batches to be respectful to the API
+    processedCount += batch.length;
+    const progressPercent = Math.round((processedCount / totalStations) * 100);
+    console.log(`📊 Progress: ${processedCount}/${totalStations} (${progressPercent}%) - Found ${validResults.length} with pollutant data`);
+
+    // Respectful delay between batches (shorter for all stations)
     if (i + batchSize < stations.length) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
   }
 
-  console.log(`📊 Successfully fetched detailed data for ${detailedStations.length}/${stations.length} stations`);
+  const successRate = Math.round((detailedStations.length / totalStations) * 100);
+  console.log(`🎯 Final result: ${detailedStations.length}/${totalStations} stations (${successRate}%) have detailed pollutant data`);
+
   return detailedStations;
 }
 

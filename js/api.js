@@ -1,6 +1,7 @@
 import { CONFIG } from './config.js';
 import { formatBounds } from './utils.js';
 import { calculateStationAQHIRealistic, initializeRealisticAQHI } from './aqhi-realistic.js';
+import { airQualityStorage } from './storage.js';
 
 // Enhanced API handling functions with pollutant data and AQHI calculations
 
@@ -32,10 +33,21 @@ export async function fetchAirQualityData() {
         
         // Enhance stations with realistic AQHI calculations
         const stations = data.data || [];
-        return stations.map(station => ({
+        const enhancedStations = stations.map(station => ({
             ...station,
             aqhi: calculateStationAQHIRealistic(station)
         }));
+
+        // Store data in Supabase (async, non-blocking)
+        try {
+            airQualityStorage.storeStationData(enhancedStations).catch(error => {
+                console.warn('Storage failed (non-critical):', error.message);
+            });
+        } catch (error) {
+            // Non-blocking storage failure
+        }
+
+        return enhancedStations;
     } catch (error) {
         console.error('Error fetching air quality data:', error);
         throw error;

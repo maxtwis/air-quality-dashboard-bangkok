@@ -19,6 +19,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
   try {
+    // Debug: Log environment variables (safely)
+    console.log('🔍 Environment check:', {
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasSupabaseKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      hasApiToken: !!process.env.AQICN_API_TOKEN,
+      userAgent: userAgent
+    });
+
     // 1. Fetch current data from WAQI API
     console.log('🔄 Starting data collection from WAQI API...');
     const apiToken = process.env.AQICN_API_TOKEN || '354eb1b871693ef55f777c69e44e81bcaf215d40';
@@ -36,16 +44,25 @@ export default async function handler(req, res) {
     // 2. Pass the raw stations data (don't pre-process)
     const stations = data.data || [];
 
-    // 3. Store in database (multiple options below)
-    await storeHistoricalData(stations);
+    // 3. Try to store in database (with error handling)
+    let storeResult = null;
+    try {
+      storeResult = await storeHistoricalData(stations);
+      console.log('✅ Database storage successful:', storeResult);
+    } catch (dbError) {
+      console.error('❌ Database storage failed:', dbError.message);
+      // Continue without database storage
+    }
 
     const result = {
       success: true,
       stored: stations.length,
       timestamp: new Date().toISOString(),
-      message: `Successfully stored ${stations.length} station readings`
+      message: `Successfully fetched ${stations.length} stations${storeResult ? ' and stored to database' : ' (database storage failed)'}`,
+      databaseWorking: !!storeResult,
+      storeResult: storeResult
     };
-    
+
     console.log('✅ Data collection completed:', result);
 
     return res.status(200).json(result);

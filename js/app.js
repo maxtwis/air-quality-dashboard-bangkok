@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { fetchAirQualityData } from './api.js';
+import { fetchAirQualityData, enhanceStationsWithAQHI } from './api.js';
 import { initializeMap, clearMarkers } from './map.js';
 import { addMarkersToMap } from './markers.js';
 import { updateStatisticsPanel } from './statistics.js';
@@ -11,9 +11,12 @@ class ModernAirQualityDashboard {
     constructor() {
         this.map = null;
         this.stations = [];
+        this.stationsWithAQHI = [];
         this.markers = [];
         this.refreshInterval = null;
         this.isInitialized = false;
+        this.aqhiCalculated = false;
+        this.isCalculatingAQHI = false;
     }
 
     async initialize() {
@@ -45,18 +48,21 @@ class ModernAirQualityDashboard {
     async loadData() {
         try {
             uiManager.showLoading('stats-content', 'Loading air quality data...');
-            
-            const stations = await fetchAirQualityData();
-            console.log(`📊 Loaded ${stations.length} stations`);
-            
+
+            // Load basic AQI data fast (no AQHI calculations)
+            const stations = await fetchAirQualityData(false);
+            console.log(`📊 Loaded ${stations.length} stations (AQI mode)`);
+
             if (stations.length === 0) {
                 uiManager.showError('stats-content', 'No air quality stations found in Bangkok area');
                 return;
             }
-            
+
             this.stations = stations;
+            this.stationsWithAQHI = []; // Clear AQHI data
+            this.aqhiCalculated = false;
             this.updateDisplay();
-            
+
         } catch (error) {
             console.error('❌ Error loading data:', error);
             uiManager.showError('stats-content', `Error loading data: ${error.message}`);
@@ -68,21 +74,30 @@ class ModernAirQualityDashboard {
         try {
             // Clear existing markers
             clearMarkers();
-            
+
+            // Use appropriate station data based on current indicator
+            const currentStations = this.getCurrentStations();
+
             // Add new modern markers
-            this.markers = addMarkersToMap(this.stations);
-            
+            this.markers = addMarkersToMap(currentStations);
+
             // Update main location display
-            uiManager.updateMainDisplay(this.stations);
-            
+            uiManager.updateMainDisplay(currentStations);
+
             // Update statistics
-            updateStatisticsPanel(this.stations);
-            
-            console.log(`✨ Display updated with ${this.stations.length} stations`);
+            updateStatisticsPanel(currentStations);
+
+            console.log(`✨ Display updated with ${currentStations.length} stations (${uiManager.currentIndicator} mode)`);
         } catch (error) {
             console.error('❌ Error updating display:', error);
             uiManager.showError('stats-content', 'Error updating display');
         }
+    }
+
+    getCurrentStations() {
+        return uiManager.currentIndicator === 'AQHI' && this.aqhiCalculated
+            ? this.stationsWithAQHI
+            : this.stations;
     }
 
     async refreshData() {
@@ -93,18 +108,55 @@ class ModernAirQualityDashboard {
 
         try {
             console.log('🔄 Refreshing data...');
-            const updatedStations = await fetchAirQualityData();
-            
+
+            // Always refresh basic AQI data
+            const updatedStations = await fetchAirQualityData(false);
+
             // Animate value changes if possible
             this.animateDataChanges(this.stations, updatedStations);
-            
+
             this.stations = updatedStations;
+
+            // If AQHI was calculated before, recalculate it
+            if (this.aqhiCalculated) {
+                await this.calculateAQHI();
+            }
+
             this.updateDisplay();
-            
+
             console.log('✅ Data refreshed successfully');
         } catch (error) {
             console.error('❌ Error during data refresh:', error);
             // Don't show error UI for auto-refresh failures to avoid disrupting user experience
+        }
+    }
+
+    async calculateAQHI() {
+        if (this.isCalculatingAQHI) {
+            console.log('⏳ AQHI calculation already in progress');
+            return;
+        }
+
+        try {
+            this.isCalculatingAQHI = true;
+            uiManager.showLoading('stats-content', 'Calculating AQHI using 3-hour averages...');
+
+            console.log('🔄 Calculating AQHI for existing stations...');
+            this.stationsWithAQHI = await enhanceStationsWithAQHI(this.stations);
+            this.aqhiCalculated = true;
+
+            console.log(`✅ AQHI calculated for ${this.stationsWithAQHI.length} stations`);
+
+            // Update display if currently showing AQHI
+            if (uiManager.currentIndicator === 'AQHI') {
+                this.updateDisplay();
+            }
+
+        } catch (error) {
+            console.error('❌ Error calculating AQHI:', error);
+            uiManager.showError('stats-content', `Error calculating AQHI: ${error.message}`);
+        } finally {
+            this.isCalculatingAQHI = false;
         }
     }
 
@@ -145,6 +197,18 @@ class ModernAirQualityDashboard {
     async forceRefresh() {
         console.log('🔄 Force refresh requested');
         await this.refreshData();
+    }
+
+    async switchToIndicator(indicator) {
+        console.log(`🔄 Switching to ${indicator} indicator`);
+
+        if (indicator === 'AQHI' && !this.aqhiCalculated) {
+            // Calculate AQHI on-demand when user switches to AQHI tab
+            await this.calculateAQHI();
+        }
+
+        // Update display with current data
+        this.updateDisplay();
     }
 
     getStations() {
@@ -239,6 +303,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Make dashboard available globally for debugging and external access
         window.dashboard = dashboard;
         window.refreshDashboard = () => dashboard.forceRefresh();
+        window.switchIndicator = (indicator) => dashboard.switchToIndicator(indicator);
         
         console.log('🎉 Dashboard ready!');
         

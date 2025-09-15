@@ -19,7 +19,8 @@ export class UIManager {
         indicatorRadios.forEach(radio => {
             radio.addEventListener('change', (e) => {
                 this.currentIndicator = e.target.value;
-                window.refreshDashboard && window.refreshDashboard();
+                // Use smart indicator switching instead of full refresh
+                window.switchIndicator && window.switchIndicator(e.target.value);
             });
         });
 

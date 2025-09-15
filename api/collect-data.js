@@ -6,17 +6,39 @@ export default async function handler(req, res) {
   // Allow external cron services and manual triggers
   const allowedMethods = ['POST', 'GET'];
   const userAgent = req.headers['user-agent'] || '';
+  const origin = req.headers['origin'] || '';
+  const referer = req.headers['referer'] || '';
 
-  // Check for known cron services
+  console.log('🔍 Request details:', {
+    method: req.method,
+    userAgent: userAgent,
+    origin: origin,
+    referer: referer,
+    headers: Object.keys(req.headers)
+  });
+
+  // Check for known cron services (more flexible detection)
   const isExternalCron = [
     'cron-job.org',
+    'cron-job',
+    'cronjob',
     'uptimerobot',
     'github',
     'easycron'
-  ].some(service => userAgent.toLowerCase().includes(service));
+  ].some(service =>
+    userAgent.toLowerCase().includes(service) ||
+    origin.toLowerCase().includes(service) ||
+    referer.toLowerCase().includes(service)
+  );
 
-  if (!allowedMethods.includes(req.method) && !isExternalCron) {
-    return res.status(405).json({ error: 'Method not allowed' });
+  // Always allow GET and POST methods, plus any external cron service
+  if (!allowedMethods.includes(req.method)) {
+    console.log('❌ Method not allowed:', req.method);
+    return res.status(405).json({
+      error: 'Method not allowed',
+      method: req.method,
+      allowedMethods: allowedMethods
+    });
   }
   try {
     // Debug: Log environment variables (safely)

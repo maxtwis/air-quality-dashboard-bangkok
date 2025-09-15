@@ -37,21 +37,8 @@ export async function fetchAirQualityData() {
             aqhi: calculateStationAQHIRealistic(station)
         }));
 
-        // Try to store data in Supabase (async, non-blocking)
-        try {
-            // Dynamic import to avoid breaking the app if Supabase isn't available
-            import('./storage.js').then(({ airQualityStorage }) => {
-                if (airQualityStorage) {
-                    airQualityStorage.storeStationData(enhancedStations).catch(error => {
-                        console.warn('📊 Storage failed (non-critical):', error.message);
-                    });
-                }
-            }).catch(() => {
-                // Silently ignore if storage module can't be loaded
-            });
-        } catch (error) {
-            // Non-blocking storage failure
-        }
+        // Client-side storage disabled - using server-side collection only
+        console.log('📊 Server-side collection active - client storage disabled');
 
         return enhancedStations;
     } catch (error) {

@@ -268,6 +268,9 @@ export function calculateStationAQHI(station, useMovingAverage = false) {
  * @returns {string} Formatted AQHI string
  */
 export function formatAQHI(aqhi) {
+    if (aqhi === null || aqhi === undefined || isNaN(aqhi)) {
+        return 'N/A';
+    }
     if (aqhi > 10) {
         return `${aqhi.toFixed(1)}+`;
     }

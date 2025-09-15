@@ -1,6 +1,6 @@
 // Browser-compatible AQHI calculation using Supabase data
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
-import { calculateStationAQHIRealistic } from './aqhi-realistic.js';
+import { calculateStationAQHIRealistic, getAQHILevel } from './aqhi-realistic.js';
 
 class SupabaseAQHI {
     constructor() {
@@ -156,14 +156,23 @@ class SupabaseAQHI {
     async calculateAQHI(station) {
         const stationId = station.uid?.toString();
         if (!stationId) {
-            return calculateStationAQHIRealistic(station);
+            const fallbackAQHI = calculateStationAQHIRealistic(station);
+            const aqhiLevel = getAQHILevel(fallbackAQHI);
+            return {
+                value: fallbackAQHI,
+                level: aqhiLevel
+            };
         }
 
         // Check cache
         const cacheKey = `aqhi_${stationId}`;
         const cached = this.cache.get(cacheKey);
         if (cached && (Date.now() - cached.timestamp) < this.cacheTimeout) {
-            return cached.value;
+            const aqhiLevel = getAQHILevel(cached.value);
+            return {
+                value: cached.value,
+                level: aqhiLevel
+            };
         }
 
         try {
@@ -198,7 +207,11 @@ class SupabaseAQHI {
                 });
 
                 console.log(`🔄 AQHI from 3h avg for ${stationId}: ${aqhi} (${averages.readingCount} readings)`);
-                return aqhi;
+                const aqhiLevel = getAQHILevel(aqhi);
+                return {
+                    value: aqhi,
+                    level: aqhiLevel
+                };
             }
         } catch (error) {
             console.warn(`⚠️ Error calculating stored AQHI for ${stationId}:`, error);
@@ -215,7 +228,11 @@ class SupabaseAQHI {
             readingCount: 0
         });
 
-        return fallbackAQHI;
+        const aqhiLevel = getAQHILevel(fallbackAQHI);
+        return {
+            value: fallbackAQHI,
+            level: aqhiLevel
+        };
     }
 
     /**
@@ -239,20 +256,20 @@ class SupabaseAQHI {
                 const stationId = station.uid?.toString();
                 const averages = stationId ? batchAverages[stationId] : null;
 
-                let aqhi;
+                let aqhiValue;
                 if (averages && (averages.pm25 || averages.o3 || averages.no2)) {
                     // Calculate AQHI using Health Canada formula
-                    aqhi = 0;
-                    if (averages.pm25) aqhi += (Math.exp(0.000487 * averages.pm25) - 1);
-                    if (averages.o3) aqhi += (Math.exp(0.000871 * averages.o3) - 1);
-                    if (averages.no2) aqhi += (Math.exp(0.000537 * averages.no2) - 1);
-                    aqhi = (10.0 / 10.4) * 100 * aqhi;
-                    aqhi = Math.max(0, Math.round(aqhi * 10) / 10);
+                    aqhiValue = 0;
+                    if (averages.pm25) aqhiValue += (Math.exp(0.000487 * averages.pm25) - 1);
+                    if (averages.o3) aqhiValue += (Math.exp(0.000871 * averages.o3) - 1);
+                    if (averages.no2) aqhiValue += (Math.exp(0.000537 * averages.no2) - 1);
+                    aqhiValue = (10.0 / 10.4) * 100 * aqhiValue;
+                    aqhiValue = Math.max(0, Math.round(aqhiValue * 10) / 10);
 
                     // Cache the result
                     if (stationId) {
                         this.cache.set(`aqhi_${stationId}`, {
-                            value: aqhi,
+                            value: aqhiValue,
                             timestamp: Date.now(),
                             source: 'batch_stored_3h_avg',
                             readingCount: averages.readingCount
@@ -261,11 +278,11 @@ class SupabaseAQHI {
                 } else {
                     // Fallback to realistic calculation
                     const { calculateStationAQHIRealistic } = await import('./aqhi-realistic.js');
-                    aqhi = calculateStationAQHIRealistic(station);
+                    aqhiValue = calculateStationAQHIRealistic(station);
 
                     if (stationId) {
                         this.cache.set(`aqhi_${stationId}`, {
-                            value: aqhi,
+                            value: aqhiValue,
                             timestamp: Date.now(),
                             source: 'fallback',
                             readingCount: 0
@@ -273,9 +290,16 @@ class SupabaseAQHI {
                     }
                 }
 
+                // Create proper AQHI object with value and level information
+                const aqhiLevel = getAQHILevel(aqhiValue);
+                const aqhiData = {
+                    value: aqhiValue,
+                    level: aqhiLevel
+                };
+
                 return {
                     ...station,
-                    aqhi: aqhi
+                    aqhi: aqhiData
                 };
             })
         );

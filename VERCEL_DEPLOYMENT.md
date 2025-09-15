@@ -66,15 +66,17 @@ AQICN_API_TOKEN=354eb1b871693ef55f777c69e44e81bcaf215d40
 ## ⏰ **How the Cron Job Works**
 
 ### Automatic Schedule
-- **Frequency**: Every 10 minutes (`*/10 * * * *`)
+- **Vercel Daily**: Once per day (`0 0 * * *`) - Hobby plan limitation
+- **External Cron**: Every 10 minutes via cron-job.org (recommended)
 - **Timezone**: UTC (Vercel default)
-- **Reliability**: Vercel handles retries and monitoring
+- **Reliability**: External service + Vercel backup
 
 ### Data Collection Process
-1. **Trigger**: Vercel automatically calls `/api/collect-data` every 10 minutes
+1. **Trigger**: External cron service calls `/api/collect-data` every 10 minutes
 2. **Fetch**: Function fetches data from AQICN API
 3. **Store**: Saves 134 stations to Supabase database
 4. **3-Hour Averages**: Database calculates moving averages automatically
+5. **Backup**: Vercel daily cron ensures consistency
 
 ## 🔧 **Disable Client-Side Storage**
 

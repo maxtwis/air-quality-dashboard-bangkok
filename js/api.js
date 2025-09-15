@@ -5,45 +5,71 @@ import { supabaseAQHI } from './aqhi-supabase.js';
 
 // Enhanced API handling functions with pollutant data and AQHI calculations
 
-export async function fetchAirQualityData() {
+// Fetch basic air quality data (fast, AQI only)
+export async function fetchAirQualityData(includeAQHI = false) {
     try {
         const boundsStr = formatBounds(CONFIG.BANGKOK_BOUNDS);
         const url = `${CONFIG.API_BASE_URL}/v2/map/bounds/?latlng=${boundsStr}&token=${CONFIG.API_TOKEN}`;
-        
+
         console.log('Fetching data from:', url);
-        
+
         const response = await fetch(url);
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const data = await response.json();
         console.log('API Response:', data);
-        
+
         if (data.status !== 'ok') {
             throw new Error(`API Error: ${data.data || 'Unknown error'}`);
         }
-        
+
+        const stations = data.data || [];
+
+        if (includeAQHI) {
+            // Initialize realistic AQHI on first call
+            if (!fetchAirQualityData._initialized) {
+                const stationsWithData = initializeRealisticAQHI();
+                console.log(`🔄 Initialized realistic AQHI with data from ${stationsWithData} stations`);
+                fetchAirQualityData._initialized = true;
+            }
+
+            // Enhanced AQHI calculations using stored data
+            console.log('🔄 Calculating enhanced AQHI using stored 3-hour averages...');
+            const enhancedStations = await supabaseAQHI.enhanceStationsWithAQHI(stations);
+
+            console.log('📊 Server-side collection active - client storage disabled');
+            console.log(`✅ Enhanced AQHI calculated for ${enhancedStations.length} stations`);
+
+            return enhancedStations;
+        }
+
+        console.log(`✅ Fetched ${stations.length} stations (AQI only, fast mode)`);
+        return stations;
+    } catch (error) {
+        console.error('Error fetching air quality data:', error);
+        throw error;
+    }
+}
+
+// Add AQHI calculations to existing station data
+export async function enhanceStationsWithAQHI(stations) {
+    try {
         // Initialize realistic AQHI on first call
         if (!fetchAirQualityData._initialized) {
             const stationsWithData = initializeRealisticAQHI();
             console.log(`🔄 Initialized realistic AQHI with data from ${stationsWithData} stations`);
             fetchAirQualityData._initialized = true;
         }
-        
-        // Enhance stations with enhanced AQHI calculations using stored data
-        const stations = data.data || [];
 
-        // Try enhanced AQHI with 3-hour averages from Supabase, fallback to realistic
-        console.log('🔄 Calculating enhanced AQHI using stored 3-hour averages...');
+        console.log('🔄 Enhancing existing stations with AQHI calculations...');
         const enhancedStations = await supabaseAQHI.enhanceStationsWithAQHI(stations);
-
-        console.log('📊 Server-side collection active - client storage disabled');
-        console.log(`✅ Enhanced AQHI calculated for ${enhancedStations.length} stations`);
+        console.log(`✅ Enhanced ${enhancedStations.length} stations with AQHI calculations`);
 
         return enhancedStations;
     } catch (error) {
-        console.error('Error fetching air quality data:', error);
+        console.error('Error enhancing stations with AQHI:', error);
         throw error;
     }
 }

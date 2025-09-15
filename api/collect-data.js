@@ -66,6 +66,12 @@ export default async function handler(req, res) {
     // 2. Pass the raw stations data (don't pre-process)
     const stations = data.data || [];
 
+    // Debug: Log first station's complete structure
+    if (stations.length > 0) {
+      console.log('🔍 First station structure:', JSON.stringify(stations[0], null, 2));
+      console.log('🔍 First station iaqi:', stations[0].iaqi);
+    }
+
     // 3. Try to store in database (with error handling)
     let storeResult = null;
     try {
@@ -113,17 +119,45 @@ async function storeHistoricalDataSupabase(stations) {
 
   // Helper function to extract pollutant values
   function extractValue(station, pollutant) {
-    let value = station.iaqi?.[pollutant]?.v;
-    if (typeof value === 'object' && value !== null) {
-      if (value.value !== undefined) value = value.value;
-      else if (value.v !== undefined) value = value.v;
-      else return null;
+    try {
+      // Check if iaqi exists
+      if (!station.iaqi) {
+        console.log(`⚠️ Station ${station.uid}: No iaqi data available`);
+        return null;
+      }
+
+      // Check if specific pollutant exists
+      if (!station.iaqi[pollutant]) {
+        console.log(`⚠️ Station ${station.uid}: No ${pollutant} data available`);
+        return null;
+      }
+
+      let value = station.iaqi[pollutant].v;
+
+      if (typeof value === 'object' && value !== null) {
+        if (value.value !== undefined) value = value.value;
+        else if (value.v !== undefined) value = value.v;
+        else {
+          console.log(`⚠️ Station ${station.uid}: ${pollutant} has complex object:`, value);
+          return null;
+        }
+      }
+
+      if (value !== undefined && value !== null && value !== '') {
+        const numValue = parseFloat(value);
+        if (isNaN(numValue)) {
+          console.log(`⚠️ Station ${station.uid}: ${pollutant} value is not a number:`, value);
+          return null;
+        }
+        console.log(`✅ Station ${station.uid}: ${pollutant} = ${numValue}`);
+        return numValue;
+      }
+
+      return null;
+    } catch (error) {
+      console.error(`❌ Error extracting ${pollutant} from station ${station.uid}:`, error);
+      return null;
     }
-    if (value !== undefined && value !== null && value !== '') {
-      const numValue = parseFloat(value);
-      return isNaN(numValue) ? null : numValue;
-    }
-    return null;
   }
 
   // Process each station
@@ -167,15 +201,8 @@ async function storeHistoricalDataSupabase(stations) {
       wind_speed: extractValue(stationData, 'w'),
       wind_direction: extractValue(stationData, 'wd'),
 
-      // Raw data for debugging
-      raw_data: JSON.stringify({
-        uid: stationData.uid,
-        aqi: stationData.aqi,
-        lat: stationData.lat,
-        lon: stationData.lon,
-        iaqi: stationData.iaqi,
-        time: stationData.time
-      })
+      // Raw data for debugging (store complete station data)
+      raw_data: JSON.stringify(stationData)
     };
 
     readings.push(reading);

@@ -14,34 +14,20 @@ export default async function handler(request) {
   try {
     // 1. Fetch current data from WAQI API
     console.log('🔄 Starting data collection from WAQI API...');
-    const apiUrl = `https://api.waqi.info/v2/map/bounds/?latlng=13.5,100.3,14.0,100.9&token=${process.env.WAQI_API_TOKEN}`;
-    
+    const apiToken = process.env.AQICN_API_TOKEN || '354eb1b871693ef55f777c69e44e81bcaf215d40';
+    const apiUrl = `https://api.waqi.info/v2/map/bounds/?latlng=13.5,100.3,14.0,100.9&token=${apiToken}`;
+
     const response = await fetch(apiUrl);
     const data = await response.json();
-    
+
     console.log(`📊 WAQI API returned ${data.data?.length || 0} stations`);
-    
+
     if (data.status !== 'ok') {
       throw new Error(`WAQI API Error: ${data.data}`);
     }
 
-    // 2. Process stations data
-    const stations = data.data.map(station => ({
-      uid: station.uid,
-      timestamp: new Date().toISOString(),
-      lat: station.lat,
-      lon: station.lon,
-      aqi: station.aqi,
-      pollutants: {
-        pm25: station.iaqi?.pm25?.v || 0,
-        no2: station.iaqi?.no2?.v || 0,
-        o3: station.iaqi?.o3?.v || 0,
-        so2: station.iaqi?.so2?.v || 0,
-        pm10: station.iaqi?.pm10?.v || 0,
-        co: station.iaqi?.co?.v || 0
-      },
-      station_name: station.station?.name || 'Unknown'
-    }));
+    // 2. Pass the raw stations data (don't pre-process)
+    const stations = data.data || [];
 
     // 3. Store in database (multiple options below)
     await storeHistoricalData(stations);
@@ -125,33 +111,111 @@ async function storeHistoricalDataPlanetscale(stations) {
   await connection.end();
 }
 
-// Option C: Supabase
+// Option C: Supabase (Updated to match your schema)
 async function storeHistoricalDataSupabase(stations) {
   const { createClient } = await import('@supabase/supabase-js');
-  
+
   const supabase = createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
   );
 
-  const { error } = await supabase
-    .from('air_quality_readings')
-    .insert(stations.map(station => ({
-      station_uid: station.uid,
-      timestamp: station.timestamp,
-      lat: station.lat,
-      lon: station.lon,
-      aqi: station.aqi,
-      pm25: station.pollutants.pm25,
-      no2: station.pollutants.no2,
-      o3: station.pollutants.o3,
-      so2: station.pollutants.so2,
-      pm10: station.pollutants.pm10,
-      co: station.pollutants.co,
-      station_name: station.station_name
-    })));
+  const timestamp = new Date().toISOString();
+  const stationsToStore = [];
+  const readings = [];
 
-  if (error) throw error;
+  // Helper function to extract pollutant values
+  function extractValue(station, pollutant) {
+    let value = station.iaqi?.[pollutant]?.v;
+    if (typeof value === 'object' && value !== null) {
+      if (value.value !== undefined) value = value.value;
+      else if (value.v !== undefined) value = value.v;
+      else return null;
+    }
+    if (value !== undefined && value !== null && value !== '') {
+      const numValue = parseFloat(value);
+      return isNaN(numValue) ? null : numValue;
+    }
+    return null;
+  }
+
+  // Process each station
+  for (const stationData of stations) {
+    // Station metadata
+    const station = {
+      station_uid: stationData.uid?.toString(),
+      name: stationData.station_name || stationData.station?.name || 'Unknown Station',
+      latitude: stationData.lat,
+      longitude: stationData.lon,
+      city: 'Bangkok',
+      country: 'Thailand',
+      is_active: true
+    };
+
+    if (!station.station_uid || !station.latitude || !station.longitude) {
+      continue;
+    }
+
+    stationsToStore.push(station);
+
+    // Reading data
+    const reading = {
+      station_uid: station.station_uid,
+      timestamp: timestamp,
+      aqi: typeof stationData.aqi === 'number' ? stationData.aqi :
+           (typeof stationData.aqi === 'string' ? parseInt(stationData.aqi) : null),
+
+      // Use the extraction helper for accurate data
+      pm25: extractValue(stationData, 'pm25'),
+      pm10: extractValue(stationData, 'pm10'),
+      o3: extractValue(stationData, 'o3'),
+      no2: extractValue(stationData, 'no2'),
+      so2: extractValue(stationData, 'so2'),
+      co: extractValue(stationData, 'co'),
+
+      // Weather data
+      temperature: extractValue(stationData, 't'),
+      humidity: extractValue(stationData, 'h'),
+      pressure: extractValue(stationData, 'p'),
+      wind_speed: extractValue(stationData, 'w'),
+      wind_direction: extractValue(stationData, 'wd'),
+
+      // Raw data for debugging
+      raw_data: JSON.stringify({
+        uid: stationData.uid,
+        aqi: stationData.aqi,
+        lat: stationData.lat,
+        lon: stationData.lon,
+        iaqi: stationData.iaqi,
+        time: stationData.time
+      })
+    };
+
+    readings.push(reading);
+  }
+
+  // Store stations (upsert)
+  if (stationsToStore.length > 0) {
+    const { error: stationsError } = await supabase
+      .from('stations')
+      .upsert(stationsToStore, {
+        onConflict: 'station_uid',
+        ignoreDuplicates: false
+      });
+
+    if (stationsError) throw stationsError;
+  }
+
+  // Store readings
+  if (readings.length > 0) {
+    const { error: readingsError } = await supabase
+      .from('air_quality_readings')
+      .insert(readings);
+
+    if (readingsError) throw readingsError;
+  }
+
+  return { stationsStored: stationsToStore.length, readingsStored: readings.length };
 }
 
 // Use Supabase storage method

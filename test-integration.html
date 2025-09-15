@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supabase Integration Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background-color: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background-color: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        button { padding: 10px 20px; margin: 10px 0; cursor: pointer; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Air Quality Dashboard - Supabase Integration Test</h1>
+
+    <div id="test-results"></div>
+
+    <button onclick="runTests()">🚀 Run All Tests</button>
+    <button onclick="clearResults()">🗑️ Clear Results</button>
+
+    <h2>📊 Real-time Console Output</h2>
+    <pre id="console-output"></pre>
+
+    <script type="module">
+        const resultsDiv = document.getElementById('test-results');
+        const consoleOutput = document.getElementById('console-output');
+
+        // Capture console messages
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+
+        function addToConsole(type, ...args) {
+            const timestamp = new Date().toLocaleTimeString();
+            const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg).join(' ');
+            consoleOutput.textContent += `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        console.log = (...args) => { originalLog(...args); addToConsole('info', ...args); };
+        console.warn = (...args) => { originalWarn(...args); addToConsole('warn', ...args); };
+        console.error = (...args) => { originalError(...args); addToConsole('error', ...args); };
+
+        function addResult(title, status, message) {
+            const div = document.createElement('div');
+            div.className = `test-result ${status}`;
+            div.innerHTML = `<strong>${title}</strong><br>${message}`;
+            resultsDiv.appendChild(div);
+        }
+
+        async function testAPI() {
+            addResult('🌐 API Test', 'info', 'Testing AQICN API connection...');
+            try {
+                const { fetchAirQualityData } = await import('./js/api.js');
+                const stations = await fetchAirQualityData();
+
+                if (stations && stations.length > 0) {
+                    addResult('✅ API Test', 'success', `Successfully fetched ${stations.length} stations from AQICN API`);
+                    return stations;
+                } else {
+                    addResult('❌ API Test', 'error', 'No stations returned from API');
+                    return null;
+                }
+            } catch (error) {
+                addResult('❌ API Test', 'error', `API Error: ${error.message}`);
+                return null;
+            }
+        }
+
+        async function testSupabase() {
+            addResult('🗃️ Supabase Test', 'info', 'Testing Supabase connection...');
+            try {
+                const { AirQualityDB } = await import('./lib/supabase.js');
+                const connected = await AirQualityDB.testConnection();
+
+                if (connected) {
+                    addResult('✅ Supabase Test', 'success', 'Supabase connection successful');
+
+                    // Get database stats
+                    const stats = await AirQualityDB.getDBStats();
+                    if (stats) {
+                        addResult('📊 Database Stats', 'success',
+                            `Active Stations: ${stats.activeStations}, ` +
+                            `Total Readings: ${stats.totalReadings}, ` +
+                            `Recent Readings (24h): ${stats.recentReadings}`
+                        );
+                    }
+                    return true;
+                } else {
+                    addResult('❌ Supabase Test', 'error', 'Supabase connection failed');
+                    return false;
+                }
+            } catch (error) {
+                addResult('❌ Supabase Test', 'error', `Supabase Error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function testStorage(stations) {
+            if (!stations || stations.length === 0) {
+                addResult('⏭️ Storage Test', 'info', 'Skipping storage test - no stations available');
+                return;
+            }
+
+            addResult('💾 Storage Test', 'info', 'Testing data storage...');
+            try {
+                const { airQualityStorage } = await import('./js/storage.js');
+
+                if (airQualityStorage.isStorageEnabled()) {
+                    // Test storing a subset of stations
+                    const testStations = stations.slice(0, 3);
+                    const stored = await airQualityStorage.storeStationData(testStations);
+
+                    if (stored) {
+                        addResult('✅ Storage Test', 'success', `Successfully stored ${testStations.length} test stations`);
+                    } else {
+                        addResult('⚠️ Storage Test', 'error', 'Storage failed');
+                    }
+                } else {
+                    addResult('⚠️ Storage Test', 'info', 'Storage service is disabled');
+                }
+            } catch (error) {
+                addResult('❌ Storage Test', 'error', `Storage Error: ${error.message}`);
+            }
+        }
+
+        async function testAQHI(stations) {
+            if (!stations || stations.length === 0) {
+                addResult('⏭️ AQHI Test', 'info', 'Skipping AQHI test - no stations available');
+                return;
+            }
+
+            addResult('🌬️ AQHI Test', 'info', 'Testing AQHI calculation...');
+            try {
+                const { enhancedAQHI } = await import('./js/aqhi-enhanced.js');
+
+                const testStation = stations[0];
+                const aqhi = await enhancedAQHI.calculateStationAQHI(testStation);
+                const category = enhancedAQHI.getAQHICategory(aqhi);
+
+                addResult('✅ AQHI Test', 'success',
+                    `Station: ${testStation.station?.name || 'Unknown'}, ` +
+                    `AQHI: ${aqhi}, Category: ${category.label}`
+                );
+            } catch (error) {
+                addResult('❌ AQHI Test', 'error', `AQHI Error: ${error.message}`);
+            }
+        }
+
+        window.runTests = async function() {
+            clearResults();
+            addResult('🚀 Starting Tests', 'info', 'Running integration tests...');
+
+            // Test 1: API Connection
+            const stations = await testAPI();
+
+            // Test 2: Supabase Connection
+            const supabaseWorking = await testSupabase();
+
+            // Test 3: Data Storage
+            await testStorage(stations);
+
+            // Test 4: AQHI Calculation
+            await testAQHI(stations);
+
+            addResult('🏁 Tests Complete', 'info', 'All tests finished. Check results above.');
+        };
+
+        window.clearResults = function() {
+            resultsDiv.innerHTML = '';
+            consoleOutput.textContent = '';
+        };
+
+        // Auto-run tests on load
+        setTimeout(runTests, 1000);
+    </script>
+</body>
+</html>

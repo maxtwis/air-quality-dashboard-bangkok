@@ -51,7 +51,7 @@ export function addMarkersToMap(stations) {
     }
 
     const markers = [];
-    const isAQHI = uiManager.currentIndicator === 'AQHI' || uiManager.currentIndicator === 'PM25_AQHI';
+    const isAQHI = uiManager.currentIndicator === 'AQHI';
 
     stations.forEach(station => {
         if (!isValidStation(station)) return;
@@ -104,7 +104,7 @@ export function addSingleMarker(station) {
     const map = getMap();
     if (!map) return null;
     
-    const isAQHI = uiManager.currentIndicator === 'AQHI' || uiManager.currentIndicator === 'PM25_AQHI';
+    const isAQHI = uiManager.currentIndicator === 'AQHI';
     let value, color;
 
     if (isAQHI && station.aqhi) {

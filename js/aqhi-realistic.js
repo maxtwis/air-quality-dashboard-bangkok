@@ -9,8 +9,8 @@ const AQHI_PARAMS = {
     beta: {
         pm25: 0.0012,
         o3: 0.001,
-        no2: 0.0052,
-        so2: 0.0038
+        no2: 0.0052
+        // so2: 0.0038 - Not used in Thailand AQHI implementation
     }
 };
 
@@ -57,8 +57,8 @@ export function calculateClientSideMovingAverage(stationId) {
     if (stationHistory.length === 0) return null;
     
     // Calculate averages from available data
-    const sums = { pm25: 0, no2: 0, o3: 0, so2: 0 };
-    const counts = { pm25: 0, no2: 0, o3: 0, so2: 0 };
+    const sums = { pm25: 0, no2: 0, o3: 0 };
+    const counts = { pm25: 0, no2: 0, o3: 0 };
     
     stationHistory.forEach(entry => {
         Object.keys(sums).forEach(pollutant => {
@@ -148,14 +148,13 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
 /**
  * Calculate AQHI with realistic approach
  */
-export function calculateRealisticAQHI(pm25, no2, o3, so2) {
-    // Same formula as before
+export function calculateRealisticAQHI(pm25, no2, o3) {
+    // Thailand AQHI formula (PM2.5, NO2, O3 only)
     const pm25Component = 100 * (Math.exp(AQHI_PARAMS.beta.pm25 * (pm25 || 0)) - 1);
     const o3Component = Math.exp(AQHI_PARAMS.beta.o3 * (o3 || 0)) - 1;
     const no2Component = Math.exp(AQHI_PARAMS.beta.no2 * (no2 || 0)) - 1;
-    const so2Component = Math.exp(AQHI_PARAMS.beta.so2 * (so2 || 0)) - 1;
-    
-    const aqhi = (10 / AQHI_PARAMS.C) * (pm25Component + o3Component + no2Component + so2Component);
+
+    const aqhi = (10 / AQHI_PARAMS.C) * (pm25Component + o3Component + no2Component);
     return Math.round(aqhi);
 }
 
@@ -179,8 +178,8 @@ export function calculateStationAQHIRealistic(station) {
     const currentPollutants = {
         pm25: station.iaqi?.pm25?.v || 0,
         no2: station.iaqi?.no2?.v || 0,
-        o3: station.iaqi?.o3?.v || 0,
-        so2: station.iaqi?.so2?.v || 0
+        o3: station.iaqi?.o3?.v || 0
+        // so2: station.iaqi?.so2?.v || 0 - Not used in Thailand AQHI
     };
     
     // Store current reading for building our own moving average
@@ -208,8 +207,7 @@ export function calculateStationAQHIRealistic(station) {
     const aqhi = calculateRealisticAQHI(
         pollutantsForCalculation.pm25,
         pollutantsForCalculation.no2,
-        pollutantsForCalculation.o3,
-        pollutantsForCalculation.so2
+        pollutantsForCalculation.o3
     );
     
     const level = getAQHILevel(aqhi);

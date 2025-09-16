@@ -3,6 +3,7 @@ import { fetchStationDetails } from './api.js';
 import { POLLUTANTS, WEATHER_PARAMS, CONFIG, AQI_LEVELS } from './config.js';
 import { getAQHILevel, formatAQHI, AQHI_LEVELS } from './aqhi-realistic.js';
 import { calculateAQHIStatistics } from './aqhi-realistic.js';
+import { healthRecommendations } from './health-recommendations.js';
 
 // UI management functions for the modern dashboard
 
@@ -310,7 +311,7 @@ export class UIManager {
                     }
                 }
 
-                this.updateStationInfoWithDetails(detailsData, isAQHI, averageData);
+                await this.updateStationInfoWithDetails(detailsData, isAQHI, averageData);
             } else {
                 this.showErrorInStationInfo('Could not load detailed data');
             }
@@ -348,7 +349,7 @@ export class UIManager {
         }
     }
 
-    updateStationInfoWithDetails(detailsData, isAQHI = false, averageData = null) {
+    async updateStationInfoWithDetails(detailsData, isAQHI = false, averageData = null) {
         let container = document.getElementById('station-details-container');
         if (!container) {
             container = document.createElement('div');
@@ -475,7 +476,153 @@ export class UIManager {
             `;
         }
 
-        container.innerHTML = pollutantHTML + weatherHTML + attributionHTML;
+        // Generate health recommendations HTML
+        let healthHTML = '';
+        if (isAQHI && this.currentStationDetails) {
+            healthHTML = await this.generateHealthRecommendationsHTML(this.currentStationDetails);
+        }
+
+        container.innerHTML = pollutantHTML + weatherHTML + healthHTML + attributionHTML;
+    }
+
+    // Generate health recommendations HTML section
+    async generateHealthRecommendationsHTML(station) {
+        try {
+            // Get AQHI value from station data
+            const aqhiValue = station.aqhi?.value || 0;
+            if (aqhiValue === 0) return '';
+
+            // Load recommendations if not loaded
+            await healthRecommendations.loadRecommendations();
+            const groupedRecs = healthRecommendations.getGroupedRecommendations(aqhiValue);
+
+            if (!groupedRecs || Object.keys(groupedRecs).length === 0) {
+                return '';
+            }
+
+            let healthHTML = `
+                <div class="health-recommendations-section" style="margin-top: 16px;">
+                    <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; color: var(--gray-700);">
+                        🏥 Health Recommendations
+                    </h4>
+            `;
+
+            // Add population group selector icons (like Google Maps)
+            const allGroups = [];
+            Object.entries(groupedRecs).forEach(([type, recommendations]) => {
+                recommendations.forEach(rec => {
+                    allGroups.push({
+                        type,
+                        description: rec.type_description,
+                        recommendation: rec.health_recommendation,
+                        icon: healthRecommendations.getGroupIcon(type, rec.type_description),
+                        shortName: healthRecommendations.getShortDescription(rec.type_description)
+                    });
+                });
+            });
+
+            if (allGroups.length > 0) {
+                // Population group icons bar (horizontal scrollable like Google Maps)
+                healthHTML += `
+                    <div class="population-groups" style="
+                        display: flex;
+                        gap: 8px;
+                        margin-bottom: 12px;
+                        overflow-x: auto;
+                        padding-bottom: 4px;
+                    ">
+                `;
+
+                allGroups.forEach((group, index) => {
+                    const isFirst = index === 0;
+                    healthHTML += `
+                        <button class="population-group-btn"
+                                data-group-index="${index}"
+                                style="
+                                    display: flex;
+                                    flex-direction: column;
+                                    align-items: center;
+                                    gap: 4px;
+                                    padding: 8px;
+                                    border: 2px solid ${isFirst ? 'var(--primary-color)' : 'var(--gray-300)'};
+                                    border-radius: 50%;
+                                    background: ${isFirst ? 'var(--primary-color)' : 'white'};
+                                    color: ${isFirst ? 'white' : 'var(--gray-600)'};
+                                    cursor: pointer;
+                                    transition: all 0.2s ease;
+                                    min-width: 56px;
+                                    height: 56px;
+                                    font-size: 0.75rem;
+                                    font-weight: 500;
+                                "
+                                onclick="window.uiManager.selectPopulationGroup(${index})">
+                            <i class="material-icons" style="font-size: 20px;">${group.icon}</i>
+                        </button>
+                    `;
+                });
+
+                healthHTML += `</div>`;
+
+                // Recommendation text (initially shows first group)
+                healthHTML += `
+                    <div id="health-recommendation-text" style="
+                        background: var(--gray-50);
+                        padding: 12px;
+                        border-radius: 8px;
+                        border-left: 4px solid var(--primary-color);
+                        font-size: 0.875rem;
+                        line-height: 1.5;
+                    ">
+                        <div style="font-weight: 600; margin-bottom: 6px; color: var(--gray-700);">
+                            ${allGroups[0]?.shortName}
+                        </div>
+                        <div style="color: var(--gray-600);">
+                            ${allGroups[0]?.recommendation}
+                        </div>
+                    </div>
+                `;
+
+                // Store groups data for interaction
+                this.currentHealthGroups = allGroups;
+            }
+
+            healthHTML += `</div>`;
+            return healthHTML;
+
+        } catch (error) {
+            console.error('Error generating health recommendations:', error);
+            return '';
+        }
+    }
+
+    // Handle population group selection
+    selectPopulationGroup(groupIndex) {
+        if (!this.currentHealthGroups || !this.currentHealthGroups[groupIndex]) {
+            return;
+        }
+
+        // Update button states
+        const buttons = document.querySelectorAll('.population-group-btn');
+        buttons.forEach((btn, index) => {
+            const isSelected = index === groupIndex;
+            btn.style.border = `2px solid ${isSelected ? 'var(--primary-color)' : 'var(--gray-300)'}`;
+            btn.style.background = isSelected ? 'var(--primary-color)' : 'white';
+            btn.style.color = isSelected ? 'white' : 'var(--gray-600)';
+        });
+
+        // Update recommendation text
+        const textElement = document.getElementById('health-recommendation-text');
+        if (textElement) {
+            const group = this.currentHealthGroups[groupIndex];
+            textElement.innerHTML = `
+                <div style="font-weight: 600; margin-bottom: 6px; color: var(--gray-700);">
+                    ${group.shortName}
+                </div>
+                <div style="color: var(--gray-600);">
+                    ${group.recommendation}
+                </div>
+            `;
+        }
     }
 
     // Close station information panel

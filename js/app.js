@@ -307,6 +307,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         window.dashboard = dashboard;
         window.refreshDashboard = () => dashboard.forceRefresh();
         window.switchIndicator = (indicator) => dashboard.switchToIndicator(indicator);
+        window.uiManager = uiManager;
         
         console.log('🎉 Dashboard ready!');
         

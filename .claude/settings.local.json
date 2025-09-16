@@ -6,7 +6,8 @@
       "Bash(npm search:*)",
       "WebSearch",
       "WebFetch(domain:aqicn.org)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(claude mcp add:*)"
     ],
     "deny": [],
     "ask": []

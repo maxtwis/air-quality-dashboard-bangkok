@@ -14,12 +14,12 @@ const AQHI_PARAMS = {
     }
 };
 
-// AQHI Categories
+// AQHI Categories (Thai documentation standards matching AQI colors)
 export const AQHI_LEVELS = {
-    LOW: { min: 0, max: 3, color: '#00d700', label: 'Low', description: 'Ideal air quality for outdoor activities' },
-    MODERATE: { min: 4, max: 6, color: '#ffa500', label: 'Moderate', description: 'No need to modify outdoor activities unless experiencing symptoms' },
-    HIGH: { min: 7, max: 10, color: '#ff6347', label: 'High', description: 'Consider reducing or rescheduling strenuous outdoor activities' },
-    VERY_HIGH: { min: 11, max: Infinity, color: '#dc143c', label: 'Very High', description: 'Reduce or reschedule strenuous outdoor activities' }
+    LOW: { min: 0, max: 3.9, color: '#10b981', label: 'Low', description: 'Ideal air quality for outdoor activities' },
+    MODERATE: { min: 4, max: 6.9, color: '#f59e0b', label: 'Moderate', description: 'No need to modify outdoor activities unless experiencing symptoms' },
+    HIGH: { min: 7, max: 10.9, color: '#ef4444', label: 'High', description: 'Consider reducing or rescheduling strenuous outdoor activities' },
+    VERY_HIGH: { min: 11, max: Infinity, color: '#7f1d1d', label: 'Very High', description: 'Reduce or reschedule strenuous outdoor activities' }
 };
 
 // Client-side data storage
@@ -156,7 +156,7 @@ export function calculateRealisticAQHI(pm25, no2, o3, so2) {
     const so2Component = Math.exp(AQHI_PARAMS.beta.so2 * (so2 || 0)) - 1;
     
     const aqhi = (10 / AQHI_PARAMS.C) * (pm25Component + o3Component + no2Component + so2Component);
-    return Math.round(aqhi * 10) / 10;
+    return Math.round(aqhi);
 }
 
 /**
@@ -261,8 +261,12 @@ function getCalculationNote(method, quality, dataPoints) {
  * Format AQHI for display
  */
 export function formatAQHI(aqhi) {
-    if (aqhi > 10) return `${aqhi.toFixed(1)}+`;
-    return aqhi.toFixed(1);
+    if (aqhi === null || aqhi === undefined || isNaN(aqhi)) {
+        return 'N/A';
+    }
+    const rounded = Math.round(aqhi);
+    if (rounded > 10) return `${rounded}+`;
+    return rounded.toString();
 }
 
 /**
@@ -292,4 +296,51 @@ export function initializeRealisticAQHI() {
     saveHistoricalData(clientHistoricalData);
     
     return clientHistoricalData.size;
+}
+
+/**
+ * Calculate statistics for multiple stations with AQHI data
+ * @param {Array} stations - Array of station data with .aqhi property
+ * @returns {Object} Statistics including average, min, max, and category counts
+ */
+export function calculateAQHIStatistics(stations) {
+    if (!stations || stations.length === 0) {
+        return null;
+    }
+
+    const aqhiValues = [];
+    const categoryCounts = {
+        LOW: 0,
+        MODERATE: 0,
+        HIGH: 0,
+        VERY_HIGH: 0
+    };
+
+    let stationsWithData = 0;
+
+    stations.forEach(station => {
+        if (station.aqhi && typeof station.aqhi.value === 'number') {
+            aqhiValues.push(station.aqhi.value);
+            categoryCounts[station.aqhi.level.key]++;
+            stationsWithData++;
+        }
+    });
+
+    if (aqhiValues.length === 0) {
+        return null;
+    }
+
+    const average = aqhiValues.reduce((sum, val) => sum + val, 0) / aqhiValues.length;
+    const min = Math.min(...aqhiValues);
+    const max = Math.max(...aqhiValues);
+
+    return {
+        average: Math.round(average),
+        min: Math.round(min),
+        max: Math.round(max),
+        categoryCounts,
+        totalStations: stations.length,
+        stationsWithData,
+        percentComplete: Math.round(stationsWithData / stations.length * 100)
+    };
 }

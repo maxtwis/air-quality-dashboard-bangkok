@@ -294,7 +294,7 @@ export class AirQualityStorage {
 
             aqhi = (10.0 / 10.4) * 100 * aqhi;
 
-            return Math.max(0, Math.round(aqhi * 10) / 10); // Round to 1 decimal place
+            return Math.max(0, Math.round(aqhi)); // Round to whole number
 
         } catch (error) {
             console.error('Error calculating AQHI from storage:', error);

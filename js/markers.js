@@ -1,37 +1,45 @@
 import { getMap } from './map.js';
 import { getAQIColor, isValidStation } from './utils.js';
 import { uiManager } from './ui.js';
-import { formatAQHI } from './aqhi.js';
+import { formatAQHI } from './aqhi-realistic.js';
 
 // Modern marker creation and management
 
 export function createModernMarkerIcon(value, color) {
+    // Determine size and font based on text length
+    const textLength = value.toString().length;
+    const isLongText = textLength > 3;
+    const width = isLongText ? Math.max(38, textLength * 9) : 32;
+    const fontSize = isLongText ? '9px' : '11px';
+
     return L.divIcon({
         className: 'custom-marker',
         html: `
             <div style="
                 background-color: ${color};
-                width: 32px;
+                width: ${width}px;
                 height: 32px;
-                border-radius: 50%;
+                border-radius: ${isLongText ? '16px' : '50%'};
                 border: 3px solid white;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-weight: 700;
-                font-size: 11px;
+                font-size: ${fontSize};
                 color: white;
                 cursor: pointer;
                 transition: all 0.2s ease;
                 font-family: 'Inter', sans-serif;
-            " 
-            onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.2)'" 
+                padding: 0 2px;
+                white-space: nowrap;
+            "
+            onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 6px 16px rgba(0,0,0,0.2)'"
             onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.15)'"
             >${value}</div>
         `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        iconSize: [width, 32],
+        iconAnchor: [width / 2, 16]
     });
 }
 

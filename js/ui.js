@@ -2,7 +2,7 @@ import { getAQILevel, getAQIClass, formatDateTime } from './utils.js';
 import { fetchStationDetails } from './api.js';
 import { POLLUTANTS, WEATHER_PARAMS, CONFIG } from './config.js';
 import { getAQHILevel, formatAQHI } from './aqhi-realistic.js';
-import { calculateAQHIStatistics } from './aqhi.js';
+import { calculateAQHIStatistics } from './aqhi-realistic.js';
 
 // UI management functions for the modern dashboard
 

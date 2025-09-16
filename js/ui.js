@@ -12,6 +12,7 @@ export class UIManager {
         this.currentIndicator = CONFIG.DEFAULT_INDICATOR;
         this.setupEventListeners();
         this.currentStationDetails = null;
+        this.enhancedStationData = null;
     }
 
     setupEventListeners() {
@@ -298,6 +299,7 @@ export class UIManager {
             const detailsData = await fetchStationDetails(station.uid);
             if (detailsData) {
                 this.currentStationDetails = detailsData;
+                this.enhancedStationData = station; // Store enhanced station data with AQHI
 
                 // If in AQHI mode, try to get 3-hour averages for display
                 let averageData = null;
@@ -478,8 +480,8 @@ export class UIManager {
 
         // Generate health recommendations HTML
         let healthHTML = '';
-        if (isAQHI && this.currentStationDetails) {
-            healthHTML = await this.generateHealthRecommendationsHTML(this.currentStationDetails);
+        if (isAQHI && this.enhancedStationData) {
+            healthHTML = await this.generateHealthRecommendationsHTML(this.enhancedStationData);
         }
 
         container.innerHTML = pollutantHTML + weatherHTML + healthHTML + attributionHTML;
@@ -488,13 +490,19 @@ export class UIManager {
     // Generate health recommendations HTML section
     async generateHealthRecommendationsHTML(station) {
         try {
-            // Get AQHI value from station data
-            const aqhiValue = station.aqhi?.value || 0;
-            if (aqhiValue === 0) return '';
+            // Get AQHI value from station data - use displayed value for consistency
+            const aqhiValue = station.aqhi?.displayValue || station.aqhi?.value || 0;
+
+            if (aqhiValue === 0 || aqhiValue === '-') return '';
 
             // Load recommendations if not loaded
             await healthRecommendations.loadRecommendations();
-            const groupedRecs = healthRecommendations.getGroupedRecommendations(aqhiValue);
+            // Convert "15+" to 15 for numerical processing
+            const numericAqhiValue = typeof aqhiValue === 'string' && aqhiValue.includes('+')
+                ? parseInt(aqhiValue.replace('+', ''))
+                : aqhiValue;
+
+            const groupedRecs = healthRecommendations.getGroupedRecommendations(numericAqhiValue);
 
             if (!groupedRecs || Object.keys(groupedRecs).length === 0) {
                 return '';
@@ -540,23 +548,24 @@ export class UIManager {
                                 data-group-index="${index}"
                                 style="
                                     display: flex;
-                                    flex-direction: column;
                                     align-items: center;
-                                    gap: 4px;
-                                    padding: 8px;
+                                    justify-content: center;
+                                    padding: 0;
                                     border: 2px solid ${isFirst ? 'var(--primary-color)' : 'var(--gray-300)'};
                                     border-radius: 50%;
                                     background: ${isFirst ? 'var(--primary-color)' : 'white'};
                                     color: ${isFirst ? 'white' : 'var(--gray-600)'};
                                     cursor: pointer;
                                     transition: all 0.2s ease;
-                                    min-width: 56px;
+                                    width: 56px;
                                     height: 56px;
-                                    font-size: 0.75rem;
-                                    font-weight: 500;
+                                    min-width: 56px;
+                                    max-width: 56px;
+                                    flex-shrink: 0;
+                                    box-sizing: border-box;
                                 "
                                 onclick="window.uiManager.selectPopulationGroup(${index})">
-                            <i class="material-icons" style="font-size: 20px;">${group.icon}</i>
+                            <i class="material-icons" style="font-size: 24px; line-height: 1; margin: 0;">${group.icon}</i>
                         </button>
                     `;
                 });

@@ -163,6 +163,7 @@ class ModernAirQualityDashboard {
         }
     }
 
+
     animateDataChanges(oldStations, newStations) {
         // Compare old vs new data and animate significant changes
         if (!oldStations.length || !newStations.length) return;

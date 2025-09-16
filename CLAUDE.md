@@ -17,7 +17,7 @@ MCP Playwright integration for browser automation and testing.
 - **Features**: Browser control, page navigation, element interaction, screenshot capture
 
 ## Project Overview
-This is a real-time air quality dashboard for Bangkok that displays AQI (Air Quality Index) data on an interactive map using the WAQI API and Leaflet.js.
+This is a real-time air quality dashboard for Bangkok that displays both AQI (Air Quality Index) and AQHI (Air Quality Health Index) data on an interactive map using the WAQI API and Leaflet.js. The dashboard includes Supabase integration for data persistence and accurate AQHI calculations using 3-hour moving averages.
 
 ## Development Commands
 
@@ -41,11 +41,13 @@ Runs ESLint on all JavaScript files in the `js/` directory.
 
 ## Architecture
 
-### Frontend-Only Application
-This is a client-side application with no backend server. It consists of:
+### Hybrid Frontend Application
+This is primarily a client-side application with optional cloud database integration. It consists of:
 - HTML/CSS/JavaScript modules
 - Direct API calls to WAQI (World Air Quality Index) API from the browser
 - Leaflet.js for interactive mapping
+- Supabase integration for data persistence and AQHI calculations
+- Client-side data collection for 3-hour moving averages
 
 ### Key Modules
 
@@ -78,18 +80,72 @@ This is a client-side application with no backend server. It consists of:
 - Calculates and displays AQI statistics
 - Shows category breakdowns and averages
 
+**AQHI Implementation** (`js/aqhi-supabase.js`, `js/aqhi-realistic.js`):
+- Implements Air Quality Health Index calculations
+- Manages 3-hour moving averages for accurate AQHI values
+- Handles data quality indicators and fallback estimation methods
+- Integrates with Supabase for persistent data storage
+
+**Supabase Integration** (`lib/supabase.js`):
+- Database client configuration and initialization
+- Automatic data collection and storage every 10 minutes
+- 3-hour moving average calculations in the database
+- Built-in AQHI calculation functions
+
 ### Data Flow
 1. App initializes and fetches Bangkok area stations from WAQI API
-2. Stations are displayed as color-coded markers on the map
-3. Sidebar shows main location data and statistics
-4. Auto-refresh updates data every 10 minutes
-5. User can interact with markers to see station details
+2. Stations are displayed as color-coded markers on the map (AQI or AQHI mode)
+3. Data is automatically stored in Supabase every 10 minutes for historical analysis
+4. Sidebar shows main location data and statistics for both AQI and AQHI
+5. Auto-refresh updates data every 10 minutes
+6. AQHI calculations improve over time as 3-hour moving averages become available
+7. User can interact with markers to see station details and toggle between AQI/AQHI modes
 
 ### API Integration
-The app uses WAQI API v2 endpoints:
+
+**WAQI API**:
 - `/v2/map/bounds/` - Fetch stations within Bangkok boundaries
 - `/feed/@{uid}/` - Get detailed station data including pollutants
 - Token-based authentication required for all API calls
+
+**Supabase Integration**:
+- Automatic data persistence for historical analysis
+- Real-time 3-hour moving average calculations
+- Built-in AQHI calculation functions
+- Cross-device data synchronization
+
+## AQHI Implementation
+
+### Air Quality Health Index (AQHI)
+The dashboard implements Canada's Air Quality Health Index alongside the traditional AQI. Key features:
+
+**Scientific Accuracy**:
+- Uses Health Canada's official AQHI formula
+- Calculates 3-hour moving averages of PM2.5, NO₂, O₃, and SO₂
+- Provides health-focused risk assessment (1-10+ scale)
+
+**Data Quality Management**:
+- **Excellent** (🎯): 3+ hours of data, 15+ readings
+- **Good** (✅): 2+ hours of data, 10+ readings
+- **Fair** (⏳): 1+ hours of data, 5+ readings
+- **Limited** (🔄): Building data, <1 hour
+- **Estimated** (📊): Using current reading estimation
+
+**Calculation Methods**:
+1. **Current**: Using immediate readings (first visit)
+2. **Estimated**: Using estimation algorithms with variability factors
+3. **Client-Average**: Using collected 3-hour moving averages (most accurate)
+
+### Supabase Data Persistence
+- **Automatic Collection**: Air quality data stored every 10 minutes
+- **Historical Storage**: 7-day rolling window with automatic cleanup
+- **3-Hour Averages**: Real-time calculation of moving averages in database
+- **Cross-Device Sync**: Data persists across browser sessions and devices
+
+### Configuration Files
+- `AQHI-Implementation.md` - Detailed technical documentation
+- `SUPABASE_SETUP.md` - Database setup and configuration guide
+- `supabase-schema.sql` - Database schema and functions
 
 ## Visual Development & Testing
 
@@ -204,6 +260,14 @@ When implementing UI features, verify:
 
 ## Additional Context
 
+### Configuration Files
 - Design review agent configuration: `/.claude/agents/design-review-agent.md`
 - Design principles checklist: `/context/design-principles.md`
 - Custom slash commands: `/context/design-review-slash-command.md`
+- AQHI implementation guide: `AQHI-Implementation.md`
+- Supabase setup guide: `SUPABASE_SETUP.md`
+
+### MCP Servers
+- **Context7**: Enhanced code understanding and library documentation
+- **Playwright**: Browser automation for comprehensive UI testing
+- Both servers configured and ready for development workflows

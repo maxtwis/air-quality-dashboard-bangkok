@@ -196,7 +196,7 @@ class SupabaseAQHI {
                 }
 
                 aqhi = (10.0 / 10.4) * 100 * aqhi;
-                aqhi = Math.max(0, Math.round(aqhi * 10) / 10); // Round to 1 decimal place
+                aqhi = Math.max(0, Math.round(aqhi)); // Round to whole number
 
                 // Cache the result
                 this.cache.set(cacheKey, {
@@ -264,7 +264,7 @@ class SupabaseAQHI {
                     if (averages.o3) aqhiValue += (Math.exp(0.000871 * averages.o3) - 1);
                     if (averages.no2) aqhiValue += (Math.exp(0.000537 * averages.no2) - 1);
                     aqhiValue = (10.0 / 10.4) * 100 * aqhiValue;
-                    aqhiValue = Math.max(0, Math.round(aqhiValue * 10) / 10);
+                    aqhiValue = Math.max(0, Math.round(aqhiValue));
 
                     // Cache the result
                     if (stationId) {

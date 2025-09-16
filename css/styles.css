@@ -627,7 +627,7 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 12px 8px;
+    padding: 8px;
     background: white;
     border: 2px solid var(--gray-200);
     border-radius: 8px;
@@ -635,6 +635,7 @@ body {
     transition: all 0.2s ease;
     text-align: center;
     min-height: 70px;
+    gap: 4px;
 }
 
 .population-group:hover {
@@ -650,12 +651,13 @@ body {
 }
 
 .population-group .material-icons {
-    font-size: 24px !important;
-    margin-bottom: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    font-size: 28px !important;
+    display: block;
+    width: 100%;
+    text-align: center;
     line-height: 1;
+    margin: 0;
+    vertical-align: middle;
 }
 
 .population-group.active .material-icons {

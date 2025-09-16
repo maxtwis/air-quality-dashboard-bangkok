@@ -51,7 +51,7 @@ export function addMarkersToMap(stations) {
     }
 
     const markers = [];
-    const isAQHI = uiManager.currentIndicator === 'AQHI';
+    const isAQHI = uiManager.currentIndicator === 'AQHI' || uiManager.currentIndicator === 'PM25_AQHI';
 
     stations.forEach(station => {
         if (!isValidStation(station)) return;
@@ -59,7 +59,7 @@ export function addMarkersToMap(stations) {
         let value, color;
 
         if (isAQHI && station.aqhi) {
-            // Use AQHI if available
+            // Use AQHI if available (includes both full AQHI and PM2.5-only AQHI)
             value = formatAQHI(station.aqhi.value);
             color = station.aqhi.level.color;
         } else {
@@ -104,9 +104,9 @@ export function addSingleMarker(station) {
     const map = getMap();
     if (!map) return null;
     
-    const isAQHI = uiManager.currentIndicator === 'AQHI';
+    const isAQHI = uiManager.currentIndicator === 'AQHI' || uiManager.currentIndicator === 'PM25_AQHI';
     let value, color;
-    
+
     if (isAQHI && station.aqhi) {
         value = formatAQHI(station.aqhi.value);
         color = station.aqhi.level.color;
@@ -158,7 +158,9 @@ export function animateMarkerUpdate(marker, newValue, newColor) {
     }
     
     // Update stored data
-    marker.stationData.aqi = newAqi.toString();
+    if (typeof newValue === 'number') {
+        marker.stationData.aqi = newValue.toString();
+    }
 }
 
 // Highlight a specific marker

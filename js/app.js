@@ -84,6 +84,9 @@ class ModernAirQualityDashboard {
             // Update main location display
             uiManager.updateMainDisplay(currentStations);
 
+            // Update map legend based on current indicator
+            uiManager.updateMapLegend();
+
             // Update statistics
             updateStatisticsPanel(currentStations);
 

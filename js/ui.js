@@ -1,7 +1,7 @@
 import { getAQILevel, getAQIClass, formatDateTime } from './utils.js';
 import { fetchStationDetails } from './api.js';
-import { POLLUTANTS, WEATHER_PARAMS, CONFIG } from './config.js';
-import { getAQHILevel, formatAQHI } from './aqhi-realistic.js';
+import { POLLUTANTS, WEATHER_PARAMS, CONFIG, AQI_LEVELS } from './config.js';
+import { getAQHILevel, formatAQHI, AQHI_LEVELS } from './aqhi-realistic.js';
 import { calculateAQHIStatistics } from './aqhi-realistic.js';
 
 // UI management functions for the modern dashboard
@@ -19,6 +19,8 @@ export class UIManager {
         indicatorRadios.forEach(radio => {
             radio.addEventListener('change', (e) => {
                 this.currentIndicator = e.target.value;
+                // Update map legend immediately
+                this.updateMapLegend();
                 // Use smart indicator switching instead of full refresh
                 window.switchIndicator && window.switchIndicator(e.target.value);
             });
@@ -137,6 +139,77 @@ export class UIManager {
         if (mainCircle) mainCircle.className = `aqi-circle ${getAQHIClass(aqhiLevel)}`;
         if (mainLabel) mainLabel.textContent = 'AQHI';
 
+    }
+
+    // Update map legend based on current indicator
+    updateMapLegend() {
+        const legendElement = document.querySelector('.map-legend');
+        if (!legendElement) return;
+
+        const legendTitle = legendElement.querySelector('.legend-title');
+        const legendItems = legendElement.querySelector('.legend-items');
+
+        if (this.currentIndicator === 'AQHI') {
+            // Update to AQHI legend
+            if (legendTitle) {
+                legendTitle.textContent = 'Air Quality Health Index (AQHI)';
+            }
+
+            if (legendItems) {
+                legendItems.innerHTML = `
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.LOW.color};"></div>
+                        <span>Low (1-3)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.MODERATE.color};"></div>
+                        <span>Moderate (4-6)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.HIGH.color};"></div>
+                        <span>High (7-10)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.VERY_HIGH.color};"></div>
+                        <span>Very High (11+)</span>
+                    </div>
+                `;
+            }
+        } else {
+            // Update to AQI legend
+            if (legendTitle) {
+                legendTitle.textContent = 'Air Quality Index (US AQI)';
+            }
+
+            if (legendItems) {
+                legendItems.innerHTML = `
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.GOOD.color};"></div>
+                        <span>Good (0-50)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.MODERATE.color};"></div>
+                        <span>Moderate (51-100)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.UNHEALTHY_SENSITIVE.color};"></div>
+                        <span>Unhealthy for Sensitive (101-150)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.UNHEALTHY.color};"></div>
+                        <span>Unhealthy (151-200)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.VERY_UNHEALTHY.color};"></div>
+                        <span>Very Unhealthy (201-300)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.HAZARDOUS.color};"></div>
+                        <span>Hazardous (301+)</span>
+                    </div>
+                `;
+            }
+        }
     }
 
     updateWeatherInfo() {

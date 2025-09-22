@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { fetchAirQualityData, enhanceStationsWithAQHI } from './api.js';
+import { fetchAirQualityData, enhanceStationsWithAQHI, enhanceStationsWithPM25OnlyAQHI } from './api.js';
 import { initializeMap, clearMarkers } from './map.js';
 import { addMarkersToMap } from './markers.js';
 import { updateStatisticsPanel } from './statistics.js';
@@ -12,10 +12,12 @@ class ModernAirQualityDashboard {
         this.map = null;
         this.stations = [];
         this.stationsWithAQHI = [];
+        this.stationsWithPM25AQHI = [];
         this.markers = [];
         this.refreshInterval = null;
         this.isInitialized = false;
         this.aqhiCalculated = false;
+        this.pm25AqhiCalculated = false;
         this.isCalculatingAQHI = false;
     }
 
@@ -60,7 +62,9 @@ class ModernAirQualityDashboard {
 
             this.stations = stations;
             this.stationsWithAQHI = []; // Clear AQHI data
+            this.stationsWithPM25AQHI = []; // Clear PM2.5 AQHI data
             this.aqhiCalculated = false;
+            this.pm25AqhiCalculated = false;
             this.updateDisplay();
 
         } catch (error) {
@@ -98,9 +102,13 @@ class ModernAirQualityDashboard {
     }
 
     getCurrentStations() {
-        return uiManager.currentIndicator === 'AQHI' && this.aqhiCalculated
-            ? this.stationsWithAQHI
-            : this.stations;
+        if (uiManager.currentIndicator === 'AQHI' && this.aqhiCalculated) {
+            return this.stationsWithAQHI;
+        } else if (uiManager.currentIndicator === 'PM25_AQHI' && this.pm25AqhiCalculated) {
+            return this.stationsWithPM25AQHI;
+        } else {
+            return this.stations;
+        }
     }
 
     async refreshData() {
@@ -123,6 +131,11 @@ class ModernAirQualityDashboard {
             // If AQHI was calculated before, recalculate it
             if (this.aqhiCalculated) {
                 await this.calculateAQHI();
+            }
+
+            // If PM2.5 AQHI was calculated before, recalculate it
+            if (this.pm25AqhiCalculated) {
+                await this.calculatePM25AQHI();
             }
 
             this.updateDisplay();
@@ -158,6 +171,35 @@ class ModernAirQualityDashboard {
         } catch (error) {
             console.error('❌ Error calculating AQHI:', error);
             uiManager.showError('stats-content', `Error calculating AQHI: ${error.message}`);
+        } finally {
+            this.isCalculatingAQHI = false;
+        }
+    }
+
+    async calculatePM25AQHI() {
+        if (this.isCalculatingAQHI) {
+            console.log('⏳ PM2.5 AQHI calculation already in progress');
+            return;
+        }
+
+        try {
+            this.isCalculatingAQHI = true;
+            uiManager.showLoading('stats-content', 'Calculating PM2.5-only AQHI using 3-hour averages...');
+
+            console.log('🔄 Calculating PM2.5-only AQHI for existing stations...');
+            this.stationsWithPM25AQHI = await enhanceStationsWithPM25OnlyAQHI(this.stations);
+            this.pm25AqhiCalculated = true;
+
+            console.log(`✅ PM2.5-only AQHI calculated for ${this.stationsWithPM25AQHI.length} stations`);
+
+            // Update display if currently showing PM2.5 AQHI
+            if (uiManager.currentIndicator === 'PM25_AQHI') {
+                this.updateDisplay();
+            }
+
+        } catch (error) {
+            console.error('❌ Error calculating PM2.5-only AQHI:', error);
+            uiManager.showError('stats-content', `Error calculating PM2.5-only AQHI: ${error.message}`);
         } finally {
             this.isCalculatingAQHI = false;
         }
@@ -209,6 +251,9 @@ class ModernAirQualityDashboard {
         if (indicator === 'AQHI' && !this.aqhiCalculated) {
             // Calculate AQHI on-demand when user switches to AQHI tab
             await this.calculateAQHI();
+        } else if (indicator === 'PM25_AQHI' && !this.pm25AqhiCalculated) {
+            // Calculate PM2.5-only AQHI on-demand when user switches to PM2.5 AQHI tab
+            await this.calculatePM25AQHI();
         }
 
         // Update display with current data

@@ -7,9 +7,12 @@ import { calculateAQHIStatistics } from './aqhi-realistic.js';
 
 export function updateStatisticsPanel(stations) {
     const isAQHI = uiManager.currentIndicator === 'AQHI';
-    
+    const isPM25AQHI = uiManager.currentIndicator === 'PM25_AQHI';
+
     if (isAQHI) {
         updateStatisticsPanelAQHI(stations);
+    } else if (isPM25AQHI) {
+        updateStatisticsPanelPM25AQHI(stations);
     } else {
         updateStatisticsPanelAQI(stations);
     }
@@ -149,6 +152,86 @@ function updateStatisticsPanelAQHI(stations) {
     updateAQHICategoryBreakdown(stats.categoryCounts);
     
     console.log('AQHI statistics updated');
+}
+
+function updateStatisticsPanelPM25AQHI(stations) {
+    // Calculate PM2.5-only AQHI statistics
+    const validStations = stations.filter(s => s.pm25_aqhi && s.pm25_aqhi.value !== undefined);
+    const statsContent = document.getElementById('stats-content');
+
+    if (!statsContent) {
+        console.error('Statistics content element not found');
+        return;
+    }
+
+    if (validStations.length === 0) {
+        uiManager.showError('stats-content', 'No valid PM2.5 AQHI data available');
+        return;
+    }
+
+    // Calculate statistics for PM2.5 AQHI
+    const aqhiValues = validStations.map(s => s.pm25_aqhi.value);
+    const avgAQHI = Math.round(aqhiValues.reduce((a, b) => a + b, 0) / aqhiValues.length);
+    const maxAQHI = Math.max(...aqhiValues);
+    const minAQHI = Math.min(...aqhiValues);
+
+    const avgLevel = getAQHILevel(avgAQHI);
+    const maxLevel = getAQHILevel(maxAQHI);
+    const minLevel = getAQHILevel(minAQHI);
+
+    // Map AQHI colors to AQI classes for consistency
+    const getAQHIClass = (level) => {
+        switch(level.key) {
+            case 'LOW': return 'aqi-good';
+            case 'MODERATE': return 'aqi-moderate';
+            case 'HIGH': return 'aqi-unhealthy-sensitive';
+            case 'VERY_HIGH': return 'aqi-unhealthy';
+            default: return 'aqi-moderate';
+        }
+    };
+
+    // Calculate category counts
+    const categoryCounts = {
+        LOW: validStations.filter(s => s.pm25_aqhi.value <= 3).length,
+        MODERATE: validStations.filter(s => s.pm25_aqhi.value >= 4 && s.pm25_aqhi.value <= 6).length,
+        HIGH: validStations.filter(s => s.pm25_aqhi.value >= 7 && s.pm25_aqhi.value <= 10).length,
+        VERY_HIGH: validStations.filter(s => s.pm25_aqhi.value >= 11).length
+    };
+
+    // Create PM2.5 AQHI stats grid
+    const statsHTML = `
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value">${validStations.length}</div>
+                <div class="stat-label">Stations with PM2.5 Data</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-${getAQHIClass(avgLevel)}">${formatAQHI(avgAQHI)}</div>
+                <div class="stat-label">Average PM2.5 AQHI</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-${getAQHIClass(maxLevel)}">${formatAQHI(maxAQHI)}</div>
+                <div class="stat-label">Highest PM2.5 AQHI</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value text-${getAQHIClass(minLevel)}">${formatAQHI(minAQHI)}</div>
+                <div class="stat-label">Lowest PM2.5 AQHI</div>
+            </div>
+        </div>
+        <div class="info" style="margin-top: 12px; padding: 8px; background: var(--gray-100); border-radius: 6px; font-size: 0.875rem;">
+            <div style="font-weight: 500; margin-bottom: 4px;">📊 PM2.5-only AQHI (Hypothesis Testing):</div>
+            <div>• NO₂ and O₃ values set to 0 for all calculations</div>
+            <div>• Only PM2.5 concentration affects the AQHI values</div>
+            <div>• Compare with normal AQHI to see impact of missing substances</div>
+        </div>
+    `;
+
+    statsContent.innerHTML = statsHTML;
+
+    // Update category breakdown for PM2.5 AQHI
+    updateAQHICategoryBreakdown(categoryCounts);
+
+    console.log('PM2.5-only AQHI statistics updated');
 }
 
 function updateAQHICategoryBreakdown(categoryCounts) {

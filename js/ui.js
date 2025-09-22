@@ -64,6 +64,8 @@ export class UIManager {
     updateMainDisplay(stations) {
         if (this.currentIndicator === 'AQHI') {
             this.updateMainDisplayAQHI(stations);
+        } else if (this.currentIndicator === 'PM25_AQHI') {
+            this.updateMainDisplayPM25AQHI(stations);
         } else {
             this.updateMainDisplayAQI(stations);
         }
@@ -99,7 +101,7 @@ export class UIManager {
         if (!stats) return;
 
         const aqhiLevel = getAQHILevel(stats.average);
-        
+
         // Map AQHI colors to existing AQI classes
         const getAQHIClass = (level) => {
             switch(level.key) {
@@ -124,10 +126,10 @@ export class UIManager {
             // Check data quality for AQHI with realistic approach
             let dataQualityNote = '';
             if (stations.length > 0 && stations[0].aqhi) {
-                const avgTimeSpan = stations.reduce((sum, s) => 
+                const avgTimeSpan = stations.reduce((sum, s) =>
                     sum + (s.aqhi?.timeSpanHours || 0), 0) / stations.length;
                 const commonMethod = stations[0].aqhi?.calculationMethod || 'current';
-                
+
                 if (commonMethod === 'estimated') {
                     dataQualityNote = ' (Estimated from current readings)';
                 } else if (avgTimeSpan < 1) {
@@ -143,6 +145,61 @@ export class UIManager {
 
     }
 
+    updateMainDisplayPM25AQHI(stations) {
+        // Calculate PM2.5-only AQHI statistics
+        const validStations = stations.filter(s => s.pm25_aqhi && s.pm25_aqhi.value !== undefined);
+        if (validStations.length === 0) return;
+
+        const aqhiValues = validStations.map(s => s.pm25_aqhi.value);
+        const avgAQHI = Math.round(aqhiValues.reduce((a, b) => a + b, 0) / aqhiValues.length);
+        const aqhiLevel = getAQHILevel(avgAQHI);
+
+        // Map AQHI colors to existing AQI classes
+        const getAQHIClass = (level) => {
+            switch(level.key) {
+                case 'LOW': return 'aqi-good';
+                case 'MODERATE': return 'aqi-moderate';
+                case 'HIGH': return 'aqi-unhealthy-sensitive';
+                case 'VERY_HIGH': return 'aqi-unhealthy';
+                default: return 'aqi-moderate';
+            }
+        };
+
+        // Update main display
+        const mainValue = document.getElementById('main-aqi-value');
+        const mainCategory = document.getElementById('main-aqi-category');
+        const mainDescription = document.getElementById('main-aqi-description');
+        const mainCircle = document.getElementById('main-aqi-circle');
+        const mainLabel = document.querySelector('.aqi-label');
+
+        if (mainValue) mainValue.textContent = formatAQHI(avgAQHI);
+        if (mainCategory) mainCategory.textContent = aqhiLevel.label;
+        if (mainDescription) {
+            // Check data quality for PM2.5 AQHI
+            let dataQualityNote = '';
+            if (validStations.length > 0 && validStations[0].pm25_aqhi) {
+                const avgTimeSpan = validStations.reduce((sum, s) =>
+                    sum + (s.pm25_aqhi?.timeSpanHours || 0), 0) / validStations.length;
+                const commonMethod = validStations[0].pm25_aqhi?.calculationMethod || 'current';
+
+                if (commonMethod === 'current') {
+                    dataQualityNote = ' (Current readings, NO₂ & O₃ = 0)';
+                } else if (avgTimeSpan < 1) {
+                    dataQualityNote = ' (Building 3h average, NO₂ & O₃ = 0)';
+                } else if (avgTimeSpan < 3) {
+                    dataQualityNote = ` (${avgTimeSpan.toFixed(1)}h average, NO₂ & O₃ = 0)`;
+                } else {
+                    dataQualityNote = ' (3h average, NO₂ & O₃ = 0)';
+                }
+            } else {
+                dataQualityNote = ' (PM2.5-only AQHI, NO₂ & O₃ = 0)';
+            }
+            mainDescription.textContent = aqhiLevel.description + dataQualityNote;
+        }
+        if (mainCircle) mainCircle.className = `aqi-circle ${getAQHIClass(aqhiLevel)}`;
+        if (mainLabel) mainLabel.textContent = 'PM2.5 AQHI';
+    }
+
     // Update map legend based on current indicator
     updateMapLegend() {
         const legendElement = document.querySelector('.map-legend');
@@ -155,6 +212,32 @@ export class UIManager {
             // Update to AQHI legend
             if (legendTitle) {
                 legendTitle.textContent = 'Air Quality Health Index (AQHI)';
+            }
+
+            if (legendItems) {
+                legendItems.innerHTML = `
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.LOW.color};"></div>
+                        <span>Low (1-3)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.MODERATE.color};"></div>
+                        <span>Moderate (4-6)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.HIGH.color};"></div>
+                        <span>High (7-10)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.VERY_HIGH.color};"></div>
+                        <span>Very High (11+)</span>
+                    </div>
+                `;
+            }
+        } else if (this.currentIndicator === 'PM25_AQHI') {
+            // Update to PM2.5 AQHI legend
+            if (legendTitle) {
+                legendTitle.textContent = 'PM2.5-only AQHI (NO₂ & O₃ = 0)';
             }
 
             if (legendItems) {
@@ -239,6 +322,7 @@ export class UIManager {
     // Enhanced station information panel with pollutant data
     async showStationInfo(station) {
         const isAQHI = this.currentIndicator === 'AQHI';
+        const isPM25AQHI = this.currentIndicator === 'PM25_AQHI';
         let value, level, cssClass, label;
 
         if (isAQHI && station.aqhi) {
@@ -246,6 +330,12 @@ export class UIManager {
             value = formatAQHI(station.aqhi.value);
             level = station.aqhi.level;
             cssClass = this.getAQHIClass(station.aqhi.value);
+            label = level.label;
+        } else if (isPM25AQHI && station.pm25_aqhi) {
+            // Use PM2.5-only AQHI data
+            value = formatAQHI(station.pm25_aqhi.value);
+            level = station.pm25_aqhi.level;
+            cssClass = this.getAQHIClass(station.pm25_aqhi.value);
             label = level.label;
         } else {
             // Use AQI data
@@ -311,9 +401,18 @@ export class UIManager {
                     } catch (avgError) {
                         console.warn('Could not fetch 3-hour averages:', avgError);
                     }
+                } else if (isPM25AQHI && station.pm25_aqhi) {
+                    try {
+                        // Import PM2.5-only AQHI to get PM2.5 3-hour averages
+                        const { pm25OnlySupabaseAQHI } = await import('./aqhi-pm25-only.js');
+                        averageData = await pm25OnlySupabaseAQHI.get3HourPM25Averages(station.uid?.toString());
+                        // Don't force NO2 and O3 - let the panel show only real pollutants
+                    } catch (avgError) {
+                        console.warn('Could not fetch PM2.5-only 3-hour averages:', avgError);
+                    }
                 }
 
-                await this.updateStationInfoWithDetails(detailsData, isAQHI, averageData);
+                await this.updateStationInfoWithDetails(detailsData, isAQHI || isPM25AQHI, averageData);
             } else {
                 this.showErrorInStationInfo('Could not load detailed data');
             }
@@ -369,7 +468,12 @@ export class UIManager {
 
             // Use 3-hour averages if in AQHI mode and available, otherwise use API data
             const dataSource = isAQHI && averageData ? averageData : detailsData.iaqi;
-            const dataLabel = isAQHI && averageData ? '3-Hour Average' : 'Current';
+
+            // Determine the correct data label based on mode and data availability
+            let dataLabel = 'Current';
+            if (isAQHI && averageData) {
+                dataLabel = '3-Hour Average';
+            }
 
             if (isAQHI && averageData) {
                 // For AQHI mode with averages, process the average data structure

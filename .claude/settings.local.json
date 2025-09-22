@@ -20,7 +20,9 @@
       "WebFetch(domain:127.0.0.1)",
       "Bash(curl:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(claude mcp:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

@@ -2,6 +2,7 @@ import { CONFIG } from './config.js';
 import { formatBounds } from './utils.js';
 import { calculateStationAQHIRealistic, initializeRealisticAQHI } from './aqhi-realistic.js';
 import { supabaseAQHI } from './aqhi-supabase.js';
+import { pm25OnlySupabaseAQHI } from './aqhi-pm25-only.js';
 
 // Enhanced API handling functions with pollutant data and AQHI calculations
 
@@ -70,6 +71,20 @@ export async function enhanceStationsWithAQHI(stations) {
         return enhancedStations;
     } catch (error) {
         console.error('Error enhancing stations with AQHI:', error);
+        throw error;
+    }
+}
+
+// Add PM2.5-only AQHI calculations to existing station data
+export async function enhanceStationsWithPM25OnlyAQHI(stations) {
+    try {
+        console.log('🔄 Enhancing existing stations with PM2.5-only AQHI calculations...');
+        const enhancedStations = await pm25OnlySupabaseAQHI.enhanceStationsWithPM25OnlyAQHI(stations);
+        console.log(`✅ Enhanced ${enhancedStations.length} stations with PM2.5-only AQHI calculations`);
+
+        return enhancedStations;
+    } catch (error) {
+        console.error('Error enhancing stations with PM2.5-only AQHI:', error);
         throw error;
     }
 }

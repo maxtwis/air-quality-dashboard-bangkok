@@ -52,6 +52,7 @@ export function addMarkersToMap(stations) {
 
     const markers = [];
     const isAQHI = uiManager.currentIndicator === 'AQHI';
+    const isPM25AQHI = uiManager.currentIndicator === 'PM25_AQHI';
 
     stations.forEach(station => {
         if (!isValidStation(station)) return;
@@ -59,9 +60,13 @@ export function addMarkersToMap(stations) {
         let value, color;
 
         if (isAQHI && station.aqhi) {
-            // Use AQHI if available (includes both full AQHI and PM2.5-only AQHI)
+            // Use AQHI if available
             value = formatAQHI(station.aqhi.value);
             color = station.aqhi.level.color;
+        } else if (isPM25AQHI && station.pm25_aqhi) {
+            // Use PM2.5-only AQHI if available
+            value = formatAQHI(station.pm25_aqhi.value);
+            color = station.pm25_aqhi.level.color;
         } else {
             // Fall back to AQI
             const aqi = parseInt(station.aqi);
@@ -100,16 +105,20 @@ export function addMarkersToMap(stations) {
 
 export function addSingleMarker(station) {
     if (!isValidStation(station)) return null;
-    
+
     const map = getMap();
     if (!map) return null;
-    
+
     const isAQHI = uiManager.currentIndicator === 'AQHI';
+    const isPM25AQHI = uiManager.currentIndicator === 'PM25_AQHI';
     let value, color;
 
     if (isAQHI && station.aqhi) {
         value = formatAQHI(station.aqhi.value);
         color = station.aqhi.level.color;
+    } else if (isPM25AQHI && station.pm25_aqhi) {
+        value = formatAQHI(station.pm25_aqhi.value);
+        color = station.pm25_aqhi.level.color;
     } else {
         const aqi = parseInt(station.aqi);
         value = aqi;

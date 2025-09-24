@@ -23,6 +23,8 @@ class SupabaseAQHI {
         window.SUPABASE_ANON_KEY ||
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxdmpyb3Z6aHVwZGZ3dmRpa3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NTQyMjMsImV4cCI6MjA3MzUzMDIyM30.rzJ8-LnZh2dITbh7HcIXJ32BQ1MN-F-O5hCmO0jzIDo';
 
+      console.log('🔗 Initializing Supabase connection for AQHI...');
+
       this.supabase = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
           persistSession: false,
@@ -30,9 +32,9 @@ class SupabaseAQHI {
         },
       });
 
-      console.log('✅ Supabase AQHI calculator initialized');
+      console.log('✅ Supabase AQHI calculator initialized successfully');
     } catch (error) {
-      console.warn('⚠️ Supabase AQHI calculator failed to initialize:', error);
+      console.error('❌ Supabase AQHI calculator failed to initialize:', error.message || error);
       this.supabase = null;
     }
   }
@@ -55,6 +57,19 @@ class SupabaseAQHI {
         console.log(
           `📊 Enhanced averages: ${Object.keys(enhancedAverages).length} stations with mixed data sources`,
         );
+        // Also get standard averages for stations not in enhanced results
+        const missingStations = stationIds.filter(
+          (id) => !enhancedAverages[id],
+        );
+        if (missingStations.length > 0) {
+          console.log(
+            `🔄 Getting standard averages for ${missingStations.length} remaining stations...`,
+          );
+          const standardAverages = await this.getBatchStandardAverages(
+            missingStations,
+          );
+          return { ...enhancedAverages, ...standardAverages };
+        }
         return enhancedAverages;
       }
 
@@ -71,127 +86,173 @@ class SupabaseAQHI {
   }
 
   /**
-   * Get enhanced averages using database functions (preferred method)
+   * Get enhanced averages using existing database views (no RPC function needed)
    */
   async getBatchEnhancedAverages(stationIds) {
     const stationAverages = {};
 
-    // We need station coordinates for the enhanced calculation
-    const { data: stations, error: stationsError } = await this.supabase
-      .from('stations')
-      .select('station_uid, latitude, longitude')
-      .in('station_uid', stationIds);
+    try {
+      // Get AQICN data from current_3h_averages view
+      const { data: aqicnData, error: aqicnError } = await this.supabase
+        .from('current_3h_averages')
+        .select('*')
+        .in('station_uid', stationIds);
 
-    if (stationsError || !stations) {
-      console.log(
-        'Could not fetch station coordinates for enhanced calculation',
-      );
-      return {};
-    }
+      if (aqicnError) {
+        console.warn('Error fetching AQICN 3h averages:', aqicnError.message);
+      }
 
-    // Process each station with enhanced calculation
-    const promises = stations.map(async (station) => {
-      try {
-        const { data, error } = await this.supabase.rpc(
-          'calculate_enhanced_3h_averages',
-          {
-            station_uid_param: station.station_uid,
-            station_lat: station.latitude,
-            station_lon: station.longitude,
-          },
-        );
+      // Get OpenWeather data from current_openweather_station_3h_averages view
+      const { data: openweatherData, error: openweatherError } = await this.supabase
+        .from('current_openweather_station_3h_averages')
+        .select('*')
+        .in('station_uid', stationIds);
 
-        if (!error && data && data.length > 0) {
-          const avgData = data[0];
-          if (avgData.reading_count > 0) {
+      if (openweatherError) {
+        console.warn('Error fetching OpenWeather 3h averages:', openweatherError.message);
+      }
+
+      // Process AQICN data
+      if (aqicnData) {
+        aqicnData.forEach(station => {
+          if (station.reading_count > 0) {
             stationAverages[station.station_uid] = {
-              pm25: avgData.pm25,
-              pm10: avgData.pm10,
-              o3: avgData.o3,
-              no2: avgData.no2,
-              so2: avgData.so2,
-              co: avgData.co,
-              readingCount: avgData.reading_count,
-              dataSources: avgData.data_sources || 'station',
+              pm25: station.avg_pm25,
+              pm10: station.avg_pm10,
+              o3: station.avg_o3,
+              no2: station.avg_no2,
+              so2: station.avg_so2,
+              co: station.avg_co,
+              readingCount: station.reading_count,
+              dataSources: 'aqicn',
             };
           }
-        }
-      } catch (error) {
-        console.error(
-          `Error calculating enhanced averages for station ${station.station_uid}:`,
-          error,
+        });
+      }
+
+      // Enhance with OpenWeather data where available
+      if (openweatherData) {
+        openweatherData.forEach(owStation => {
+          const stationId = owStation.station_uid;
+
+          if (stationAverages[stationId]) {
+            // Merge with existing AQICN data - prefer AQICN PM2.5, supplement with OpenWeather NO2/O3
+            const existing = stationAverages[stationId];
+            stationAverages[stationId] = {
+              pm25: existing.pm25 || owStation.avg_pm25,
+              pm10: existing.pm10 || owStation.avg_pm10,
+              o3: existing.o3 || owStation.avg_o3,
+              no2: existing.no2 || owStation.avg_no2,
+              so2: existing.so2 || owStation.avg_so2,
+              co: existing.co || owStation.avg_co,
+              readingCount: Math.max(existing.readingCount, owStation.reading_count),
+              dataSources: 'mixed',
+            };
+          } else if (owStation.reading_count > 0) {
+            // Only OpenWeather data available
+            stationAverages[stationId] = {
+              pm25: owStation.avg_pm25,
+              pm10: owStation.avg_pm10,
+              o3: owStation.avg_o3,
+              no2: owStation.avg_no2,
+              so2: owStation.avg_so2,
+              co: owStation.avg_co,
+              readingCount: owStation.reading_count,
+              dataSources: 'openweather',
+            };
+          }
+        });
+      }
+
+      const enhancedCount = Object.values(stationAverages).filter(
+        (avg) => avg.dataSources === 'mixed',
+      ).length;
+
+      const openweatherOnlyCount = Object.values(stationAverages).filter(
+        (avg) => avg.dataSources === 'openweather',
+      ).length;
+
+      if (enhancedCount > 0) {
+        console.log(
+          `🌐 ${enhancedCount} stations enhanced with mixed data sources`,
         );
       }
-    });
 
-    await Promise.all(promises);
+      if (openweatherOnlyCount > 0) {
+        console.log(
+          `☁️ ${openweatherOnlyCount} stations using OpenWeather-only data`,
+        );
+      }
 
-    const enhancedCount = Object.values(stationAverages).filter(
-      (avg) => avg.dataSources === 'mixed',
-    ).length;
-
-    if (enhancedCount > 0) {
       console.log(
-        `🌐 ${enhancedCount} stations enhanced with OpenWeather data`,
+        `📊 Enhanced averages using views: ${Object.keys(stationAverages).length} total stations`,
       );
-    }
 
-    return stationAverages;
+      return stationAverages;
+    } catch (error) {
+      console.error('Error in getBatchEnhancedAverages:', error.message);
+      return {};
+    }
   }
 
   /**
    * Standard 3-hour averages (fallback method)
    */
   async getBatchStandardAverages(stationIds) {
-    const { data, error } = await this.supabase
-      .from('air_quality_readings')
-      .select('station_uid, pm25, pm10, o3, no2, so2, co, timestamp')
-      .in('station_uid', stationIds)
-      .gte('timestamp', new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString())
-      .order('timestamp', { ascending: false });
+    try {
+      const { data, error } = await this.supabase
+        .from('air_quality_readings')
+        .select('station_uid, pm25, pm10, o3, no2, so2, co, timestamp')
+        .in('station_uid', stationIds)
+        .gte('timestamp', new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString())
+        .order('timestamp', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching standard 3h averages:', error);
-      return {};
-    }
-
-    if (!data || data.length === 0) {
-      console.log(`ℹ️ No stored data for ${stationIds.length} stations`);
-      return {};
-    }
-
-    // Group by station and calculate averages
-    const stationAverages = {};
-    const groupedData = data.reduce((acc, reading) => {
-      if (!acc[reading.station_uid]) acc[reading.station_uid] = [];
-      acc[reading.station_uid].push(reading);
-      return acc;
-    }, {});
-
-    Object.entries(groupedData).forEach(([stationId, readings]) => {
-      const validReadings = readings.filter(
-        (reading) =>
-          reading.pm25 !== null || reading.o3 !== null || reading.no2 !== null,
-      );
-
-      if (validReadings.length > 0) {
-        stationAverages[stationId] = {
-          pm25: this.calculateAverage(validReadings, 'pm25'),
-          pm10: this.calculateAverage(validReadings, 'pm10'),
-          o3: this.calculateAverage(validReadings, 'o3'),
-          no2: this.calculateAverage(validReadings, 'no2'),
-          so2: this.calculateAverage(validReadings, 'so2'),
-          co: this.calculateAverage(validReadings, 'co'),
-          readingCount: validReadings.length,
-          dataSources: 'station',
-        };
+      if (error) {
+        console.error('Error fetching standard 3h averages:', error.message);
+        return {};
       }
-    });
 
-    console.log(
-      `📊 Standard batch processed ${Object.keys(stationAverages).length}/${stationIds.length} stations with data`,
-    );
-    return stationAverages;
+      if (!data || data.length === 0) {
+        console.log(`ℹ️ No stored data for ${stationIds.length} stations`);
+        return {};
+      }
+
+      // Group by station and calculate averages
+      const stationAverages = {};
+      const groupedData = data.reduce((acc, reading) => {
+        if (!acc[reading.station_uid]) acc[reading.station_uid] = [];
+        acc[reading.station_uid].push(reading);
+        return acc;
+      }, {});
+
+      Object.entries(groupedData).forEach(([stationId, readings]) => {
+        const validReadings = readings.filter(
+          (reading) =>
+            reading.pm25 !== null || reading.o3 !== null || reading.no2 !== null,
+        );
+
+        if (validReadings.length > 0) {
+          stationAverages[stationId] = {
+            pm25: this.calculateAverage(validReadings, 'pm25'),
+            pm10: this.calculateAverage(validReadings, 'pm10'),
+            o3: this.calculateAverage(validReadings, 'o3'),
+            no2: this.calculateAverage(validReadings, 'no2'),
+            so2: this.calculateAverage(validReadings, 'so2'),
+            co: this.calculateAverage(validReadings, 'co'),
+            readingCount: validReadings.length,
+            dataSources: 'station',
+          };
+        }
+      });
+
+      console.log(
+        `📊 Standard batch processed ${Object.keys(stationAverages).length}/${stationIds.length} stations with data`,
+      );
+      return stationAverages;
+    } catch (error) {
+      console.error('Error in getBatchStandardAverages:', error.message);
+      return {};
+    }
   }
 
   /**
@@ -352,112 +413,165 @@ class SupabaseAQHI {
     console.log(
       `🔄 Processing ${stations.length} stations with batch optimization...`,
     );
+
+    if (!this.supabase) {
+      console.error('❌ Supabase not initialized - falling back to realistic AQHI calculations');
+      // Fallback to realistic calculations
+      return stations.map(station => ({
+        ...station,
+        aqhi: {
+          value: calculateStationAQHIRealistic(station),
+          level: getAQHILevel(calculateStationAQHIRealistic(station)),
+          calculationMethod: 'fallback_no_db',
+          readingCount: 0,
+          dataQuality: 'estimated',
+          dataSources: 'fallback'
+        }
+      }));
+    }
+
     const startTime = Date.now();
 
-    // Extract all station IDs for batch query
-    const stationIds = stations
-      .map((station) => station.uid?.toString())
-      .filter((id) => id);
+    try {
+      // Extract all station IDs for batch query
+      const stationIds = stations
+        .map((station) => station.uid?.toString())
+        .filter((id) => id);
 
-    // Fetch all 3-hour averages in one batch query
-    const batchAverages = await this.getBatch3HourAverages(stationIds);
+      console.log(`🔍 Fetching batch data for ${stationIds.length} stations...`);
 
-    // Process all stations in parallel with pre-fetched data
-    const enhancedStations = await Promise.all(
-      stations.map(async (station) => {
-        const stationId = station.uid?.toString();
-        const averages = stationId ? batchAverages[stationId] : null;
+      // Fetch all 3-hour averages in one batch query
+      const batchAverages = await this.getBatch3HourAverages(stationIds);
 
-        let aqhiValue;
-        if (averages && (averages.pm25 || averages.o3 || averages.no2)) {
-          // Calculate AQHI using Health Canada formula
-          aqhiValue = 0;
-          if (averages.pm25)
-            aqhiValue += Math.exp(0.000487 * averages.pm25) - 1;
-          if (averages.o3) aqhiValue += Math.exp(0.000871 * averages.o3) - 1;
-          if (averages.no2) aqhiValue += Math.exp(0.000537 * averages.no2) - 1;
-          aqhiValue = (10.0 / 10.4) * 100 * aqhiValue;
-          aqhiValue = Math.max(0, Math.round(aqhiValue));
+      console.log(`📊 Got batch averages for ${Object.keys(batchAverages).length} stations`);
 
-          // Cache the result
-          if (stationId) {
-            this.cache.set(`aqhi_${stationId}`, {
-              value: aqhiValue,
-              timestamp: Date.now(),
-              source: 'batch_stored_3h_avg',
-              readingCount: averages.readingCount,
-            });
-          }
-        } else {
-          // Try OpenWeather fallback for missing O3/NO2 data
-          const supplementaryData = await getOpenWeatherFallback(
-            station,
-            averages,
-          );
+      // Process all stations in parallel with pre-fetched data
+      const enhancedStations = await Promise.all(
+        stations.map(async (station) => {
+          const stationId = station.uid?.toString();
+          const averages = stationId ? batchAverages[stationId] : null;
 
-          if (supplementaryData) {
-            aqhiValue = this.calculateWithSupplementaryData(
-              station,
-              supplementaryData,
-            );
+          let aqhiValue;
+          if (averages && (averages.pm25 || averages.o3 || averages.no2)) {
+            // Calculate AQHI using Health Canada formula
+            aqhiValue = 0;
+            if (averages.pm25)
+              aqhiValue += Math.exp(0.000487 * averages.pm25) - 1;
+            if (averages.o3) aqhiValue += Math.exp(0.000871 * averages.o3) - 1;
+            if (averages.no2) aqhiValue += Math.exp(0.000537 * averages.no2) - 1;
+            aqhiValue = (10.0 / 10.4) * 100 * aqhiValue;
+            aqhiValue = Math.max(0, Math.round(aqhiValue));
 
+            // Cache the result
             if (stationId) {
               this.cache.set(`aqhi_${stationId}`, {
                 value: aqhiValue,
                 timestamp: Date.now(),
-                source: 'openweather_supplemented',
-                readingCount: 1,
+                source: 'batch_stored_3h_avg',
+                readingCount: averages.readingCount,
               });
             }
           } else {
-            // Final fallback to realistic calculation
-            const { calculateStationAQHIRealistic } = await import(
-              './aqhi-realistic.js'
-            );
-            aqhiValue = calculateStationAQHIRealistic(station);
+            // Try OpenWeather fallback for missing O3/NO2 data
+            try {
+              const supplementaryData = await getOpenWeatherFallback(
+                station,
+                averages,
+              );
 
-            if (stationId) {
-              this.cache.set(`aqhi_${stationId}`, {
-                value: aqhiValue,
-                timestamp: Date.now(),
-                source: 'fallback',
-                readingCount: 0,
-              });
+              if (supplementaryData) {
+                aqhiValue = this.calculateWithSupplementaryData(
+                  station,
+                  supplementaryData,
+                );
+
+                if (stationId) {
+                  this.cache.set(`aqhi_${stationId}`, {
+                    value: aqhiValue,
+                    timestamp: Date.now(),
+                    source: 'openweather_supplemented',
+                    readingCount: 1,
+                  });
+                }
+              } else {
+                // Final fallback to realistic calculation
+                aqhiValue = calculateStationAQHIRealistic(station);
+
+                if (stationId) {
+                  this.cache.set(`aqhi_${stationId}`, {
+                    value: aqhiValue,
+                    timestamp: Date.now(),
+                    source: 'fallback',
+                    readingCount: 0,
+                  });
+                }
+              }
+            } catch (openWeatherError) {
+              console.warn(`OpenWeather fallback failed for ${stationId}:`, openWeatherError.message);
+              // Final fallback to realistic calculation
+              aqhiValue = calculateStationAQHIRealistic(station);
+
+              if (stationId) {
+                this.cache.set(`aqhi_${stationId}`, {
+                  value: aqhiValue,
+                  timestamp: Date.now(),
+                  source: 'fallback',
+                  readingCount: 0,
+                });
+              }
             }
           }
+
+          // Create proper AQHI object with value and level information
+          const aqhiLevel = getAQHILevel(aqhiValue);
+          const cachedData = stationId
+            ? this.cache.get(`aqhi_${stationId}`)
+            : null;
+          const aqhiData = {
+            value: aqhiValue,
+            level: aqhiLevel,
+            calculationMethod: cachedData?.source || 'unknown',
+            readingCount: cachedData?.readingCount || 0,
+            dataQuality: this.getDataQualityFromSource(
+              cachedData?.source,
+              cachedData?.readingCount,
+              averages?.dataSources || 'station',
+            ),
+            dataSources: averages?.dataSources || 'station',
+          };
+
+          return {
+            ...station,
+            aqhi: aqhiData,
+          };
+        }),
+      );
+
+      const duration = Date.now() - startTime;
+      const storedCount = Object.keys(batchAverages).length;
+      console.log(
+        `✅ Enhanced ${enhancedStations.length} stations (${storedCount} from stored data) in ${duration}ms`,
+      );
+      return enhancedStations;
+    } catch (error) {
+      console.error('❌ Error during AQHI enhancement:', error.message || error);
+      // Return stations with fallback AQHI calculations
+      const fallbackStations = stations.map(station => ({
+        ...station,
+        aqhi: {
+          value: calculateStationAQHIRealistic(station),
+          level: getAQHILevel(calculateStationAQHIRealistic(station)),
+          calculationMethod: 'fallback_error',
+          readingCount: 0,
+          dataQuality: 'estimated',
+          dataSources: 'fallback'
         }
+      }));
 
-        // Create proper AQHI object with value and level information
-        const aqhiLevel = getAQHILevel(aqhiValue);
-        const cachedData = stationId
-          ? this.cache.get(`aqhi_${stationId}`)
-          : null;
-        const aqhiData = {
-          value: aqhiValue,
-          level: aqhiLevel,
-          calculationMethod: cachedData?.source || 'unknown',
-          readingCount: cachedData?.readingCount || 0,
-          dataQuality: this.getDataQualityFromSource(
-            cachedData?.source,
-            cachedData?.readingCount,
-            averages?.dataSources || 'station',
-          ),
-          dataSources: averages?.dataSources || 'station',
-        };
-
-        return {
-          ...station,
-          aqhi: aqhiData,
-        };
-      }),
-    );
-
-    const duration = Date.now() - startTime;
-    const storedCount = Object.keys(batchAverages).length;
-    console.log(
-      `✅ Enhanced ${enhancedStations.length} stations (${storedCount} from stored data) in ${duration}ms`,
-    );
-    return enhancedStations;
+      const duration = Date.now() - startTime;
+      console.log(`⚠️ Fallback AQHI calculations completed for ${fallbackStations.length} stations in ${duration}ms`);
+      return fallbackStations;
+    }
   }
 
   /**

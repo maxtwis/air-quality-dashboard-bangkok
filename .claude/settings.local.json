@@ -24,7 +24,8 @@
       "Bash(claude mcp:*)",
       "Bash(findstr:*)",
       "WebFetch(domain:api.openweathermap.org)",
-      "Bash(npx eslint:*)"
+      "Bash(npx eslint:*)",
+      "Bash(OPENWEATHER_API_KEY=a180db2b4dba131e42c97be80d3d018f node test-enhanced-collection.js)"
     ],
     "deny": [],
     "ask": []

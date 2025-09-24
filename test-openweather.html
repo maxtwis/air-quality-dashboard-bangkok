@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenWeather API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            background: #f9f9f9;
+        }
+        .result {
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #005a87;
+        }
+        .success {
+            color: #28a745;
+        }
+        .error {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <h1>OpenWeather API Integration Test</h1>
+
+    <div class="test-section">
+        <h2>1. Test OpenWeather API Client</h2>
+        <button onclick="testOpenWeatherAPI()">Test OpenWeather API Key</button>
+        <button onclick="testOpenWeatherFallback()">Test Fallback Function</button>
+        <div id="api-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Rate Limiting</h2>
+        <button onclick="testRateLimit()">Check Rate Limit Status</button>
+        <div id="rate-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Station Detection</h2>
+        <button onclick="testStationNeedsData()">Test Station Data Detection</button>
+        <div id="station-result" class="result"></div>
+    </div>
+
+    <script type="module">
+        import { openWeatherClient, getOpenWeatherFallback } from './js/openweather-api.js';
+
+        // Make functions globally available for buttons
+        window.testOpenWeatherAPI = async function() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = 'Testing OpenWeather API...';
+
+            try {
+                // Test API key validity
+                const isValid = await openWeatherClient.testApiKey();
+                console.log('API key valid:', isValid);
+
+                if (isValid) {
+                    // Get pollution data for Bangkok
+                    const data = await openWeatherClient.getPollutionData(13.7563, 100.5018);
+                    console.log('Pollution data:', data);
+
+                    resultDiv.innerHTML = `
+<span class="success">✅ API Test Successful!</span>
+
+API Key: Valid and active
+Data received: ${JSON.stringify(data, null, 2)}
+
+Available pollutants:
+- PM2.5: ${data?.pm25 || 'N/A'} μg/m³
+- PM10: ${data?.pm10 || 'N/A'} μg/m³
+- NO₂: ${data?.no2 || 'N/A'} μg/m³
+- O₃: ${data?.o3 || 'N/A'} μg/m³
+- SO₂: ${data?.so2 || 'N/A'} μg/m³
+- CO: ${data?.co || 'N/A'} mg/m³
+
+Rate Limit Status:
+${JSON.stringify(openWeatherClient.getRateLimitStatus(), null, 2)}
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ API key test failed</span>`;
+                }
+            } catch (error) {
+                console.error('API test error:', error);
+                resultDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.testOpenWeatherFallback = async function() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = 'Testing fallback function...';
+
+            try {
+                // Mock station missing O3 and NO2
+                const mockStation = {
+                    uid: 'test-123',
+                    lat: 13.7563,
+                    lon: 100.5018,
+                    station: { name: 'Test Station' },
+                    iaqi: {
+                        pm25: { v: 25 },
+                        pm10: { v: 40 }
+                        // Missing o3 and no2
+                    }
+                };
+
+                const fallbackData = await getOpenWeatherFallback(mockStation);
+                console.log('Fallback data:', fallbackData);
+
+                resultDiv.innerHTML = `
+<span class="success">✅ Fallback Test Successful!</span>
+
+Station missing: O₃ and NO₂
+Fallback data received: ${JSON.stringify(fallbackData, null, 2)}
+
+This station would be enhanced with:
+- O₃: ${fallbackData?.o3 || 'N/A'} μg/m³
+- NO₂: ${fallbackData?.no2 || 'N/A'} μg/m³
+                `;
+
+            } catch (error) {
+                console.error('Fallback test error:', error);
+                resultDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.testRateLimit = function() {
+            const resultDiv = document.getElementById('rate-result');
+            const status = openWeatherClient.getRateLimitStatus();
+
+            resultDiv.innerHTML = `
+<span class="success">📊 Rate Limit Status</span>
+
+Current Usage: ${status.used} / ${status.limit} calls
+Remaining: ${status.remaining} calls
+Reset Time: ${new Date(status.resetTime).toLocaleString()}
+            `;
+        };
+
+        window.testStationNeedsData = function() {
+            const resultDiv = document.getElementById('station-result');
+
+            // Mock different station scenarios
+            const stations = [
+                {
+                    uid: 'station-1',
+                    station: { name: 'Complete Station' },
+                    iaqi: { pm25: { v: 25 }, o3: { v: 45 }, no2: { v: 12 } }
+                },
+                {
+                    uid: 'station-2',
+                    station: { name: 'Missing O₃' },
+                    iaqi: { pm25: { v: 30 }, no2: { v: 15 } }
+                },
+                {
+                    uid: 'station-3',
+                    station: { name: 'Missing NO₂' },
+                    iaqi: { pm25: { v: 28 }, o3: { v: 38 } }
+                },
+                {
+                    uid: 'station-4',
+                    station: { name: 'Missing Both' },
+                    iaqi: { pm25: { v: 35 } }
+                }
+            ];
+
+            let result = '<span class="success">🔍 Station Data Analysis</span>\n\n';
+
+            stations.forEach(station => {
+                const hasO3 = station.iaqi?.o3?.v !== undefined;
+                const hasNO2 = station.iaqi?.no2?.v !== undefined;
+                const needsData = !hasO3 || !hasNO2;
+
+                result += `${station.station.name}:\n`;
+                result += `  O₃: ${hasO3 ? '✅ Available' : '❌ Missing'}\n`;
+                result += `  NO₂: ${hasNO2 ? '✅ Available' : '❌ Missing'}\n`;
+                result += `  Needs OpenWeather: ${needsData ? '✅ Yes' : '❌ No'}\n\n`;
+            });
+
+            resultDiv.innerHTML = result;
+        };
+
+        // Auto-run basic test
+        console.log('OpenWeather test page loaded');
+        console.log('Available functions:', { openWeatherClient, getOpenWeatherFallback });
+    </script>
+</body>
+</html>

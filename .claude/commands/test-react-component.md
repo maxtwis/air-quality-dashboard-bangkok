@@ -21,6 +21,7 @@ Your tests should cover:
 **Integration**: Test component interactions with context providers, custom hooks, and external dependencies.
 
 Use the following testing patterns from this project:
+
 - Jest with React Testing Library setup
 - Mock external dependencies (date-fns, APIs, etc.)
 - Use `describe` blocks for grouping related tests
@@ -32,6 +33,7 @@ Use the following testing patterns from this project:
 - Test user events with `@testing-library/user-event`
 
 For components that use:
+
 - **NextUI components**: Mock them appropriately or test their integration
 - **React Hook Form**: Test form validation, submission, and error handling
 - **Zustand stores**: Mock store state and actions

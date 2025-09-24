@@ -5,44 +5,57 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## MCP Integration
 
 ### Context7
+
 This project uses Context7 MCP server for enhanced context awareness and capabilities.
+
 - **MCP Server**: Context7 (https://mcp.context7.com/mcp)
 - **Configuration**: Configured via `claude mcp add` command
 - **Purpose**: Provides additional context and capabilities for better code understanding and assistance
 
 ### Playwright
+
 MCP Playwright integration for browser automation and testing.
+
 - **MCP Server**: Playwright MCP
 - **Purpose**: Enables browser automation, web scraping, and end-to-end testing capabilities
 - **Features**: Browser control, page navigation, element interaction, screenshot capture
 
 ## Project Overview
+
 This is a real-time air quality dashboard for Bangkok that displays both AQI (Air Quality Index) and AQHI (Air Quality Health Index) data on an interactive map using the WAQI API and Leaflet.js. The dashboard includes Supabase integration for data persistence and accurate AQHI calculations using 3-hour moving averages.
 
 ## Development Commands
 
 ### Run Development Server
+
 ```bash
 npm run dev
 ```
+
 Starts a live development server on port 3000 with hot reload.
 
 ### Format Code
+
 ```bash
 npm run format
 ```
+
 Runs Prettier to format all files in the project.
 
 ### Lint JavaScript
+
 ```bash
 npm run lint
 ```
+
 Runs ESLint on all JavaScript files in the `js/` directory.
 
 ## Architecture
 
 ### Hybrid Frontend Application
+
 This is primarily a client-side application with optional cloud database integration. It consists of:
+
 - HTML/CSS/JavaScript modules
 - Direct API calls to WAQI (World Air Quality Index) API from the browser
 - Leaflet.js for interactive mapping
@@ -52,47 +65,56 @@ This is primarily a client-side application with optional cloud database integra
 ### Key Modules
 
 **Configuration** (`js/config.js`):
+
 - Contains API token for WAQI API
 - Map boundaries for Bangkok area
 - AQI level thresholds and color schemes
 - Pollutant definitions and metadata
 
 **Main Application** (`js/app.js`):
+
 - `ModernAirQualityDashboard` class manages the entire application lifecycle
 - Handles data fetching, display updates, and auto-refresh
 - Provides analytics methods for station categorization
 
 **API Layer** (`js/api.js`):
+
 - Fetches air quality data from WAQI API
 - Handles station details and current location data
 
 **Map Management** (`js/map.js`, `js/markers.js`):
+
 - Initializes Leaflet map centered on Bangkok
 - Creates and manages station markers with AQI color coding
 - Handles marker interactions and popups
 
 **UI Components** (`js/ui.js`):
+
 - Updates sidebar displays with current AQI values
 - Manages loading states and error displays
 - Handles station info panel
 
 **Statistics** (`js/statistics.js`):
+
 - Calculates and displays AQI statistics
 - Shows category breakdowns and averages
 
 **AQHI Implementation** (`js/aqhi-supabase.js`, `js/aqhi-realistic.js`):
+
 - Implements Air Quality Health Index calculations
 - Manages 3-hour moving averages for accurate AQHI values
 - Handles data quality indicators and fallback estimation methods
 - Integrates with Supabase for persistent data storage
 
 **Supabase Integration** (`lib/supabase.js`):
+
 - Database client configuration and initialization
 - Automatic data collection and storage every 10 minutes
 - 3-hour moving average calculations in the database
 - Built-in AQHI calculation functions
 
 ### Data Flow
+
 1. App initializes and fetches Bangkok area stations from WAQI API
 2. Stations are displayed as color-coded markers on the map (AQI or AQHI mode)
 3. Data is automatically stored in Supabase every 10 minutes for historical analysis
@@ -104,11 +126,13 @@ This is primarily a client-side application with optional cloud database integra
 ### API Integration
 
 **WAQI API**:
+
 - `/v2/map/bounds/` - Fetch stations within Bangkok boundaries
 - `/feed/@{uid}/` - Get detailed station data including pollutants
 - Token-based authentication required for all API calls
 
 **Supabase Integration**:
+
 - Automatic data persistence for historical analysis
 - Real-time 3-hour moving average calculations
 - Built-in AQHI calculation functions
@@ -117,14 +141,17 @@ This is primarily a client-side application with optional cloud database integra
 ## AQHI Implementation
 
 ### Air Quality Health Index (AQHI)
+
 The dashboard implements Canada's Air Quality Health Index alongside the traditional AQI. Key features:
 
 **Scientific Accuracy**:
+
 - Uses Health Canada's official AQHI formula
 - Calculates 3-hour moving averages of PM2.5, NO₂, O₃, and SO₂
 - Provides health-focused risk assessment (1-10+ scale)
 
 **Data Quality Management**:
+
 - **Excellent** (🎯): 3+ hours of data, 15+ readings
 - **Good** (✅): 2+ hours of data, 10+ readings
 - **Fair** (⏳): 1+ hours of data, 5+ readings
@@ -132,17 +159,20 @@ The dashboard implements Canada's Air Quality Health Index alongside the traditi
 - **Estimated** (📊): Using current reading estimation
 
 **Calculation Methods**:
+
 1. **Current**: Using immediate readings (first visit)
 2. **Estimated**: Using estimation algorithms with variability factors
 3. **Client-Average**: Using collected 3-hour moving averages (most accurate)
 
 ### Supabase Data Persistence
+
 - **Automatic Collection**: Air quality data stored every 10 minutes
 - **Historical Storage**: 7-day rolling window with automatic cleanup
 - **3-Hour Averages**: Real-time calculation of moving averages in database
 - **Cross-Device Sync**: Data persists across browser sessions and devices
 
 ### Configuration Files
+
 - `AQHI-Implementation.md` - Detailed technical documentation
 - `SUPABASE_SETUP.md` - Database setup and configuration guide
 - `supabase-schema.sql` - Database schema and functions
@@ -199,25 +229,17 @@ The design review agent will:
 // Navigation & Screenshots
 mcp__playwright__browser_navigate(url); // Navigate to page
 mcp__playwright__browser_take_screenshot(); // Capture visual evidence
-mcp__playwright__browser_resize(
-  width,
-  height
-); // Test responsiveness
+mcp__playwright__browser_resize(width, height); // Test responsiveness
 
 // Interaction Testing
 mcp__playwright__browser_click(element); // Test clicks
-mcp__playwright__browser_type(
-  element,
-  text
-); // Test input
+mcp__playwright__browser_type(element, text); // Test input
 mcp__playwright__browser_hover(element); // Test hover states
 
 // Validation
 mcp__playwright__browser_console_messages(); // Check for errors
 mcp__playwright__browser_snapshot(); // Accessibility check
-mcp__playwright__browser_wait_for(
-  text / element
-); // Ensure loading
+mcp__playwright__browser_wait_for(text / element); // Ensure loading
 ```
 
 ### Design Compliance Checklist
@@ -261,6 +283,7 @@ When implementing UI features, verify:
 ## Additional Context
 
 ### Configuration Files
+
 - Design review agent configuration: `/.claude/agents/design-review-agent.md`
 - Design principles checklist: `/context/design-principles.md`
 - Custom slash commands: `/context/design-review-slash-command.md`
@@ -268,6 +291,7 @@ When implementing UI features, verify:
 - Supabase setup guide: `SUPABASE_SETUP.md`
 
 ### MCP Servers
+
 - **Context7**: Enhanced code understanding and library documentation
 - **Playwright**: Browser automation for comprehensive UI testing
 - Both servers configured and ready for development workflows

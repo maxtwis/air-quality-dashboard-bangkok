@@ -5,11 +5,13 @@ This guide helps you deploy your air quality dashboard to Vercel with automatic 
 ## 🎯 **Problem Solved**
 
 **Before**: Data collection happens in browser (client-side)
+
 - ❌ Only works when someone has dashboard open
 - ❌ Multiple users cause conflicts
 - ❌ No data when dashboard is closed
 
 **After**: Data collection happens on Vercel servers
+
 - ✅ Runs automatically every 10 minutes
 - ✅ Works even when no one visits the dashboard
 - ✅ No conflicts between multiple users
@@ -20,6 +22,7 @@ This guide helps you deploy your air quality dashboard to Vercel with automatic 
 ### 1. **Prepare Your Repository**
 
 Ensure these files are in your repo:
+
 - `api/collect-data.js` - Server-side data collection function ✅
 - `vercel.json` - Vercel configuration with cron job ✅
 - `supabase-schema.sql` - Database schema ✅
@@ -66,12 +69,14 @@ AQICN_API_TOKEN=354eb1b871693ef55f777c69e44e81bcaf215d40
 ## ⏰ **How the Cron Job Works**
 
 ### Automatic Schedule
+
 - **Vercel Daily**: Once per day (`0 0 * * *`) - Hobby plan limitation
 - **External Cron**: Every 10 minutes via cron-job.org (recommended)
 - **Timezone**: UTC (Vercel default)
 - **Reliability**: External service + Vercel backup
 
 ### Data Collection Process
+
 1. **Trigger**: External cron service calls `/api/collect-data` every 10 minutes
 2. **Fetch**: Function fetches data from AQICN API
 3. **Store**: Saves 134 stations to Supabase database
@@ -88,29 +93,32 @@ Update `js/api.js` to remove client-side storage:
 // Remove this section from fetchAirQualityData():
 // Try to store data in Supabase (async, non-blocking)
 try {
-    // Dynamic import to avoid breaking the app if Supabase isn't available
-    import('./storage.js').then(({ airQualityStorage }) => {
-        // REMOVE THIS ENTIRE BLOCK
-    });
+  // Dynamic import to avoid breaking the app if Supabase isn't available
+  import("./storage.js").then(({ airQualityStorage }) => {
+    // REMOVE THIS ENTIRE BLOCK
+  });
 } catch (error) {
-    // Non-blocking storage failure
+  // Non-blocking storage failure
 }
 ```
 
 ## 📊 **Monitoring Data Collection**
 
 ### Check Vercel Logs
+
 1. Go to your Vercel dashboard
 2. Click on your project
 3. Go to **Functions** tab
 4. Click on the `collect-data` function to see logs
 
 ### Check Supabase Database
+
 1. Go to your Supabase dashboard
 2. Navigate to **Table Editor**
 3. Check `air_quality_readings` table for new entries every 10 minutes
 
 ### Expected Log Messages
+
 ```
 🔄 Starting data collection from WAQI API...
 📊 WAQI API returned 134 stations
@@ -120,6 +128,7 @@ try {
 ## 🎛️ **Frontend Updates**
 
 Your dashboard will now:
+
 1. **Display**: Show current data from AQICN API (as before)
 2. **AQHI Calculations**: Use 3-hour averages from Supabase
 3. **Historical Data**: Available for trends and analysis
@@ -128,16 +137,19 @@ Your dashboard will now:
 ## 🔍 **Troubleshooting**
 
 ### Function Not Running
+
 - Check Vercel **Functions** tab for error logs
 - Verify environment variables are set correctly
 - Ensure Supabase service role key has proper permissions
 
 ### Data Not Storing
+
 - Check Supabase logs in dashboard
 - Verify your database schema is applied
 - Test the function manually with curl
 
 ### AQHI Not Improving
+
 - Wait 3+ hours for sufficient historical data
 - Check that readings are accumulating in database
 - Verify the `current_3h_averages` view is working

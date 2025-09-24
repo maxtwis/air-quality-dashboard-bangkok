@@ -1,12 +1,15 @@
 ## Visual Development
 
 ### Design Principles
+
 - Comprehensive design checklist in `/context/design-principles.md`
 - Brand style guide in `/context/style-guide.md`
 - When making visual (front-end, UI/UX) changes, always refer to these files for guidance
 
 ### Quick Visual Check
+
 IMMEDIATELY after implementing any front-end change:
+
 1. **Identify what changed** - Review the modified components/pages
 2. **Navigate to affected pages** - Use `mcp__playwright__browser_navigate` to visit each changed view
 3. **Verify design compliance** - Compare against `/context/design-principles.md` and `/context/style-guide.md`
@@ -18,7 +21,9 @@ IMMEDIATELY after implementing any front-end change:
 This verification ensures changes meet design standards and user requirements.
 
 ### Comprehensive Design Review
+
 Invoke the `@agent-design-review` subagent for thorough design validation when:
+
 - Completing significant UI/UX features
 - Before finalizing PRs with visual changes
 - Needing comprehensive accessibility and responsiveness testing

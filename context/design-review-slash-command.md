@@ -31,7 +31,6 @@ DIFF CONTENT:
 
 Review the complete diff above. This contains all code changes in the PR.
 
-
 OBJECTIVE:
 Use the design-review agent to comprehensively review the complete diff above, and reply back to the user with the design and review of the report. Your final reply must contain the markdown report and nothing else.
 

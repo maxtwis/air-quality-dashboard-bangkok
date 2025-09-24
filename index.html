@@ -1,191 +1,200 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Air Quality Dashboard - Bangkok</title>
-    
+
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" />
-    
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css"
+    />
+
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
 
     <!-- Material Design Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/styles.css">
-</head>
-<body>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
     <div class="app-container">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <h1 class="app-title">
-                    🌬️ Breathe Bangkok
-                </h1>
-                <p class="app-subtitle">Real-time air quality monitoring</p>
-            </div>
-
-            <div class="current-location">
-                <div class="location-header">
-                    <span>📍</span>
-                    <span>CURRENT LOCATION</span>
-                </div>
-                <div class="location-name">Bangkok, Thailand</div>
-                
-                <!-- Indicator Toggle -->
-                <div class="indicator-toggle">
-                    <label class="toggle-label">
-                        <input type="radio" name="indicator" value="AQI" checked>
-                        <span class="toggle-btn">AQI</span>
-                    </label>
-                    <label class="toggle-label">
-                        <input type="radio" name="indicator" value="AQHI">
-                        <span class="toggle-btn">AQHI</span>
-                    </label>
-                    <label class="toggle-label">
-                        <input type="radio" name="indicator" value="PM25_AQHI">
-                        <span class="toggle-btn">PM2.5 AQHI</span>
-                    </label>
-                </div>
-                
-                <div class="current-aqi">
-                    <div class="aqi-circle aqi-good" id="main-aqi-circle">
-                        <div class="aqi-value" id="main-aqi-value">--</div>
-                        <div class="aqi-label">US AQI</div>
-                    </div>
-                    <div class="aqi-details">
-                        <div class="aqi-category" id="main-aqi-category">Loading...</div>
-                        <div class="aqi-description" id="main-aqi-description">Fetching air quality data...</div>
-                    </div>
-                </div>
-
-                <div class="weather-info">
-                    <div class="weather-item">
-                        <span class="weather-icon">🌡️</span>
-                        <div>
-                            <div class="weather-value" id="temperature">--°C</div>
-                            <div class="weather-label">Temperature</div>
-                        </div>
-                    </div>
-                    <div class="weather-item">
-                        <span class="weather-icon">💧</span>
-                        <div>
-                            <div class="weather-value" id="humidity">--%</div>
-                            <div class="weather-label">Humidity</div>
-                        </div>
-                    </div>
-                    <div class="weather-item">
-                        <span class="weather-icon">💨</span>
-                        <div>
-                            <div class="weather-value" id="wind">-- km/h</div>
-                            <div class="weather-label">Wind Speed</div>
-                        </div>
-                    </div>
-                    <div class="weather-item">
-                        <span class="weather-icon">🔄</span>
-                        <div>
-                            <div class="weather-value" id="last-update">--</div>
-                            <div class="weather-label">Last Update</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="stats-section">
-                <h3 class="section-title">
-                    📊 Statistics
-                </h3>
-                <div id="stats-content">
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        Loading statistics...
-                    </div>
-                </div>
-            </div>
-
-            <div class="stats-section">
-                <h3 class="section-title">
-                    🎯 Air Quality Breakdown
-                </h3>
-                <div class="category-stats" id="category-stats">
-                    <div class="loading">
-                        <div class="loading-spinner"></div>
-                        Loading breakdown...
-                    </div>
-                </div>
-            </div>
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="sidebar-header">
+          <h1 class="app-title">🌬️ Breathe Bangkok</h1>
+          <p class="app-subtitle">Real-time air quality monitoring</p>
         </div>
 
-        <!-- Map Container -->
-        <div class="map-container">
-            <div id="map"></div>
-            
-            <!-- Map Controls -->
-            <div class="map-controls">
-                <button class="control-button" id="refresh-btn" title="Refresh Data">
-                    🔄
-                </button>
-                <button class="control-button" id="fullscreen-btn" title="Toggle Fullscreen">
-                    ⛶
-                </button>
-            </div>
+        <div class="current-location">
+          <div class="location-header">
+            <span>📍</span>
+            <span>CURRENT LOCATION</span>
+          </div>
+          <div class="location-name">Bangkok, Thailand</div>
 
-            <!-- Map Legend -->
-            <div class="map-legend">
-                <div class="legend-title">Air Quality Index</div>
-                <div class="legend-items">
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: #10b981;"></div>
-                        <span>Good (0-50)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: #f59e0b;"></div>
-                        <span>Moderate (51-100)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: #f97316;"></div>
-                        <span>Unhealthy for Sensitive (101-150)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: #ef4444;"></div>
-                        <span>Unhealthy (151-200)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: #8b5cf6;"></div>
-                        <span>Very Unhealthy (201-300)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: #6b7280;"></div>
-                        <span>Hazardous (301+)</span>
-                    </div>
-                </div>
-            </div>
+          <!-- Indicator Toggle -->
+          <div class="indicator-toggle">
+            <label class="toggle-label">
+              <input type="radio" name="indicator" value="AQI" checked />
+              <span class="toggle-btn">AQI</span>
+            </label>
+            <label class="toggle-label">
+              <input type="radio" name="indicator" value="AQHI" />
+              <span class="toggle-btn">AQHI</span>
+            </label>
+            <label class="toggle-label">
+              <input type="radio" name="indicator" value="PM25_AQHI" />
+              <span class="toggle-btn">PM2.5 AQHI</span>
+            </label>
+          </div>
 
-            <!-- Station Info Panel -->
-            <div class="station-info" id="station-info">
-                <div class="station-header">
-                    <div class="station-name" id="station-name">Station Name</div>
-                    <button class="close-button" id="close-station-btn">×</button>
-                </div>
-                <div class="station-aqi">
-                    <div class="station-aqi-circle aqi-good" id="station-aqi-circle">
-                        <span id="station-aqi-value">--</span>
-                    </div>
-                    <div class="station-details">
-                        <div class="station-category" id="station-category">Category</div>
-                        <div class="station-time" id="station-time">Last updated: --</div>
-                    </div>
-                </div>
+          <div class="current-aqi">
+            <div class="aqi-circle aqi-good" id="main-aqi-circle">
+              <div class="aqi-value" id="main-aqi-value">--</div>
+              <div class="aqi-label">US AQI</div>
             </div>
+            <div class="aqi-details">
+              <div class="aqi-category" id="main-aqi-category">Loading...</div>
+              <div class="aqi-description" id="main-aqi-description">
+                Fetching air quality data...
+              </div>
+            </div>
+          </div>
+
+          <div class="weather-info">
+            <div class="weather-item">
+              <span class="weather-icon">🌡️</span>
+              <div>
+                <div class="weather-value" id="temperature">--°C</div>
+                <div class="weather-label">Temperature</div>
+              </div>
+            </div>
+            <div class="weather-item">
+              <span class="weather-icon">💧</span>
+              <div>
+                <div class="weather-value" id="humidity">--%</div>
+                <div class="weather-label">Humidity</div>
+              </div>
+            </div>
+            <div class="weather-item">
+              <span class="weather-icon">💨</span>
+              <div>
+                <div class="weather-value" id="wind">-- km/h</div>
+                <div class="weather-label">Wind Speed</div>
+              </div>
+            </div>
+            <div class="weather-item">
+              <span class="weather-icon">🔄</span>
+              <div>
+                <div class="weather-value" id="last-update">--</div>
+                <div class="weather-label">Last Update</div>
+              </div>
+            </div>
+          </div>
         </div>
+
+        <div class="stats-section">
+          <h3 class="section-title">📊 Statistics</h3>
+          <div id="stats-content">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              Loading statistics...
+            </div>
+          </div>
+        </div>
+
+        <div class="stats-section">
+          <h3 class="section-title">🎯 Air Quality Breakdown</h3>
+          <div class="category-stats" id="category-stats">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              Loading breakdown...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map Container -->
+      <div class="map-container">
+        <div id="map"></div>
+
+        <!-- Map Controls -->
+        <div class="map-controls">
+          <button class="control-button" id="refresh-btn" title="Refresh Data">
+            🔄
+          </button>
+          <button
+            class="control-button"
+            id="fullscreen-btn"
+            title="Toggle Fullscreen"
+          >
+            ⛶
+          </button>
+        </div>
+
+        <!-- Map Legend -->
+        <div class="map-legend">
+          <div class="legend-title">Air Quality Index</div>
+          <div class="legend-items">
+            <div class="legend-item">
+              <div class="legend-dot" style="background-color: #10b981"></div>
+              <span>Good (0-50)</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background-color: #f59e0b"></div>
+              <span>Moderate (51-100)</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background-color: #f97316"></div>
+              <span>Unhealthy for Sensitive (101-150)</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background-color: #ef4444"></div>
+              <span>Unhealthy (151-200)</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background-color: #8b5cf6"></div>
+              <span>Very Unhealthy (201-300)</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-dot" style="background-color: #6b7280"></div>
+              <span>Hazardous (301+)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Station Info Panel -->
+        <div class="station-info" id="station-info">
+          <div class="station-header">
+            <div class="station-name" id="station-name">Station Name</div>
+            <button class="close-button" id="close-station-btn">×</button>
+          </div>
+          <div class="station-aqi">
+            <div class="station-aqi-circle aqi-good" id="station-aqi-circle">
+              <span id="station-aqi-value">--</span>
+            </div>
+            <div class="station-details">
+              <div class="station-category" id="station-category">Category</div>
+              <div class="station-time" id="station-time">Last updated: --</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- External Libraries -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
-    
+
     <!-- Application Modules -->
     <script type="module" src="js/config.js"></script>
     <script type="module" src="js/utils.js"></script>
@@ -194,6 +203,9 @@
     <script type="module" src="js/markers.js"></script>
     <script type="module" src="js/ui.js"></script>
     <script type="module" src="js/statistics.js"></script>
+    <script type="module" src="js/openweather-api.js"></script>
+    <script type="module" src="js/openweather-collector.js"></script>
+    <script type="module" src="js/enhanced-data-manager.js"></script>
     <script type="module" src="js/app.js"></script>
-</body>
+  </body>
 </html>

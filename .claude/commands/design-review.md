@@ -8,6 +8,7 @@ You need to invoke the design-review agent to conduct a comprehensive design rev
 First, start the development server if it's not already running, then use the design-review agent to systematically review all UI changes following the phases outlined in /.claude/agents/design-review-agent.md.
 
 The agent will:
+
 1. Prepare by analyzing changes and setting up Playwright
 2. Test interaction and user flows
 3. Verify responsiveness across viewports

@@ -22,7 +22,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(claude mcp:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "WebFetch(domain:api.openweathermap.org)",
+      "Bash(npx eslint:*)"
     ],
     "deny": [],
     "ask": []

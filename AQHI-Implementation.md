@@ -51,24 +51,38 @@ For immediate AQHI values when we don't have historical data yet:
 estimated_value = current_value × seasonal_factor × time_factor ± variability
 ```
 
-### 3. Comprehensive AQHI Formula
+### 3. Official Health Canada AQHI Formula
 
-**Complete Formula** (includes all 4 pollutants):
+**Official Formula** (Health Canada 2024):
 
 ```
-AQHI = (10/105.19) × [
-  100 × (exp(0.0012 × PM2.5_3hr) - 1) +
-  (exp(0.001 × O3_3hr) - 1) +
-  (exp(0.0052 × NO2_3hr) - 1) +
-  (exp(0.0038 × SO2_3hr) - 1)
+AQHI = (10/10.4) × 100 × [
+  (exp(0.000487 × PM2.5_3hr) - 1) +
+  (exp(0.000871 × NO2_3hr) - 1) +
+  (exp(0.000537 × O3_3hr) - 1)
 ]
 ```
 
 **Where**:
 
-- PM2.5_3hr, NO2_3hr, O3_3hr, SO2_3hr are 3-hour moving averages
-- β coefficients are based on health impact studies
-- C = 105.19 (scaling constant)
+- PM2.5_3hr, NO2_3hr, O3_3hr are 3-hour moving averages
+- PM2.5 in μg/m³, NO2 and O3 in ppb (but we use μg/m³ for all)
+- Coefficients based on Canadian health impact studies:
+  - **PM2.5**: 4.87 × 10⁻⁴ (0.000487)
+  - **NO2**: 8.71 × 10⁻⁴ (0.000871)
+  - **O3**: 5.37 × 10⁻⁴ (0.000537)
+- Scaling constant: 10.4 (official Health Canada value)
+
+**Note**: SO2 is not included in the official Health Canada AQHI formula
+
+### Example Calculations (Realistic Bangkok Concentrations)
+
+| Scenario | PM2.5 | NO2 | O3 | AQHI | Risk Level |
+|----------|--------|-----|----|----|------------|
+| Good day | 12 μg/m³ | 25 μg/m³ | 60 μg/m³ | **6** | Moderate Risk |
+| Typical weekday | 25 μg/m³ | 40 μg/m³ | 80 μg/m³ | **9** | High Risk |
+| Heavy traffic | 35 μg/m³ | 60 μg/m³ | 100 μg/m³ | **12** | Very High Risk |
+| Pollution episode | 50 μg/m³ | 80 μg/m³ | 120 μg/m³ | **16** | Very High Risk |
 
 ## Data Quality Indicators
 

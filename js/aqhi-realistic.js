@@ -11,14 +11,14 @@ import {
   getRawConcentration
 } from './aqi-to-concentration.js';
 
-// AQHI Parameters (same as before)
+// Official Health Canada AQHI Parameters
 const AQHI_PARAMS = {
-  C: 105.19,
+  C: 10.4,  // Official Health Canada scaling constant
   beta: {
-    pm25: 0.0012,
-    o3: 0.001,
-    no2: 0.0052,
-    // so2: 0.0038 - Not used in Thailand AQHI implementation
+    pm25: 0.000487,  // PM2.5 coefficient
+    o3: 0.000537,    // O3 coefficient
+    no2: 0.000871,   // NO2 coefficient
+    // SO2 not used in official Health Canada AQHI formula
   },
 };
 
@@ -201,16 +201,15 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
 export function calculateRealisticAQHI(pm25, no2, o3) {
   console.log(`🧮 Calculating AQHI with RAW concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}μg/m³, O3=${o3}μg/m³`);
 
-  // Thailand AQHI formula (PM2.5, NO2, O3 only) - using raw concentrations
-  const pm25Component =
-    100 * (Math.exp(AQHI_PARAMS.beta.pm25 * (pm25 || 0)) - 1);
+  // Official Health Canada AQHI formula: AQHI = (10/10.4) × 100 × [sum of exponential terms]
+  const pm25Component = Math.exp(AQHI_PARAMS.beta.pm25 * (pm25 || 0)) - 1;
   const o3Component = Math.exp(AQHI_PARAMS.beta.o3 * (o3 || 0)) - 1;
   const no2Component = Math.exp(AQHI_PARAMS.beta.no2 * (no2 || 0)) - 1;
 
   const aqhi =
-    (10 / AQHI_PARAMS.C) * (pm25Component + o3Component + no2Component);
+    (10 / AQHI_PARAMS.C) * 100 * (pm25Component + o3Component + no2Component);
 
-  console.log(`📊 AQHI components: PM2.5=${pm25Component.toFixed(2)}, NO2=${no2Component.toFixed(2)}, O3=${o3Component.toFixed(2)} → AQHI=${Math.round(aqhi)}`);
+  console.log(`📊 AQHI components: PM2.5=${pm25Component.toFixed(4)}, NO2=${no2Component.toFixed(4)}, O3=${o3Component.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
 
   return Math.round(aqhi);
 }

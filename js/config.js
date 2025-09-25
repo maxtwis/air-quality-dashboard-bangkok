@@ -1,6 +1,6 @@
 // Modern Air Quality Dashboard Configuration
 export const CONFIG = {
-  API_TOKEN: '354eb1b871693ef55f777c69e44e81bcaf215d40',
+  API_TOKEN: window.WAQI_API_TOKEN || process.env.WAQI_API_TOKEN || '',
 
   BANGKOK_BOUNDS: {
     southwest: { lat: 13.5, lng: 100.3 },
@@ -36,7 +36,7 @@ export const CONFIG = {
 
 // OpenWeather API Configuration for O3/NO2 fallback
 export const OPENWEATHER_CONFIG = {
-  API_KEY: 'a180db2b4dba131e42c97be80d3d018f',
+  API_KEY: window.OPENWEATHER_API_KEY || process.env.OPENWEATHER_API_KEY || '',
   API_URL: 'https://api.openweathermap.org/data/2.5/air_pollution',
   CACHE_DURATION: 10 * 60 * 1000, // 10 minutes
   MAX_REQUESTS_PER_DAY: 1000,

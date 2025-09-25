@@ -7,12 +7,9 @@
     },
     "api/collect-data-enhanced.js": {
       "maxDuration": 60
+    },
+    "api/debug-collect.js": {
+      "maxDuration": 30
     }
-  },
-  "crons": [
-    {
-      "path": "/api/collect-data",
-      "schedule": "*/10 * * * *"
-    }
-  ]
+  }
 }

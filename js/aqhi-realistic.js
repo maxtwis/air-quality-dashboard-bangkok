@@ -11,14 +11,14 @@ import {
   getRawConcentration
 } from './aqi-to-concentration.js';
 
-// Official Health Canada AQHI Parameters
+// Thai Health Department AQHI Parameters
 const AQHI_PARAMS = {
-  C: 10.4,  // Official Health Canada scaling constant
+  C: 105.19,  // Thai Health Department scaling constant
   beta: {
-    pm25: 0.000487,  // PM2.5 coefficient
-    o3: 0.000537,    // O3 coefficient
-    no2: 0.000871,   // NO2 coefficient
-    // SO2 not used in official Health Canada AQHI formula
+    pm25: 0.0012,  // PM2.5 coefficient (Thai formula)
+    o3: 0.0010,    // O3 coefficient (Thai formula)
+    no2: 0.0052,   // NO2 coefficient (Thai formula)
+    // SO2 not used in Thai AQHI formula
   },
 };
 

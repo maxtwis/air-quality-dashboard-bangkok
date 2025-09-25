@@ -128,18 +128,18 @@ DECLARE
     no2_contribution DECIMAL := 0;
 BEGIN
     -- AQHI calculation based on Health Canada formula
-    -- AQHI = (10/10.4) * 100 * [(exp(0.000871 * O3) - 1) + (exp(0.000537 * NO2) - 1) + (exp(0.000487 * PM2.5) - 1)]
+    -- AQHI = (10/10.4) * 100 * [(exp(0.000487 * PM2.5) - 1) + (exp(0.000537 * NO2) - 1) + (exp(0.000871 * O3) - 1)]
 
     IF pm25_val IS NOT NULL AND pm25_val > 0 THEN
         pm25_contribution := EXP(0.000487 * pm25_val) - 1;
     END IF;
 
-    IF o3_val IS NOT NULL AND o3_val > 0 THEN
-        o3_contribution := EXP(0.000871 * o3_val) - 1;
-    END IF;
-
     IF no2_val IS NOT NULL AND no2_val > 0 THEN
         no2_contribution := EXP(0.000537 * no2_val) - 1;
+    END IF;
+
+    IF o3_val IS NOT NULL AND o3_val > 0 THEN
+        o3_contribution := EXP(0.000871 * o3_val) - 1;
     END IF;
 
     -- Calculate AQHI

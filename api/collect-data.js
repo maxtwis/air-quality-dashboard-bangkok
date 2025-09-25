@@ -200,9 +200,9 @@ async function storeHistoricalDataSupabase(stations) {
     }
   }
 
-  // CRITICAL FIX: Import AQI converter for server-side use (ES modules)
-  const { convertStationDataForSupabase } = await import('../lib/aqi-converter-node.js');
-  console.log('🔄 [BASIC] Converting AQI values to concentrations for Supabase storage...');
+  // CRITICAL FIX: Import Thai AQHI converter for server-side use (ES modules)
+  const { convertStationDataForThaiAQHI } = await import('../lib/thai-aqhi-converter.js');
+  console.log('🇹🇭 [BASIC] Converting AQI values to Thai AQHI units for Supabase storage...');
 
   // Process each station
   for (const stationData of stations) {
@@ -226,8 +226,8 @@ async function storeHistoricalDataSupabase(stations) {
 
     stationsToStore.push(station);
 
-    // CRITICAL FIX: Convert AQI values to raw concentrations before storing
-    const convertedConcentrations = convertStationDataForSupabase(stationData);
+    // CRITICAL FIX: Convert AQI values to Thai AQHI units before storing
+    const convertedConcentrations = convertStationDataForThaiAQHI(stationData);
 
     // Reading data with CONVERTED CONCENTRATIONS instead of AQI values
     const reading = {
@@ -240,7 +240,7 @@ async function storeHistoricalDataSupabase(stations) {
             ? parseInt(stationData.aqi)
             : null,
 
-      // FIXED: Store converted concentrations (μg/m³) instead of AQI values
+      // FIXED: Store Thai AQHI unit conversions (PM2.5 in μg/m³, O3/NO2 in ppb) instead of AQI values
       pm25: convertedConcentrations.pm25 || null,
       pm10: convertedConcentrations.pm10 || null,
       o3: convertedConcentrations.o3 || null,

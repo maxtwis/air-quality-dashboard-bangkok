@@ -349,22 +349,25 @@ class SupabaseAQHI {
       const averages = await this.get3HourAverages(stationId);
 
       if (averages && (averages.pm25 || averages.o3 || averages.no2)) {
-        // Calculate AQHI using Health Canada formula
+        // Calculate AQHI using Thai Health Department formula
         let aqhi = 0;
+        let pm25Component = 0;
+        let o3Component = 0;
+        let no2Component = 0;
 
         if (averages.pm25) {
-          aqhi += Math.exp(0.000487 * averages.pm25) - 1;
+          pm25Component = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
         }
 
         if (averages.o3) {
-          aqhi += Math.exp(0.000871 * averages.o3) - 1;
+          o3Component = Math.exp(0.0010 * averages.o3) - 1;
         }
 
         if (averages.no2) {
-          aqhi += Math.exp(0.000537 * averages.no2) - 1;
+          no2Component = Math.exp(0.0052 * averages.no2) - 1;
         }
 
-        aqhi = (10.0 / 10.4) * 100 * aqhi;
+        aqhi = (10.0 / 105.19) * (pm25Component + o3Component + no2Component);
         aqhi = Math.max(0, Math.round(aqhi)); // Round to whole number
 
         // Cache the result
@@ -453,13 +456,22 @@ class SupabaseAQHI {
 
           let aqhiValue;
           if (averages && (averages.pm25 || averages.o3 || averages.no2)) {
-            // Calculate AQHI using Health Canada formula
-            aqhiValue = 0;
-            if (averages.pm25)
-              aqhiValue += Math.exp(0.000487 * averages.pm25) - 1;
-            if (averages.o3) aqhiValue += Math.exp(0.000871 * averages.o3) - 1;
-            if (averages.no2) aqhiValue += Math.exp(0.000537 * averages.no2) - 1;
-            aqhiValue = (10.0 / 10.4) * 100 * aqhiValue;
+            // Calculate AQHI using Thai Health Department formula
+            let pm25Component = 0;
+            let o3Component = 0;
+            let no2Component = 0;
+
+            if (averages.pm25) {
+              pm25Component = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
+            }
+            if (averages.o3) {
+              o3Component = Math.exp(0.0010 * averages.o3) - 1;
+            }
+            if (averages.no2) {
+              no2Component = Math.exp(0.0052 * averages.no2) - 1;
+            }
+
+            aqhiValue = (10.0 / 105.19) * (pm25Component + o3Component + no2Component);
             aqhiValue = Math.max(0, Math.round(aqhiValue));
 
             // Cache the result
@@ -589,13 +601,22 @@ class SupabaseAQHI {
       so2: station.iaqi?.so2?.v || supplementaryData.so2,
     };
 
-    // AQHI formula
-    let aqhi = 0;
-    if (mergedData.pm25) aqhi += Math.exp(0.000487 * mergedData.pm25) - 1;
-    if (mergedData.o3) aqhi += Math.exp(0.000871 * mergedData.o3) - 1;
-    if (mergedData.no2) aqhi += Math.exp(0.000537 * mergedData.no2) - 1;
+    // Thai AQHI formula
+    let pm25Component = 0;
+    let o3Component = 0;
+    let no2Component = 0;
 
-    aqhi = (10.0 / 10.4) * 100 * aqhi;
+    if (mergedData.pm25) {
+      pm25Component = 100 * (Math.exp(0.0012 * mergedData.pm25) - 1);
+    }
+    if (mergedData.o3) {
+      o3Component = Math.exp(0.0010 * mergedData.o3) - 1;
+    }
+    if (mergedData.no2) {
+      no2Component = Math.exp(0.0052 * mergedData.no2) - 1;
+    }
+
+    const aqhi = (10.0 / 105.19) * (pm25Component + o3Component + no2Component);
     const aqhiValue = Math.max(0, Math.round(aqhi));
 
     // Log the data sources used

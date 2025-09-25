@@ -344,10 +344,10 @@ async function storeWAQIData(supabase, detailedStations) {
   const stationsToStore = [];
   const readings = [];
 
-  // CRITICAL FIX: Import AQI converter for server-side use (ES modules)
-  const { convertStationDataForSupabase } = await import('../lib/aqi-converter-node.js');
+  // CRITICAL FIX: Import Thai AQHI converter for server-side use (ES modules)
+  const { convertStationDataForThaiAQHI } = await import('../lib/thai-aqhi-converter.js');
 
-  console.log('🔄 Converting AQI values to concentrations for Supabase storage...');
+  console.log('🇹🇭 Converting AQI values to Thai AQHI units for Supabase storage...');
 
   // Helper function to safely extract AQI values (kept for reference)
   function extractAQIValue(stationData, pollutant) {
@@ -374,8 +374,8 @@ async function storeWAQIData(supabase, detailedStations) {
 
     stationsToStore.push(station);
 
-    // CRITICAL FIX: Convert AQI values to raw concentrations before storing
-    const convertedConcentrations = convertStationDataForSupabase(stationData);
+    // CRITICAL FIX: Convert AQI values to Thai AQHI units before storing
+    const convertedConcentrations = convertStationDataForThaiAQHI(stationData);
 
     // Reading data with CONVERTED CONCENTRATIONS instead of AQI values
     const reading = {

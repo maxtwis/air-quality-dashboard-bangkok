@@ -31,12 +31,11 @@ class OpenWeatherAirPollution {
     }
 
     try {
-      const url = `${OPENWEATHER_CONFIG.API_URL}?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_CONFIG.API_KEY}`;
+      // Use proxy endpoint to hide API keys
+      const url = `/api/openweather-proxy?lat=${lat}&lon=${lon}`;
 
       console.log(`Fetching OpenWeather data for coordinates: ${lat}, ${lon}`);
-      console.log(
-        `API URL: ${url.replace(OPENWEATHER_CONFIG.API_KEY, 'API_KEY_HIDDEN')}`,
-      );
+      console.log(`Using proxy URL: ${url}`);
 
       const response = await fetch(url);
 
@@ -170,10 +169,10 @@ class OpenWeatherAirPollution {
    */
   async testApiKey() {
     try {
-      // Test with Bangkok coordinates
-      const testUrl = `${OPENWEATHER_CONFIG.API_URL}?lat=13.7563&lon=100.5018&appid=${OPENWEATHER_CONFIG.API_KEY}`;
+      // Test with Bangkok coordinates using proxy
+      const testUrl = `/api/openweather-proxy?lat=13.7563&lon=100.5018`;
 
-      console.log('🔍 Testing OpenWeather API key...');
+      console.log('🔍 Testing OpenWeather API key via proxy...');
       const response = await fetch(testUrl);
 
       if (response.ok) {

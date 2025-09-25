@@ -12,10 +12,10 @@ import { pm25OnlySupabaseAQHI } from './aqhi-pm25-only.js';
 // Fetch basic air quality data (fast, AQI only)
 export async function fetchAirQualityData(includeAQHI = false) {
   try {
-    const boundsStr = formatBounds(CONFIG.BANGKOK_BOUNDS);
-    const url = `${CONFIG.API_BASE_URL}/v2/map/bounds/?latlng=${boundsStr}&token=${CONFIG.API_TOKEN}`;
+    // Use proxy endpoint to hide API keys
+    const url = `/api/waqi-proxy?endpoint=bounds`;
 
-    console.log('Fetching data from:', url);
+    console.log('Fetching data from proxy:', url);
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -112,8 +112,9 @@ export async function enhanceStationsWithPM25OnlyAQHI(stations) {
 // Fetch detailed station data including pollutants
 export async function fetchStationDetails(stationUID) {
   try {
-    const url = `${CONFIG.API_BASE_URL}/feed/@${stationUID}/?token=${CONFIG.API_TOKEN}`;
-    console.log('Fetching station details:', url);
+    // Use proxy endpoint to hide API keys
+    const url = `/api/waqi-proxy?endpoint=station&uid=${stationUID}`;
+    console.log('Fetching station details from proxy:', url);
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -140,6 +141,30 @@ export async function fetchStationDetails(stationUID) {
 
 // Get current location data
 export async function fetchCurrentLocationData() {
+  try {
+    // Note: Current location endpoint may need geolocation or IP-based detection
+    // For now, use a default Bangkok station as fallback
+    const url = `/api/waqi-proxy?endpoint=bounds`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (data.status === 'ok' && data.data && data.data.length > 0) {
+      // Return the first station as current location fallback
+      return data.data[0];
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching current location data:', error);
+    return null;
+  }
+}
+
+// Original current location function (kept for reference)
+export async function fetchCurrentLocationDataDirect() {
   try {
     const url = `${CONFIG.API_BASE_URL}/v2/feed/here/?token=${CONFIG.API_TOKEN}`;
     const response = await fetch(url);

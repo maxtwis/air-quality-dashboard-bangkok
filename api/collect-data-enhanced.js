@@ -338,14 +338,19 @@ async function fetchOpenWeatherData(apiKey, lat, lon) {
   }
 }
 
-// Store WAQI data (existing logic)
+// Store WAQI data (FIXED: Now converts AQI to concentrations)
 async function storeWAQIData(supabase, detailedStations) {
   const timestamp = new Date().toISOString();
   const stationsToStore = [];
   const readings = [];
 
-  // Helper function to safely extract values
-  function extractValue(stationData, pollutant) {
+  // CRITICAL FIX: Import AQI converter for server-side use
+  const { convertStationDataForSupabase } = require('../lib/aqi-converter-node.js');
+
+  console.log('🔄 Converting AQI values to concentrations for Supabase storage...');
+
+  // Helper function to safely extract AQI values (kept for reference)
+  function extractAQIValue(stationData, pollutant) {
     const value = stationData.iaqi?.[pollutant]?.v;
     return typeof value === "number" ? value : null;
   }
@@ -369,7 +374,10 @@ async function storeWAQIData(supabase, detailedStations) {
 
     stationsToStore.push(station);
 
-    // Reading data
+    // CRITICAL FIX: Convert AQI values to raw concentrations before storing
+    const convertedConcentrations = convertStationDataForSupabase(stationData);
+
+    // Reading data with CONVERTED CONCENTRATIONS instead of AQI values
     const reading = {
       station_uid: station.station_uid,
       timestamp: timestamp,
@@ -382,13 +390,13 @@ async function storeWAQIData(supabase, detailedStations) {
             ? parseInt(stationData.aqi)
             : null,
 
-      // Pollutant data
-      pm25: extractValue(stationData, "pm25"),
-      pm10: extractValue(stationData, "pm10"),
-      o3: extractValue(stationData, "o3"),
-      no2: extractValue(stationData, "no2"),
-      so2: extractValue(stationData, "so2"),
-      co: extractValue(stationData, "co"),
+      // FIXED: Store converted concentrations (μg/m³) instead of AQI values
+      pm25: convertedConcentrations.pm25 || null,
+      pm10: convertedConcentrations.pm10 || null,
+      o3: convertedConcentrations.o3 || null,
+      no2: convertedConcentrations.no2 || null,
+      so2: convertedConcentrations.so2 || null,
+      co: convertedConcentrations.co || null,
 
       station_name: station.name,
     };

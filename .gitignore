@@ -104,5 +104,8 @@ logs
 ehthumbs.db
 Thumbs.db
 
+# Environment files with sensitive data
+js/env.js
+
 # Claude Code settings (keep local settings private)
 .claude/settings.local.json

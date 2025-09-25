@@ -1,6 +1,18 @@
 // Modern Air Quality Dashboard Configuration
+// Helper function to safely get environment variables
+const getEnvVar = (name) => {
+  // Try window first (for client-side), then process.env (for server-side)
+  if (typeof window !== 'undefined' && window[name]) {
+    return window[name];
+  }
+  if (typeof process !== 'undefined' && process.env && process.env[name]) {
+    return process.env[name];
+  }
+  return '';
+};
+
 export const CONFIG = {
-  API_TOKEN: window.WAQI_API_TOKEN || process.env.WAQI_API_TOKEN || '',
+  API_TOKEN: getEnvVar('WAQI_API_TOKEN'),
 
   BANGKOK_BOUNDS: {
     southwest: { lat: 13.5, lng: 100.3 },
@@ -36,7 +48,7 @@ export const CONFIG = {
 
 // OpenWeather API Configuration for O3/NO2 fallback
 export const OPENWEATHER_CONFIG = {
-  API_KEY: window.OPENWEATHER_API_KEY || process.env.OPENWEATHER_API_KEY || '',
+  API_KEY: getEnvVar('OPENWEATHER_API_KEY'),
   API_URL: 'https://api.openweathermap.org/data/2.5/air_pollution',
   CACHE_DURATION: 10 * 60 * 1000, // 10 minutes
   MAX_REQUESTS_PER_DAY: 1000,

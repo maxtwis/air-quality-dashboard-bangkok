@@ -12,7 +12,8 @@ const getEnvVar = (name) => {
 };
 
 export const CONFIG = {
-  API_TOKEN: getEnvVar('WAQI_API_TOKEN'),
+  // API_TOKEN no longer needed client-side - handled by proxy endpoints
+  API_TOKEN: '', // Kept for backward compatibility, but unused
 
   BANGKOK_BOUNDS: {
     southwest: { lat: 13.5, lng: 100.3 },
@@ -48,7 +49,8 @@ export const CONFIG = {
 
 // OpenWeather API Configuration for O3/NO2 fallback
 export const OPENWEATHER_CONFIG = {
-  API_KEY: getEnvVar('OPENWEATHER_API_KEY'),
+  // API_KEY no longer needed client-side - handled by proxy endpoints
+  API_KEY: '', // Kept for backward compatibility, but unused
   API_URL: 'https://api.openweathermap.org/data/2.5/air_pollution',
   CACHE_DURATION: 10 * 60 * 1000, // 10 minutes
   MAX_REQUESTS_PER_DAY: 1000,

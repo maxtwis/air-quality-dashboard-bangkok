@@ -344,8 +344,8 @@ async function storeWAQIData(supabase, detailedStations) {
   const stationsToStore = [];
   const readings = [];
 
-  // CRITICAL FIX: Import AQI converter for server-side use
-  const { convertStationDataForSupabase } = require('../lib/aqi-converter-node.cjs');
+  // CRITICAL FIX: Import AQI converter for server-side use (ES modules)
+  const { convertStationDataForSupabase } = await import('../lib/aqi-converter-node.js');
 
   console.log('🔄 Converting AQI values to concentrations for Supabase storage...');
 

@@ -4,6 +4,7 @@ import { POLLUTANTS, WEATHER_PARAMS, CONFIG, AQI_LEVELS } from './config.js';
 import { getAQHILevel, formatAQHI, AQHI_LEVELS } from './aqhi-realistic.js';
 import { calculateAQHIStatistics } from './aqhi-realistic.js';
 import { healthRecommendations } from './health-recommendations.js';
+import { convertStationToRawConcentrations, getRawConcentration } from './aqi-to-concentration.js';
 
 // UI management functions for the modern dashboard
 
@@ -548,14 +549,37 @@ export class UIManager {
           }
         });
       } else {
-        // Standard processing for API data
+        // Standard processing for API data - CONVERT AQI TO CONCENTRATIONS
+        console.log('🔄 Converting detail panel AQI values to concentrations...');
+        const convertedStation = convertStationToRawConcentrations(detailsData);
+
         Object.entries(detailsData.iaqi).forEach(([key, data]) => {
           if (POLLUTANTS[key]) {
-            pollutantData.push({
-              key,
-              config: POLLUTANTS[key],
-              value: data.v,
-            });
+            // Use converted concentration if available, otherwise fall back to AQI
+            const rawConcentration = getRawConcentration(convertedStation, key);
+
+            if (rawConcentration !== null) {
+              // Show converted concentration in μg/m³
+              pollutantData.push({
+                key,
+                config: {
+                  ...POLLUTANTS[key],
+                  unit: key === 'co' ? 'mg/m³' : 'μg/m³' // CO is in mg/m³, others in μg/m³
+                },
+                value: Math.round(rawConcentration * 10) / 10,
+                isConverted: true
+              });
+              console.log(`   ✅ ${key.toUpperCase()}: ${data.v} AQI → ${rawConcentration} ${key === 'co' ? 'mg/m³' : 'μg/m³'}`);
+            } else {
+              // Fallback to AQI if conversion failed
+              pollutantData.push({
+                key,
+                config: { ...POLLUTANTS[key], unit: 'AQI' },
+                value: data.v,
+                isConverted: false
+              });
+              console.log(`   ⚠️  ${key.toUpperCase()}: ${data.v} AQI (conversion failed)`);
+            }
           } else if (WEATHER_PARAMS[key]) {
             weatherData.push({
               key,

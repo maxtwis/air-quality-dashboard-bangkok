@@ -178,11 +178,22 @@ export function convertStationToRawConcentrations(station) {
 
   const rawConcentrations = {};
   const conversionLog = [];
+  const skippedParams = [];
 
-  // Convert each available pollutant
+  // WAQI weather/non-pollutant parameters to skip
+  const WEATHER_PARAMETERS = ['h', 't', 'p', 'w', 'wd', 'r', 'dew'];
+
+  // Convert each available pollutant (skip weather parameters)
   Object.keys(station.iaqi).forEach(pollutant => {
     const aqiValue = station.iaqi[pollutant]?.v;
+
     if (typeof aqiValue === 'number') {
+      // Skip weather parameters
+      if (WEATHER_PARAMETERS.includes(pollutant)) {
+        skippedParams.push(`${pollutant}=${aqiValue} (weather)`);
+        return;
+      }
+
       const rawConc = aqiToConcentration(aqiValue, pollutant);
       if (rawConc !== null) {
         rawConcentrations[pollutant] = {
@@ -191,12 +202,20 @@ export function convertStationToRawConcentrations(station) {
           unit: pollutant === 'co' ? 'mg/m³' : 'μg/m³'
         };
         conversionLog.push(`${pollutant.toUpperCase()}: ${aqiValue} AQI → ${rawConc} ${rawConcentrations[pollutant].unit}`);
+      } else {
+        skippedParams.push(`${pollutant}=${aqiValue} (unsupported)`);
       }
     }
   });
 
-  console.log(`🔄 AQI→Concentration conversion for station ${station.station?.name || station.uid}:`);
-  console.log(conversionLog.join(', '));
+  const stationName = station.station?.name || station.uid || 'unknown';
+  console.log(`🔄 AQI→Concentration conversion for station ${stationName}:`);
+  if (conversionLog.length > 0) {
+    console.log(`   Converted: ${conversionLog.join(', ')}`);
+  }
+  if (skippedParams.length > 0) {
+    console.log(`   Skipped: ${skippedParams.join(', ')}`);
+  }
 
   return {
     ...station,

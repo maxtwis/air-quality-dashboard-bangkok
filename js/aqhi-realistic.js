@@ -280,14 +280,14 @@ export function calculateStationAQHIRealistic(station) {
   return {
     value: aqhi,
     level,
-    pollutants: currentPollutants,
+    pollutants: currentConcentrations, // Fixed: use currentConcentrations instead of undefined currentPollutants
     calculationMethod,
     dataQuality,
     dataPoints,
     timeSpanHours: movingAverageData?.timeSpanHours || 0,
-    hasAllSensors: Object.values(currentPollutants).every((v) => v > 0),
-    missingSensors: Object.keys(currentPollutants).filter(
-      (k) => currentPollutants[k] === 0,
+    hasAllSensors: Object.values(currentConcentrations).every((v) => v > 0),
+    missingSensors: Object.keys(currentConcentrations).filter(
+      (k) => currentConcentrations[k] === 0,
     ),
     note: getCalculationNote(calculationMethod, dataQuality, dataPoints),
   };

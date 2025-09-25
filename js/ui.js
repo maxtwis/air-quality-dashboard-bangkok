@@ -534,23 +534,33 @@ export class UIManager {
       // Determine the correct data label based on mode and data availability
       let dataLabel = 'Current';
       if (isAQHI && averageData) {
-        dataLabel = '3-Hour Average';
+        dataLabel = '3-Hour Average (μg/m³)';
+      } else if (isAQHI) {
+        dataLabel = 'Current (converted to μg/m³)';
+      } else {
+        dataLabel = 'Current (μg/m³)';
       }
 
       if (isAQHI && averageData) {
         // For AQHI mode with averages, process the average data structure
+        console.log('🔄 AQHI mode: Using 3-hour averages (already in μg/m³)');
         Object.entries(averageData).forEach(([key, value]) => {
           if (POLLUTANTS[key] && value !== null && value !== undefined) {
             pollutantData.push({
               key,
-              config: POLLUTANTS[key],
+              config: {
+                ...POLLUTANTS[key],
+                unit: key === 'co' ? 'mg/m³' : 'μg/m³' // Ensure proper units are shown
+              },
               value: Math.round(value * 10) / 10, // Round to 1 decimal place
+              isConverted: true
             });
+            console.log(`   ✅ ${key.toUpperCase()}: ${Math.round(value * 10) / 10} ${key === 'co' ? 'mg/m³' : 'μg/m³'} (3h avg)`);
           }
         });
       } else {
         // Standard processing for API data - CONVERT AQI TO CONCENTRATIONS
-        console.log('🔄 Converting detail panel AQI values to concentrations...');
+        console.log(`🔄 Detail panel mode: ${isAQHI ? 'AQHI' : 'AQI'} - Converting AQI values to concentrations...`);
         const convertedStation = convertStationToRawConcentrations(detailsData);
 
         Object.entries(detailsData.iaqi).forEach(([key, data]) => {

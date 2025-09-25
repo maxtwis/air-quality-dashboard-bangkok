@@ -45,7 +45,7 @@ export default async function handler(req, res) {
     // 3. Test module imports
     debugLog("📦 Testing module imports");
     try {
-      const { convertStationDataForSupabase } = require('../lib/aqi-converter-node.cjs');
+      const { convertStationDataForSupabase } = await import('../lib/aqi-converter-node.js');
       debugLog("✅ AQI converter imported successfully");
 
       // Test conversion with sample data

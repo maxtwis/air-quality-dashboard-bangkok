@@ -200,8 +200,8 @@ async function storeHistoricalDataSupabase(stations) {
     }
   }
 
-  // CRITICAL FIX: Import AQI converter for server-side use
-  const { convertStationDataForSupabase } = require('../lib/aqi-converter-node.cjs');
+  // CRITICAL FIX: Import AQI converter for server-side use (ES modules)
+  const { convertStationDataForSupabase } = await import('../lib/aqi-converter-node.js');
   console.log('🔄 [BASIC] Converting AQI values to concentrations for Supabase storage...');
 
   // Process each station

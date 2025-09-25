@@ -27,7 +27,9 @@
       "Bash(npx eslint:*)",
       "Bash(OPENWEATHER_API_KEY=a180db2b4dba131e42c97be80d3d018f node test-enhanced-collection.js)",
       "Bash(git rm:*)",
-      "WebFetch(domain:aqs.epa.gov)"
+      "WebFetch(domain:aqs.epa.gov)",
+      "Bash(move test-conversion-logic.js test-conversion-logic.cjs)",
+      "Bash(ren:*)"
     ],
     "deny": [],
     "ask": []

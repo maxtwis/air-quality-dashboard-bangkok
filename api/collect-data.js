@@ -1,6 +1,6 @@
 // Vercel Serverless Function to collect and store air quality data
 // This runs server-side via cron (changed from edge to serverless for full module support)
-
+// redeploy
 // This can be triggered by external cron services or Vercel daily cron
 export default async function handler(req, res) {
   // Allow external cron services and manual triggers

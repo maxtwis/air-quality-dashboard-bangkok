@@ -4,12 +4,15 @@
   "functions": {
     "api/collect-data.js": {
       "maxDuration": 60
+    },
+    "api/collect-data-enhanced.js": {
+      "maxDuration": 60
     }
   },
   "crons": [
     {
       "path": "/api/collect-data",
-      "schedule": "0 0 * * *"
+      "schedule": "*/10 * * * *"
     }
   ]
 }

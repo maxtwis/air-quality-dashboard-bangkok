@@ -589,7 +589,7 @@ class SupabaseAQHI {
       so2: station.iaqi?.so2?.v || supplementaryData.so2,
     };
 
-    // Apply Health Canada AQHI formula with merged data
+    // AQHI formula
     let aqhi = 0;
     if (mergedData.pm25) aqhi += Math.exp(0.000487 * mergedData.pm25) - 1;
     if (mergedData.o3) aqhi += Math.exp(0.000871 * mergedData.o3) - 1;

@@ -26,7 +26,8 @@
       "WebFetch(domain:api.openweathermap.org)",
       "Bash(npx eslint:*)",
       "Bash(OPENWEATHER_API_KEY=a180db2b4dba131e42c97be80d3d018f node test-enhanced-collection.js)",
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "WebFetch(domain:aqs.epa.gov)"
     ],
     "deny": [],
     "ask": []

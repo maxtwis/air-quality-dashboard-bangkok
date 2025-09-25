@@ -2,7 +2,7 @@
 export default async function handler(req, res) {
   try {
     // Fetch data from WAQI API
-    const apiToken = "354eb1b871693ef55f777c69e44e81bcaf215d40";
+    const apiToken = process.env.WAQI_API_TOKEN;
     const apiUrl = `https://api.waqi.info/v2/map/bounds/?latlng=13.5,100.3,14.0,100.9&token=${apiToken}`;
 
     const response = await fetch(apiUrl);

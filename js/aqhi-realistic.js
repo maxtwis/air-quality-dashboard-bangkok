@@ -6,6 +6,10 @@ import {
   loadHistoricalData,
   initializeDataStore,
 } from './dataStore.js';
+import {
+  convertStationToRawConcentrations,
+  getRawConcentration
+} from './aqi-to-concentration.js';
 
 // AQHI Parameters (same as before)
 const AQHI_PARAMS = {
@@ -186,10 +190,18 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
 }
 
 /**
- * Calculate AQHI with realistic approach
+ * Calculate AQHI with realistic approach using RAW CONCENTRATIONS (μg/m³)
+ * CRITICAL: This function expects raw concentrations, NOT AQI values!
+ *
+ * @param {number} pm25 - PM2.5 concentration in μg/m³ (NOT AQI!)
+ * @param {number} no2 - NO2 concentration in μg/m³ (NOT AQI!)
+ * @param {number} o3 - O3 concentration in μg/m³ (NOT AQI!)
+ * @returns {number} AQHI value (0-10+)
  */
 export function calculateRealisticAQHI(pm25, no2, o3) {
-  // Thailand AQHI formula (PM2.5, NO2, O3 only)
+  console.log(`🧮 Calculating AQHI with RAW concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}μg/m³, O3=${o3}μg/m³`);
+
+  // Thailand AQHI formula (PM2.5, NO2, O3 only) - using raw concentrations
   const pm25Component =
     100 * (Math.exp(AQHI_PARAMS.beta.pm25 * (pm25 || 0)) - 1);
   const o3Component = Math.exp(AQHI_PARAMS.beta.o3 * (o3 || 0)) - 1;
@@ -197,6 +209,9 @@ export function calculateRealisticAQHI(pm25, no2, o3) {
 
   const aqhi =
     (10 / AQHI_PARAMS.C) * (pm25Component + o3Component + no2Component);
+
+  console.log(`📊 AQHI components: PM2.5=${pm25Component.toFixed(2)}, NO2=${no2Component.toFixed(2)}, O3=${o3Component.toFixed(2)} → AQHI=${Math.round(aqhi)}`);
+
   return Math.round(aqhi);
 }
 
@@ -214,23 +229,31 @@ export function getAQHILevel(aqhi) {
 
 /**
  * Main AQHI calculation for station with realistic approach
+ * FIXED: Now properly converts AQI values to raw concentrations before calculation
  */
 export function calculateStationAQHIRealistic(station) {
   const stationId = station.uid || station.station?.name || 'unknown';
-  const currentPollutants = {
-    pm25: station.iaqi?.pm25?.v || 0,
-    no2: station.iaqi?.no2?.v || 0,
-    o3: station.iaqi?.o3?.v || 0,
-    // so2: station.iaqi?.so2?.v || 0 - Not used in Thailand AQHI
+
+  // CRITICAL FIX: Convert AQI values to raw concentrations first
+  console.log(`🔄 Converting station ${stationId} AQI values to raw concentrations...`);
+  const stationWithConcentrations = convertStationToRawConcentrations(station);
+
+  // Extract raw concentrations (μg/m³) instead of AQI values
+  const currentConcentrations = {
+    pm25: getRawConcentration(stationWithConcentrations, 'pm25') || 0,
+    no2: getRawConcentration(stationWithConcentrations, 'no2') || 0,
+    o3: getRawConcentration(stationWithConcentrations, 'o3') || 0,
   };
 
-  // Store current reading for building our own moving average
-  const dataPoints = collectCurrentReading(stationId, currentPollutants);
+  console.log(`📊 Raw concentrations for ${stationId}:`, currentConcentrations);
+
+  // Store current reading for building our own moving average (now with raw concentrations)
+  const dataPoints = collectCurrentReading(stationId, currentConcentrations);
 
   // Try to get moving average from our collected data
   const movingAverageData = calculateClientSideMovingAverage(stationId);
 
-  let pollutantsForCalculation = currentPollutants;
+  let pollutantsForCalculation = currentConcentrations;
   let calculationMethod = 'current';
   let dataQuality = 'limited';
 

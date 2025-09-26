@@ -355,19 +355,24 @@ class SupabaseAQHI {
         let o3Component = 0;
         let no2Component = 0;
 
+        let riskPM25 = 0;
+        let riskO3 = 0;
+        let riskNO2 = 0;
+
         if (averages.pm25) {
-          pm25Component = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
+          riskPM25 = Math.exp(0.0012 * averages.pm25) - 1;
         }
 
         if (averages.o3) {
-          o3Component = Math.exp(0.0010 * averages.o3) - 1;
+          riskO3 = Math.exp(0.0010 * averages.o3) - 1;
         }
 
         if (averages.no2) {
-          no2Component = Math.exp(0.0052 * averages.no2) - 1;
+          riskNO2 = Math.exp(0.0052 * averages.no2) - 1;
         }
 
-        aqhi = (10.0 / 105.19) * (pm25Component + o3Component + no2Component);
+        const totalRiskSum = riskPM25 + riskO3 + riskNO2;
+        aqhi = (10.0 / 105.19) * 100 * totalRiskSum;
         aqhi = Math.max(0, Math.round(aqhi)); // Round to whole number
 
         // Cache the result
@@ -456,22 +461,23 @@ class SupabaseAQHI {
 
           let aqhiValue;
           if (averages && (averages.pm25 || averages.o3 || averages.no2)) {
-            // Calculate AQHI using Thai Health Department formula
-            let pm25Component = 0;
-            let o3Component = 0;
-            let no2Component = 0;
+            // Calculate AQHI using correct formula
+            let riskPM25 = 0;
+            let riskO3 = 0;
+            let riskNO2 = 0;
 
             if (averages.pm25) {
-              pm25Component = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
+              riskPM25 = Math.exp(0.0012 * averages.pm25) - 1;
             }
             if (averages.o3) {
-              o3Component = Math.exp(0.0010 * averages.o3) - 1;
+              riskO3 = Math.exp(0.0010 * averages.o3) - 1;
             }
             if (averages.no2) {
-              no2Component = Math.exp(0.0052 * averages.no2) - 1;
+              riskNO2 = Math.exp(0.0052 * averages.no2) - 1;
             }
 
-            aqhiValue = (10.0 / 105.19) * (pm25Component + o3Component + no2Component);
+            const totalRiskSum = riskPM25 + riskO3 + riskNO2;
+            aqhiValue = (10.0 / 105.19) * 100 * totalRiskSum;
             aqhiValue = Math.max(0, Math.round(aqhiValue));
 
             // Cache the result
@@ -601,22 +607,23 @@ class SupabaseAQHI {
       so2: station.iaqi?.so2?.v || supplementaryData.so2,
     };
 
-    // Thai AQHI formula
-    let pm25Component = 0;
-    let o3Component = 0;
-    let no2Component = 0;
+    // Correct AQHI formula
+    let riskPM25 = 0;
+    let riskO3 = 0;
+    let riskNO2 = 0;
 
     if (mergedData.pm25) {
-      pm25Component = 100 * (Math.exp(0.0012 * mergedData.pm25) - 1);
+      riskPM25 = Math.exp(0.0012 * mergedData.pm25) - 1;
     }
     if (mergedData.o3) {
-      o3Component = Math.exp(0.0010 * mergedData.o3) - 1;
+      riskO3 = Math.exp(0.0010 * mergedData.o3) - 1;
     }
     if (mergedData.no2) {
-      no2Component = Math.exp(0.0052 * mergedData.no2) - 1;
+      riskNO2 = Math.exp(0.0052 * mergedData.no2) - 1;
     }
 
-    const aqhi = (10.0 / 105.19) * (pm25Component + o3Component + no2Component);
+    const totalRiskSum = riskPM25 + riskO3 + riskNO2;
+    const aqhi = (10.0 / 105.19) * 100 * totalRiskSum;
     const aqhiValue = Math.max(0, Math.round(aqhi));
 
     // Log the data sources used

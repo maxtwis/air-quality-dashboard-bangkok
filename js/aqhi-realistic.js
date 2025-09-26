@@ -11,14 +11,14 @@ import {
   getRawConcentration
 } from './aqi-to-concentration.js';
 
-// Thai Health Department AQHI Parameters
+// AQHI Parameters (reverted to original Thai values)
 const AQHI_PARAMS = {
-  C: 105.19,  // Thai Health Department scaling constant
+  C: 105.19,  // Scaling factor for hospital admissions
   beta: {
-    pm25: 0.0012,  // PM2.5 coefficient (Thai formula)
-    o3: 0.0010,    // O3 coefficient (Thai formula)
-    no2: 0.0052,   // NO2 coefficient (Thai formula)
-    // SO2 not used in Thai AQHI formula
+    pm25: 0.0012,  // PM2.5 coefficient (original Thai formula)
+    o3: 0.0010,    // O3 coefficient (original Thai formula)
+    no2: 0.0052,   // NO2 coefficient (original Thai formula)
+    // SO2 not used in AQHI formula
   },
 };
 
@@ -201,17 +201,17 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
 export function calculateRealisticAQHI(pm25, no2, o3) {
   console.log(`🧮 Calculating AQHI with RAW concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}μg/m³, O3=${o3}μg/m³`);
 
-  // Official Health Canada AQHI formula: AQHI = (10/10.4) × 100 × [sum of exponential terms]
-  const pm25Component = Math.exp(AQHI_PARAMS.beta.pm25 * (pm25 || 0)) - 1;
-  const o3Component = Math.exp(AQHI_PARAMS.beta.o3 * (o3 || 0)) - 1;
-  const no2Component = Math.exp(AQHI_PARAMS.beta.no2 * (no2 || 0)) - 1;
+  // Correct AQHI formula: AQHI = (10/c) × 100 × [sum of excess risk terms]
+  const riskPM25 = pm25 ? Math.exp(AQHI_PARAMS.beta.pm25 * pm25) - 1 : 0;
+  const riskO3 = o3 ? Math.exp(AQHI_PARAMS.beta.o3 * o3) - 1 : 0;
+  const riskNO2 = no2 ? Math.exp(AQHI_PARAMS.beta.no2 * no2) - 1 : 0;
 
-  const aqhi =
-    (10 / AQHI_PARAMS.C) * 100 * (pm25Component + o3Component + no2Component);
+  const totalRiskSum = riskPM25 + riskO3 + riskNO2;
+  const aqhi = (10 / AQHI_PARAMS.C) * 100 * totalRiskSum;
 
-  console.log(`📊 AQHI components: PM2.5=${pm25Component.toFixed(4)}, NO2=${no2Component.toFixed(4)}, O3=${o3Component.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
+  console.log(`📊 AQHI risks: PM2.5=${riskPM25.toFixed(4)}, NO2=${riskNO2.toFixed(4)}, O3=${riskO3.toFixed(4)}, Total=${totalRiskSum.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
 
-  return Math.round(aqhi);
+  return Math.max(0, Math.round(aqhi));
 }
 
 /**

@@ -8,11 +8,14 @@ import { calculateAQHIStatistics } from './aqhi-realistic.js';
 export function updateStatisticsPanel(stations) {
   const isAQHI = uiManager.currentIndicator === 'AQHI';
   const isPM25AQHI = uiManager.currentIndicator === 'PM25_AQHI';
+  const isCanadianAQHI = uiManager.currentIndicator === 'AQHI_CANADA';
 
   if (isAQHI) {
     updateStatisticsPanelAQHI(stations);
   } else if (isPM25AQHI) {
     updateStatisticsPanelPM25AQHI(stations);
+  } else if (isCanadianAQHI) {
+    updateStatisticsPanelCanadianAQHI(stations);
   } else {
     updateStatisticsPanelAQI(stations);
   }
@@ -262,6 +265,113 @@ function updateStatisticsPanelPM25AQHI(stations) {
   updateAQHICategoryBreakdown(categoryCounts);
 
   console.log('PM2.5-only AQHI statistics updated');
+}
+
+function updateStatisticsPanelCanadianAQHI(stations) {
+  // Calculate Canadian AQHI statistics
+  const validStations = stations.filter(
+    (s) => s.canadianAqhi && s.canadianAqhi.value !== undefined,
+  );
+  const statsContent = document.getElementById('stats-content');
+
+  if (!statsContent) {
+    console.error('Statistics content element not found');
+    return;
+  }
+
+  if (validStations.length === 0) {
+    uiManager.showError('stats-content', 'No valid Canadian AQHI data available');
+    return;
+  }
+
+  // Import Canadian AQHI functions
+  import('./aqhi-canada.js').then(({ getCanadianAQHILevel, formatCanadianAQHI, calculateCanadianAQHIStatistics }) => {
+    // Calculate statistics for Canadian AQHI
+    const aqhiValues = validStations.map((s) => s.canadianAqhi.value);
+    const avgAQHI = Math.round(
+      aqhiValues.reduce((a, b) => a + b, 0) / aqhiValues.length,
+    );
+    const maxAQHI = Math.max(...aqhiValues);
+    const minAQHI = Math.min(...aqhiValues);
+
+    const avgLevel = getCanadianAQHILevel(avgAQHI);
+    const maxLevel = getCanadianAQHILevel(maxAQHI);
+    const minLevel = getCanadianAQHILevel(minAQHI);
+
+    // Map Canadian AQHI colors to AQI classes for consistency
+    const getCanadianAQHIClass = (level) => {
+      switch (level.key) {
+        case 'LOW':
+          return 'aqi-good';
+        case 'MODERATE':
+          return 'aqi-moderate';
+        case 'HIGH':
+          return 'aqi-unhealthy-sensitive';
+        case 'VERY_HIGH':
+          return 'aqi-unhealthy';
+        default:
+          return 'aqi-moderate';
+      }
+    };
+
+    // Calculate category counts for Canadian AQHI
+    const categoryCounts = {
+      LOW: validStations.filter((s) => s.canadianAqhi.value >= 1 && s.canadianAqhi.value <= 3).length,
+      MODERATE: validStations.filter(
+        (s) => s.canadianAqhi.value >= 4 && s.canadianAqhi.value <= 6,
+      ).length,
+      HIGH: validStations.filter(
+        (s) => s.canadianAqhi.value >= 7 && s.canadianAqhi.value <= 10,
+      ).length,
+      VERY_HIGH: validStations.filter((s) => s.canadianAqhi.value >= 11).length,
+    };
+
+    // Count data quality types
+    const dataQualityTypes = validStations.reduce((acc, station) => {
+      const method = station.canadianAqhi?.calculationMethod || 'unknown';
+      acc[method] = (acc[method] || 0) + 1;
+      return acc;
+    }, {});
+
+    const supabaseCount = dataQualityTypes['supabase-average'] || 0;
+    const currentCount = dataQualityTypes['current-reading'] || 0;
+
+    // Create Canadian AQHI stats grid
+    const statsHTML = `
+          <div class="stats-grid">
+              <div class="stat-card">
+                  <div class="stat-value">${validStations.length}</div>
+                  <div class="stat-label">Stations with Canadian AQHI</div>
+              </div>
+              <div class="stat-card">
+                  <div class="stat-value text-${getCanadianAQHIClass(avgLevel)}">${formatCanadianAQHI(avgAQHI)}</div>
+                  <div class="stat-label">Average Canadian AQHI</div>
+              </div>
+              <div class="stat-card">
+                  <div class="stat-value text-${getCanadianAQHIClass(maxLevel)}">${formatCanadianAQHI(maxAQHI)}</div>
+                  <div class="stat-label">Highest Canadian AQHI</div>
+              </div>
+              <div class="stat-card">
+                  <div class="stat-value text-${getCanadianAQHIClass(minLevel)}">${formatCanadianAQHI(minAQHI)}</div>
+                  <div class="stat-label">Lowest Canadian AQHI</div>
+              </div>
+          </div>
+          <div class="info" style="margin-top: 12px; padding: 8px; background: var(--gray-100); border-radius: 6px; font-size: 0.875rem;">
+              <div style="font-weight: 500; margin-bottom: 4px;">🍁 Canadian AQHI Formula (Health Canada):</div>
+              <div>• β coefficients: PM2.5=0.000487, NO₂=0.000871, O₃=0.000537</div>
+              <div>• Scaling factor: C=10.4 (official Canadian standard)</div>
+              <div>• Data quality: ${supabaseCount} 3h avg, ${currentCount} current readings</div>
+              <div>• Compare with Thai AQHI to see regional differences</div>
+          </div>
+      `;
+
+    statsContent.innerHTML = statsHTML;
+
+    // Update category breakdown for Canadian AQHI
+    updateAQHICategoryBreakdown(categoryCounts);
+
+    console.log('Canadian AQHI statistics updated');
+  });
 }
 
 function updateAQHICategoryBreakdown(categoryCounts) {

@@ -372,7 +372,7 @@ class SupabaseAQHI {
         }
 
         const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-        aqhi = (10.0 / 105.19) * 100 * totalRiskSum;
+        aqhi = (10.0 / 10.4) * 100 * totalRiskSum;
         aqhi = Math.max(0, Math.round(aqhi)); // Round to whole number
 
         // Cache the result
@@ -477,7 +477,7 @@ class SupabaseAQHI {
             }
 
             const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-            aqhiValue = (10.0 / 105.19) * 100 * totalRiskSum;
+            aqhiValue = (10.0 / 10.4) * 100 * totalRiskSum;
             aqhiValue = Math.max(0, Math.round(aqhiValue));
 
             // Cache the result
@@ -623,7 +623,7 @@ class SupabaseAQHI {
     }
 
     const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-    const aqhi = (10.0 / 105.19) * 100 * totalRiskSum;
+    const aqhi = (10.0 / 10.4) * 100 * totalRiskSum;
     const aqhiValue = Math.max(0, Math.round(aqhi));
 
     // Log the data sources used

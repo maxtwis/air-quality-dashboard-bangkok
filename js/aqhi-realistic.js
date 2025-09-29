@@ -13,7 +13,7 @@ import {
 
 // AQHI Parameters (reverted to original Thai values)
 const AQHI_PARAMS = {
-  C: 105,  
+  C: 105.19,  
   beta: {
     pm25: 0.0012,  
     o3: 0.0010, 

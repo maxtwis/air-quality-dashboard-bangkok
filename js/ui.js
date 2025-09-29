@@ -71,6 +71,8 @@ export class UIManager {
       this.updateMainDisplayAQHI(stations);
     } else if (this.currentIndicator === 'PM25_AQHI') {
       this.updateMainDisplayPM25AQHI(stations);
+    } else if (this.currentIndicator === 'AQHI_CANADA') {
+      this.updateMainDisplayCanadianAQHI(stations);
     } else {
       this.updateMainDisplayAQI(stations);
     }
@@ -229,6 +231,77 @@ export class UIManager {
     if (mainLabel) mainLabel.textContent = 'PM2.5 AQHI';
   }
 
+  updateMainDisplayCanadianAQHI(stations) {
+    // Calculate Canadian AQHI statistics
+    const validStations = stations.filter(
+      (s) => s.canadianAqhi && s.canadianAqhi.value !== undefined,
+    );
+    if (validStations.length === 0) return;
+
+    const aqhiValues = validStations.map((s) => s.canadianAqhi.value);
+    const avgAQHI = Math.round(
+      aqhiValues.reduce((a, b) => a + b, 0) / aqhiValues.length,
+    );
+
+    // Import Canadian AQHI levels
+    import('./aqhi-canada.js').then(({ getCanadianAQHILevel, formatCanadianAQHI }) => {
+      const aqhiLevel = getCanadianAQHILevel(avgAQHI);
+
+      // Map Canadian AQHI colors to existing AQI classes
+      const getCanadianAQHIClass = (level) => {
+        switch (level.key) {
+          case 'LOW':
+            return 'aqi-good';
+          case 'MODERATE':
+            return 'aqi-moderate';
+          case 'HIGH':
+            return 'aqi-unhealthy-sensitive';
+          case 'VERY_HIGH':
+            return 'aqi-unhealthy';
+          default:
+            return 'aqi-moderate';
+        }
+      };
+
+      // Update main display
+      const mainValue = document.getElementById('main-aqi-value');
+      const mainCategory = document.getElementById('main-aqi-category');
+      const mainDescription = document.getElementById('main-aqi-description');
+      const mainCircle = document.getElementById('main-aqi-circle');
+      const mainLabel = document.querySelector('.aqi-label');
+
+      if (mainValue) mainValue.textContent = formatCanadianAQHI(avgAQHI);
+      if (mainCategory) mainCategory.textContent = aqhiLevel.label;
+      if (mainDescription) {
+        // Check data quality for Canadian AQHI
+        let dataQualityNote = '';
+        if (validStations.length > 0 && validStations[0].canadianAqhi) {
+          const commonMethod =
+            validStations[0].canadianAqhi?.calculationMethod || 'current-reading';
+          const readingCount = validStations[0].canadianAqhi?.readingCount || 1;
+
+          if (commonMethod === 'current-reading') {
+            dataQualityNote = ' (Current readings - Canadian formula)';
+          } else if (commonMethod === 'supabase-average') {
+            if (readingCount >= 15) {
+              dataQualityNote = ' (3h average - Canadian formula)';
+            } else if (readingCount >= 10) {
+              dataQualityNote = ` (${readingCount} readings avg - Canadian formula)`;
+            } else {
+              dataQualityNote = ` (${readingCount} readings - Canadian formula)`;
+            }
+          }
+        } else {
+          dataQualityNote = ' (Canadian AQHI formula)';
+        }
+        mainDescription.textContent = aqhiLevel.description + dataQualityNote;
+      }
+      if (mainCircle)
+        mainCircle.className = `aqi-circle ${getCanadianAQHIClass(aqhiLevel)}`;
+      if (mainLabel) mainLabel.textContent = 'AQHI Canada';
+    });
+  }
+
   // Update map legend based on current indicator
   updateMapLegend() {
     const legendElement = document.querySelector('.map-legend');
@@ -288,6 +361,35 @@ export class UIManager {
                         <span>Very High (11+)</span>
                     </div>
                 `;
+      }
+    } else if (this.currentIndicator === 'AQHI_CANADA') {
+      // Update to Canadian AQHI legend
+      if (legendTitle) {
+        legendTitle.textContent = 'Canadian Air Quality Health Index';
+      }
+
+      if (legendItems) {
+        // Import Canadian AQHI levels dynamically
+        import('./aqhi-canada.js').then(({ CANADIAN_AQHI_LEVELS }) => {
+          legendItems.innerHTML = `
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background-color: ${CANADIAN_AQHI_LEVELS.LOW.color};"></div>
+                            <span>Low Risk (1-3)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background-color: ${CANADIAN_AQHI_LEVELS.MODERATE.color};"></div>
+                            <span>Moderate Risk (4-6)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background-color: ${CANADIAN_AQHI_LEVELS.HIGH.color};"></div>
+                            <span>High Risk (7-10)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background-color: ${CANADIAN_AQHI_LEVELS.VERY_HIGH.color};"></div>
+                            <span>Very High Risk (11+)</span>
+                        </div>
+                    `;
+        });
       }
     } else {
       // Update to AQI legend

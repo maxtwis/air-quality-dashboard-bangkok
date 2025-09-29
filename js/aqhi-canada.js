@@ -113,12 +113,92 @@ class CanadianAQHISupabase {
     return false;
   }
 
-  async get3HourAverages(stationId) {
+
+  async enhanceStationsWithCanadianAQHI(stations) {
+    if (!stations || stations.length === 0) return stations;
+
+    const enhancedStations = [];
+
+    for (const station of stations) {
+      const stationId = station.uid?.toString() || station.station?.name || 'unknown';
+
+      try {
+        // Use the same 3-hour averages from regular AQHI calculation but apply Canadian formula
+        let aqhi, pollutants, calculationMethod, dataQuality, readingCount;
+
+        // Try multiple data sources in priority order
+        const mergedData = await this.getMergedConcentrations(stationId);
+
+        if (mergedData && (mergedData.pm25 > 0 || mergedData.no2 > 0 || mergedData.o3 > 0)) {
+          // Calculate Canadian AQHI using the same concentrations as Thai AQHI
+          const riskPM25 = mergedData.pm25 ? Math.exp(CANADIAN_AQHI_PARAMS.beta.pm25 * mergedData.pm25) - 1 : 0;
+          const riskO3 = mergedData.o3 ? Math.exp(CANADIAN_AQHI_PARAMS.beta.o3 * mergedData.o3) - 1 : 0;
+          const riskNO2 = mergedData.no2 ? Math.exp(CANADIAN_AQHI_PARAMS.beta.no2 * mergedData.no2) - 1 : 0;
+
+          const totalRiskSum = riskPM25 + riskO3 + riskNO2;
+          aqhi = (10.0 / CANADIAN_AQHI_PARAMS.C) * 100 * totalRiskSum;
+
+          pollutants = mergedData;
+          calculationMethod = mergedData.source || 'supabase-average';
+          dataQuality = mergedData.readingCount >= 15 ? 'excellent' :
+                       mergedData.readingCount >= 10 ? 'good' :
+                       mergedData.readingCount >= 5 ? 'fair' : 'limited';
+          readingCount = mergedData.readingCount || 1;
+
+          console.log(`🍁 Canadian AQHI for ${stationId}: PM2.5=${mergedData.pm25?.toFixed(1)}, NO2=${mergedData.no2?.toFixed(1)}, O3=${mergedData.o3?.toFixed(1)} → AQHI=${Math.round(aqhi)} (${calculationMethod})`);
+        } else {
+          // Fallback when no data available
+          aqhi = 1; // Minimum Canadian AQHI value
+          pollutants = { pm25: 0, no2: 0, o3: 0 };
+          calculationMethod = 'no-data';
+          dataQuality = 'unavailable';
+          readingCount = 0;
+          console.log(`🍁 No data for Canadian AQHI calculation for station ${stationId}`);
+        }
+
+        const canadianAqhiValue = Math.max(1, Math.round(aqhi));
+        const level = getCanadianAQHILevel(canadianAqhiValue);
+
+        enhancedStations.push({
+          ...station,
+          canadianAqhi: {
+            value: canadianAqhiValue,
+            level,
+            pollutants,
+            calculationMethod,
+            dataQuality,
+            readingCount,
+            hasAllSensors: Object.values(pollutants).every(v => v > 0),
+            missingSensors: Object.keys(pollutants).filter(k => pollutants[k] === 0),
+            note: this.getCalculationNote(calculationMethod, dataQuality, readingCount),
+          }
+        });
+
+      } catch (error) {
+        console.error(`🍁 Error calculating Canadian AQHI for station ${stationId}:`, error);
+        enhancedStations.push({
+          ...station,
+          canadianAqhi: {
+            value: 1,
+            level: getCanadianAQHILevel(1),
+            error: error.message,
+            calculationMethod: 'failed',
+            dataQuality: 'unavailable'
+          }
+        });
+      }
+    }
+
+    return enhancedStations;
+  }
+
+  async getMergedConcentrations(stationId) {
     if (!this.isEnabled) return null;
 
     try {
       await this.initPromise;
 
+      // Get the same 3-hour averages that regular AQHI uses
       const { data, error } = await this.supabase
         .from('air_quality_data')
         .select('*')
@@ -129,11 +209,10 @@ class CanadianAQHISupabase {
       if (error) throw error;
 
       if (!data || data.length === 0) {
-        console.log(`🍁 No Canadian AQHI data found for station ${stationId}`);
         return null;
       }
 
-      // Calculate 3-hour averages
+      // Use the same averaging logic as the Thai AQHI
       const validReadings = data.filter(reading =>
         reading.pm25_concentration > 0 ||
         reading.no2_concentration > 0 ||
@@ -146,7 +225,8 @@ class CanadianAQHISupabase {
         pm25: 0,
         no2: 0,
         o3: 0,
-        readingCount: validReadings.length
+        readingCount: validReadings.length,
+        source: 'supabase-3h-average'
       };
 
       let counts = { pm25: 0, no2: 0, o3: 0 };
@@ -174,88 +254,9 @@ class CanadianAQHISupabase {
       return averages;
 
     } catch (error) {
-      console.error(`🍁 Error fetching Canadian AQHI 3h averages for ${stationId}:`, error);
+      console.error(`🍁 Error fetching merged concentrations for ${stationId}:`, error);
       return null;
     }
-  }
-
-  async enhanceStationsWithCanadianAQHI(stations) {
-    if (!stations || stations.length === 0) return stations;
-
-    const enhancedStations = [];
-
-    for (const station of stations) {
-      const stationId = station.uid?.toString() || station.station?.name || 'unknown';
-
-      try {
-        // Convert AQI values to raw concentrations
-        const stationWithConcentrations = convertStationToRawConcentrations(station);
-
-        // Try to get 3-hour averages from Supabase
-        const averages = await this.get3HourAverages(stationId);
-
-        let pollutantsForCalculation;
-        let calculationMethod;
-        let dataQuality;
-
-        if (averages && averages.readingCount >= 5) {
-          // Use Supabase 3-hour averages
-          pollutantsForCalculation = averages;
-          calculationMethod = 'supabase-average';
-          dataQuality = averages.readingCount >= 15 ? 'excellent' :
-                       averages.readingCount >= 10 ? 'good' : 'fair';
-        } else {
-          // Fallback to current reading
-          pollutantsForCalculation = {
-            pm25: getRawConcentration(stationWithConcentrations, 'pm25') || 0,
-            no2: getRawConcentration(stationWithConcentrations, 'no2') || 0,
-            o3: getRawConcentration(stationWithConcentrations, 'o3') || 0,
-          };
-          calculationMethod = 'current-reading';
-          dataQuality = 'limited';
-        }
-
-        const canadianAqhi = calculateCanadianAQHI(
-          pollutantsForCalculation.pm25,
-          pollutantsForCalculation.no2,
-          pollutantsForCalculation.o3
-        );
-
-        const level = getCanadianAQHILevel(canadianAqhi);
-
-        enhancedStations.push({
-          ...station,
-          canadianAqhi: {
-            value: canadianAqhi,
-            level,
-            pollutants: pollutantsForCalculation,
-            calculationMethod,
-            dataQuality,
-            readingCount: averages?.readingCount || 1,
-            hasAllSensors: Object.values(pollutantsForCalculation).every(v => v > 0),
-            missingSensors: Object.keys(pollutantsForCalculation).filter(
-              k => pollutantsForCalculation[k] === 0
-            ),
-            note: this.getCalculationNote(calculationMethod, dataQuality, averages?.readingCount || 1),
-          }
-        });
-
-      } catch (error) {
-        console.error(`🍁 Error calculating Canadian AQHI for station ${stationId}:`, error);
-        enhancedStations.push({
-          ...station,
-          canadianAqhi: {
-            value: null,
-            level: null,
-            error: error.message,
-            calculationMethod: 'failed',
-            dataQuality: 'unavailable'
-          }
-        });
-      }
-    }
-
-    return enhancedStations;
   }
 
   getCalculationNote(method, quality, readingCount) {

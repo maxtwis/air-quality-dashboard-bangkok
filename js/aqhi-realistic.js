@@ -13,11 +13,11 @@ import {
 
 // AQHI Parameters (reverted to original Thai values)
 const AQHI_PARAMS = {
-  C: 10.4,  // Scaling factor for hospital admissions
+  C: 1,  
   beta: {
-    pm25: 0.0012,  // PM2.5 coefficient (original Thai formula)
-    o3: 0.0010,    // O3 coefficient (original Thai formula)
-    no2: 0.0052,   // NO2 coefficient (original Thai formula)
+    pm25: 0.0012,  
+    o3: 0.0010, 
+    no2: 0.0052, 
   },
 };
 

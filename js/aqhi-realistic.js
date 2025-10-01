@@ -210,7 +210,7 @@ export function calculateRealisticAQHI(pm25, no2, o3) {
 
   console.log(`📊 AQHI risks: PM2.5=${riskPM25.toFixed(4)}, NO2=${riskNO2.toFixed(4)}, O3=${riskO3.toFixed(4)}, Total=${totalRiskSum.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
 
-  return Math.max(0, Math.round(aqhi));
+  return Math.max(1, Math.round(aqhi));
 }
 
 /**

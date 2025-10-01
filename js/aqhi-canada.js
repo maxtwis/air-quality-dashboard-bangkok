@@ -227,60 +227,48 @@ class CanadianAQHISupabase {
     try {
       await this.initPromise;
 
-      // Get the same 3-hour averages that regular AQHI uses
-      const { data, error } = await this.supabase
-        .from('air_quality_data')
+      // Use the same current_3h_averages view as Thai AQHI and PM2.5 AQHI
+      const { data: aqicnData, error: aqicnError } = await this.supabase
+        .from('current_3h_averages')
         .select('*')
-        .eq('station_id', stationId)
-        .gte('timestamp', new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString())
-        .order('timestamp', { ascending: false });
+        .eq('station_uid', stationId)
+        .single();
 
-      if (error) throw error;
-
-      if (!data || data.length === 0) {
-        return null;
+      if (aqicnError && aqicnError.code !== 'PGRST116') {
+        console.warn(`🍁 Error fetching AQICN 3h averages for ${stationId}:`, aqicnError.message);
       }
 
-      // Use the same averaging logic as the Thai AQHI
-      const validReadings = data.filter(reading =>
-        reading.pm25_concentration > 0 ||
-        reading.no2_concentration > 0 ||
-        reading.o3_concentration > 0
-      );
+      // Get OpenWeather data as fallback
+      const { data: openweatherData, error: openweatherError } = await this.supabase
+        .from('current_openweather_station_3h_averages')
+        .select('*')
+        .eq('station_uid', stationId)
+        .single();
 
-      if (validReadings.length === 0) return null;
+      if (openweatherError && openweatherError.code !== 'PGRST116') {
+        console.warn(`🍁 Error fetching OpenWeather 3h averages for ${stationId}:`, openweatherError.message);
+      }
 
-      const averages = {
-        pm25: 0,
-        no2: 0,
-        o3: 0,
-        readingCount: validReadings.length,
-        source: 'supabase-3h-average'
-      };
+      // Merge data prioritizing AQICN, supplementing with OpenWeather
+      if (aqicnData || openweatherData) {
+        const mergedData = {
+          pm25: aqicnData?.avg_pm25 || openweatherData?.avg_pm25 || 0,
+          pm10: aqicnData?.avg_pm10 || openweatherData?.avg_pm10 || 0,
+          o3: aqicnData?.avg_o3 || openweatherData?.avg_o3 || 0,
+          no2: aqicnData?.avg_no2 || openweatherData?.avg_no2 || 0,
+          so2: aqicnData?.avg_so2 || openweatherData?.avg_so2 || 0,
+          co: aqicnData?.avg_co || openweatherData?.avg_co || 0,
+          readingCount: aqicnData?.reading_count || openweatherData?.reading_count || 1,
+          source: aqicnData ? 'aqicn-3h-average' : 'openweather-3h-average'
+        };
 
-      let counts = { pm25: 0, no2: 0, o3: 0 };
-
-      validReadings.forEach(reading => {
-        if (reading.pm25_concentration > 0) {
-          averages.pm25 += reading.pm25_concentration;
-          counts.pm25++;
+        // Only return if we have meaningful pollutant data
+        if (mergedData.pm25 > 0 || mergedData.no2 > 0 || mergedData.o3 > 0) {
+          return mergedData;
         }
-        if (reading.no2_concentration > 0) {
-          averages.no2 += reading.no2_concentration;
-          counts.no2++;
-        }
-        if (reading.o3_concentration > 0) {
-          averages.o3 += reading.o3_concentration;
-          counts.o3++;
-        }
-      });
+      }
 
-      // Calculate final averages
-      averages.pm25 = counts.pm25 > 0 ? averages.pm25 / counts.pm25 : 0;
-      averages.no2 = counts.no2 > 0 ? averages.no2 / counts.no2 : 0;
-      averages.o3 = counts.o3 > 0 ? averages.o3 / counts.o3 : 0;
-
-      return averages;
+      return null;
 
     } catch (error) {
       console.error(`🍁 Error fetching merged concentrations for ${stationId}:`, error);

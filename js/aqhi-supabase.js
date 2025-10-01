@@ -50,14 +50,18 @@ export const AQHI_LEVELS = {
 export function calculateThaiAQHI(pm25, no2, o3) {
   console.log(`🧮 Calculating Thai AQHI with concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}μg/m³, O3=${o3}μg/m³`);
 
-  const riskPM25 = pm25 ? Math.exp(THAI_AQHI_PARAMS.beta.pm25 * pm25) - 1 : 0;
+  // Calculate the risk from each pollutant
+  const riskPM25 = pm25 ? 100 * (Math.exp(THAI_AQHI_PARAMS.beta.pm25 * pm25) - 1) : 0;
   const riskO3 = o3 ? Math.exp(THAI_AQHI_PARAMS.beta.o3 * o3) - 1 : 0;
   const riskNO2 = no2 ? Math.exp(THAI_AQHI_PARAMS.beta.no2 * no2) - 1 : 0;
 
-  const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-  const aqhi = (10 / THAI_AQHI_PARAMS.C) * 100 * totalRiskSum;
+  // Sum the risks
+  const totalRisk = riskPM25 + riskO3 + riskNO2;
 
-  console.log(`📊 Thai AQHI risks: PM2.5=${riskPM25.toFixed(4)}, NO2=${riskNO2.toFixed(4)}, O3=${riskO3.toFixed(4)}, Total=${totalRiskSum.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
+  // Apply the scaling factor
+  const aqhi = (10 / THAI_AQHI_PARAMS.C) * totalRisk;
+
+  console.log(`📊 Thai AQHI risks: PM2.5=${riskPM25.toFixed(4)}, NO2=${riskNO2.toFixed(4)}, O3=${riskO3.toFixed(4)}, Total=${totalRisk.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
 
   return Math.max(0, Math.round(aqhi));
 }
@@ -499,7 +503,7 @@ class SupabaseAQHI {
         let riskNO2 = 0;
 
         if (averages.pm25) {
-          riskPM25 = Math.exp(0.0012 * averages.pm25) - 1;
+          riskPM25 = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
         }
 
         if (averages.o3) {
@@ -511,7 +515,7 @@ class SupabaseAQHI {
         }
 
         const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-        aqhi = (10.0 / 105.19) * 100 * totalRiskSum;
+        aqhi = (10.0 / 105.19) * totalRiskSum;
         aqhi = Math.max(0, Math.round(aqhi)); // Round to whole number
 
         // Cache the result
@@ -609,7 +613,7 @@ class SupabaseAQHI {
             let riskNO2 = 0;
 
             if (averages.pm25) {
-              riskPM25 = Math.exp(0.0012 * averages.pm25) - 1;
+              riskPM25 = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
             }
             if (averages.o3) {
               riskO3 = Math.exp(0.0010 * averages.o3) - 1;
@@ -619,7 +623,7 @@ class SupabaseAQHI {
             }
 
             const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-            aqhiValue = (10.0 / 105.19) * 100 * totalRiskSum;
+            aqhiValue = (10.0 / 105.19) * totalRiskSum;
             aqhiValue = Math.max(0, Math.round(aqhiValue));
 
             // Cache the result

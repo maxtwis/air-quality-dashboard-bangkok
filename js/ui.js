@@ -591,7 +591,18 @@ export class UIManager {
           openWeatherData,
         );
       } else {
-        this.showErrorInStationInfo('Could not load detailed data');
+        // Fallback for AQI mode - use basic station data if detailed fetch fails
+        if (!isAnyAQHI) {
+          console.warn('⚠️ Detailed station data unavailable, using basic station data for AQI mode');
+          await this.updateStationInfoWithDetails(
+            { iaqi: { pm25: { v: station.aqi || 0 } } }, // Mock structure with basic AQI
+            false, // Not AQHI mode
+            null, // No averageData
+            null, // No openWeatherData
+          );
+        } else {
+          this.showErrorInStationInfo('Could not load detailed data');
+        }
       }
     } catch (error) {
       console.error('Error loading station details:', error);

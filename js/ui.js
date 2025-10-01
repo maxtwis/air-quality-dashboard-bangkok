@@ -454,6 +454,7 @@ export class UIManager {
   async showStationInfo(station) {
     const isAQHI = this.currentIndicator === 'AQHI';
     const isPM25AQHI = this.currentIndicator === 'PM25_AQHI';
+    const isCanadianAQHI = this.currentIndicator === 'AQHI_CANADA';
     let value, level, cssClass, label;
 
     if (isAQHI && station.aqhi) {
@@ -467,6 +468,13 @@ export class UIManager {
       value = formatAQHI(station.pm25_aqhi.value);
       level = station.pm25_aqhi.level;
       cssClass = this.getAQHIClass(station.pm25_aqhi.value);
+      label = level.label;
+    } else if (isCanadianAQHI && station.canadianAqhi) {
+      // Use Canadian AQHI data
+      const { formatCanadianAQHI } = await import('./aqhi-canada.js');
+      value = formatCanadianAQHI(station.canadianAqhi.value);
+      level = station.canadianAqhi.level;
+      cssClass = this.getAQHIClass(station.canadianAqhi.value);
       label = level.label;
     } else {
       // Use AQI data
@@ -551,6 +559,16 @@ export class UIManager {
               avgError,
             );
           }
+        } else if (isCanadianAQHI && station.canadianAqhi) {
+          try {
+            // Import Canadian AQHI to get 3-hour averages
+            const { canadianAQHI } = await import('./aqhi-canada.js');
+            averageData = await canadianAQHI.getMergedConcentrations(
+              station.uid?.toString(),
+            );
+          } catch (avgError) {
+            console.warn('Could not fetch Canadian AQHI 3-hour averages:', avgError);
+          }
         }
 
         // Fetch OpenWeather data if needed for NO₂ and O₃
@@ -630,20 +648,21 @@ export class UIManager {
       const pollutantData = [];
       const weatherData = [];
 
-      // Use 3-hour averages if in AQHI mode and available, otherwise use API data
-      const dataSource = isAQHI && averageData ? averageData : detailsData.iaqi;
+      // Use 3-hour averages if in any AQHI mode and available, otherwise use API data
+      const isAnyAQHI = isAQHI || isPM25AQHI || isCanadianAQHI;
+      const dataSource = isAnyAQHI && averageData ? averageData : detailsData.iaqi;
 
       // Determine the correct data label based on mode and data availability
       let dataLabel = 'Current';
-      if (isAQHI && averageData) {
+      if (isAnyAQHI && averageData) {
         dataLabel = '3-Hour Average (μg/m³)';
-      } else if (isAQHI) {
+      } else if (isAnyAQHI) {
         dataLabel = 'Current (converted to μg/m³)';
       } else {
         dataLabel = 'Current (μg/m³)';
       }
 
-      if (isAQHI && averageData) {
+      if (isAnyAQHI && averageData) {
         // For AQHI mode with averages, process the average data structure
         console.log('🔄 AQHI mode: Using 3-hour averages (already in μg/m³)');
         Object.entries(averageData).forEach(([key, value]) => {
@@ -662,7 +681,7 @@ export class UIManager {
         });
       } else {
         // Standard processing for API data - CONVERT AQI TO CONCENTRATIONS
-        console.log(`🔄 Detail panel mode: ${isAQHI ? 'AQHI' : 'AQI'} - Converting AQI values to concentrations...`);
+        console.log(`🔄 Detail panel mode: ${isAnyAQHI ? 'AQHI' : 'AQI'} - Converting AQI values to concentrations...`);
         const convertedStation = convertStationToRawConcentrations(detailsData);
 
         Object.entries(detailsData.iaqi).forEach(([key, data]) => {

@@ -1,8 +1,8 @@
 import { getAQILevel, getAQIClass, formatDateTime } from './utils.js';
 import { fetchStationDetails } from './api.js';
 import { POLLUTANTS, WEATHER_PARAMS, CONFIG, AQI_LEVELS } from './config.js';
-import { getAQHILevel, formatAQHI, AQHI_LEVELS } from './aqhi-realistic.js';
-import { calculateAQHIStatistics } from './aqhi-realistic.js';
+import { getAQHILevel, formatAQHI, AQHI_LEVELS } from './aqhi-supabase.js';
+import { calculateAQHIStatistics } from './aqhi-supabase.js';
 import { healthRecommendations } from './health-recommendations.js';
 import { convertStationToRawConcentrations, getRawConcentration } from './aqi-to-concentration.js';
 

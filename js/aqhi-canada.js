@@ -2,10 +2,7 @@
 // Based on official Canadian AQHI formula from Health Canada
 
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
-import {
-  convertStationToRawConcentrations,
-  getRawConcentration
-} from './aqi-to-concentration.js';
+// Import will be added dynamically when needed for fallback calculations
 
 // Official Canadian AQHI Parameters from Health Canada
 const CANADIAN_AQHI_PARAMS = {

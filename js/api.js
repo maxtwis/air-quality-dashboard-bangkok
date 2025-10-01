@@ -1,9 +1,8 @@
 import { CONFIG } from './config.js';
 import { formatBounds } from './utils.js';
 import {
-  calculateStationAQHIRealistic,
-  initializeRealisticAQHI,
-} from './aqhi-realistic.js';
+  calculateStationAQHI,
+} from './aqhi-supabase.js';
 import { supabaseAQHI } from './aqhi-supabase.js';
 import { pm25OnlySupabaseAQHI } from './aqhi-pm25-only.js';
 
@@ -32,12 +31,9 @@ export async function fetchAirQualityData(includeAQHI = false) {
     const stations = data.data || [];
 
     if (includeAQHI) {
-      // Initialize realistic AQHI on first call
+      // Initialize Thai AQHI on first call
       if (!fetchAirQualityData._initialized) {
-        const stationsWithData = initializeRealisticAQHI();
-        console.log(
-          `🔄 Initialized realistic AQHI with data from ${stationsWithData} stations`,
-        );
+        console.log('🔄 Initialized Thai AQHI calculation system');
         fetchAirQualityData._initialized = true;
       }
 
@@ -67,12 +63,9 @@ export async function fetchAirQualityData(includeAQHI = false) {
 // Add AQHI calculations to existing station data
 export async function enhanceStationsWithAQHI(stations) {
   try {
-    // Initialize realistic AQHI on first call
+    // Initialize Thai AQHI on first call
     if (!fetchAirQualityData._initialized) {
-      const stationsWithData = initializeRealisticAQHI();
-      console.log(
-        `🔄 Initialized realistic AQHI with data from ${stationsWithData} stations`,
-      );
+      console.log('🔄 Initialized Thai AQHI calculation system');
       fetchAirQualityData._initialized = true;
     }
 
@@ -127,11 +120,11 @@ export async function fetchStationDetails(stationUID) {
       throw new Error(`API Error: ${data.reason || 'Unknown error'}`);
     }
 
-    // Enhance station details with realistic AQHI
+    // Enhance station details with Thai AQHI
     const stationData = data.data;
     return {
       ...stationData,
-      aqhi: calculateStationAQHIRealistic(stationData),
+      aqhi: await calculateStationAQHI(stationData),
     };
   } catch (error) {
     console.error('Error fetching station details:', error);

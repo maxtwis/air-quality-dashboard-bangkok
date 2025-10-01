@@ -1,7 +1,7 @@
 import { getMap } from './map.js';
 import { getAQIColor, isValidStation } from './utils.js';
 import { uiManager } from './ui.js';
-import { formatAQHI } from './aqhi-realistic.js';
+import { formatAQHI } from './aqhi-supabase.js';
 
 // Modern marker creation and management
 

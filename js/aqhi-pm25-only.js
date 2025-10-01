@@ -213,38 +213,38 @@ class PM25OnlySupabaseAQHI {
     if (!this.supabase) return null;
 
     try {
-      const { data, error } = await this.supabase
-        .from('air_quality_readings')
-        .select('pm25, timestamp')
+      // Use the same current_3h_averages view as other AQHI implementations
+      const { data: aqicnData, error: aqicnError } = await this.supabase
+        .from('current_3h_averages')
+        .select('avg_pm25, reading_count')
         .eq('station_uid', stationId)
-        .gte(
-          'timestamp',
-          new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-        )
-        .order('timestamp', { ascending: false });
+        .single();
 
-      if (error) {
-        console.error('Error fetching PM2.5-only 3h averages:', error);
-        return null;
+      if (aqicnError && aqicnError.code !== 'PGRST116') {
+        console.warn(`Error fetching AQICN 3h averages for PM2.5 AQHI ${stationId}:`, aqicnError.message);
       }
 
-      if (!data || data.length === 0) {
-        return null;
+      // Get OpenWeather data as fallback
+      const { data: openweatherData, error: openweatherError } = await this.supabase
+        .from('current_openweather_station_3h_averages')
+        .select('avg_pm25, reading_count')
+        .eq('station_uid', stationId)
+        .single();
+
+      if (openweatherError && openweatherError.code !== 'PGRST116') {
+        console.warn(`Error fetching OpenWeather 3h averages for PM2.5 AQHI ${stationId}:`, openweatherError.message);
       }
 
-      // Calculate averages
-      const validReadings = data.filter((reading) => reading.pm25 !== null);
-
-      if (validReadings.length === 0) {
-        return null;
+      // Use AQICN data first, fallback to OpenWeather
+      if (aqicnData?.avg_pm25 > 0 || openweatherData?.avg_pm25 > 0) {
+        return {
+          pm25: aqicnData?.avg_pm25 || openweatherData?.avg_pm25,
+          readingCount: aqicnData?.reading_count || openweatherData?.reading_count || 1,
+          source: aqicnData ? 'aqicn-3h-average' : 'openweather-3h-average'
+        };
       }
 
-      const averages = {
-        pm25: this.calculateAverage(validReadings, 'pm25'),
-        readingCount: validReadings.length,
-      };
-
-      return averages;
+      return null;
     } catch (error) {
       console.error('Error in get3HourPM25Averages:', error);
       return null;

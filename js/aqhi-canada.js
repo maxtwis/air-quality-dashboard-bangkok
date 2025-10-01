@@ -147,13 +147,42 @@ class CanadianAQHISupabase {
 
           console.log(`🍁 Canadian AQHI for ${stationId}: PM2.5=${mergedData.pm25?.toFixed(1)}, NO2=${mergedData.no2?.toFixed(1)}, O3=${mergedData.o3?.toFixed(1)} → AQHI=${Math.round(aqhi)} (${calculationMethod})`);
         } else {
-          // Fallback when no data available
-          aqhi = 1; // Minimum Canadian AQHI value
-          pollutants = { pm25: 0, no2: 0, o3: 0 };
-          calculationMethod = 'no-data';
-          dataQuality = 'unavailable';
-          readingCount = 0;
-          console.log(`🍁 No data for Canadian AQHI calculation for station ${stationId}`);
+          // Fallback to current station data when Supabase data unavailable
+          try {
+            const { convertStationToRawConcentrations } = await import('./aqi-to-concentration.js');
+            const fallbackConcentrations = convertStationToRawConcentrations(station);
+
+            if (fallbackConcentrations && (fallbackConcentrations.pm25 > 0 || fallbackConcentrations.no2 > 0 || fallbackConcentrations.o3 > 0)) {
+              const riskPM25 = fallbackConcentrations.pm25 ? Math.exp(CANADIAN_AQHI_PARAMS.beta.pm25 * fallbackConcentrations.pm25) - 1 : 0;
+              const riskO3 = fallbackConcentrations.o3 ? Math.exp(CANADIAN_AQHI_PARAMS.beta.o3 * fallbackConcentrations.o3) - 1 : 0;
+              const riskNO2 = fallbackConcentrations.no2 ? Math.exp(CANADIAN_AQHI_PARAMS.beta.no2 * fallbackConcentrations.no2) - 1 : 0;
+
+              const totalRiskSum = riskPM25 + riskO3 + riskNO2;
+              aqhi = (10.0 / CANADIAN_AQHI_PARAMS.C) * 100 * totalRiskSum;
+
+              pollutants = fallbackConcentrations;
+              calculationMethod = 'current-reading';
+              dataQuality = 'current';
+              readingCount = 1;
+
+              console.log(`🍁 Canadian AQHI for ${stationId} (fallback): PM2.5=${fallbackConcentrations.pm25?.toFixed(1)}, NO2=${fallbackConcentrations.no2?.toFixed(1)}, O3=${fallbackConcentrations.o3?.toFixed(1)} → AQHI=${Math.round(aqhi)} (current)`);
+            } else {
+              // No data available at all
+              aqhi = 1; // Minimum Canadian AQHI value
+              pollutants = { pm25: 0, no2: 0, o3: 0 };
+              calculationMethod = 'no-data';
+              dataQuality = 'unavailable';
+              readingCount = 0;
+              console.log(`🍁 No data for Canadian AQHI calculation for station ${stationId}`);
+            }
+          } catch (conversionError) {
+            console.error(`🍁 Error in fallback concentration conversion for ${stationId}:`, conversionError);
+            aqhi = 1;
+            pollutants = { pm25: 0, no2: 0, o3: 0 };
+            calculationMethod = 'no-data';
+            dataQuality = 'unavailable';
+            readingCount = 0;
+          }
         }
 
         const canadianAqhiValue = Math.max(1, Math.round(aqhi));

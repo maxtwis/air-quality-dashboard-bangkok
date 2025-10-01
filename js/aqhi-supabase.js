@@ -262,46 +262,48 @@ class SupabaseAQHI {
     if (!this.supabase) return null;
 
     try {
-      const { data, error } = await this.supabase
-        .from('air_quality_readings')
-        .select('pm25, pm10, o3, no2, so2, co, timestamp')
+      // Use the same current_3h_averages view as the main AQHI calculation
+      const { data: aqicnData, error: aqicnError } = await this.supabase
+        .from('current_3h_averages')
+        .select('*')
         .eq('station_uid', stationId)
-        .gte(
-          'timestamp',
-          new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-        )
-        .order('timestamp', { ascending: false });
+        .single();
 
-      if (error) {
-        console.error('Error fetching 3h averages:', error);
-        return null;
+      if (aqicnError && aqicnError.code !== 'PGRST116') {
+        console.warn(`Error fetching AQICN 3h averages for detail panel ${stationId}:`, aqicnError.message);
       }
 
-      if (!data || data.length === 0) {
-        return null;
+      // Get OpenWeather data as fallback
+      const { data: openweatherData, error: openweatherError } = await this.supabase
+        .from('current_openweather_station_3h_averages')
+        .select('*')
+        .eq('station_uid', stationId)
+        .single();
+
+      if (openweatherError && openweatherError.code !== 'PGRST116') {
+        console.warn(`Error fetching OpenWeather 3h averages for detail panel ${stationId}:`, openweatherError.message);
       }
 
-      // Calculate averages
-      const validReadings = data.filter(
-        (reading) =>
-          reading.pm25 !== null || reading.o3 !== null || reading.no2 !== null,
-      );
+      // Merge data prioritizing AQICN, supplementing with OpenWeather
+      if (aqicnData || openweatherData) {
+        const averages = {
+          pm25: aqicnData?.avg_pm25 || openweatherData?.avg_pm25 || null,
+          pm10: aqicnData?.avg_pm10 || openweatherData?.avg_pm10 || null,
+          o3: aqicnData?.avg_o3 || openweatherData?.avg_o3 || null,
+          no2: aqicnData?.avg_no2 || openweatherData?.avg_no2 || null,
+          so2: aqicnData?.avg_so2 || openweatherData?.avg_so2 || null,
+          co: aqicnData?.avg_co || openweatherData?.avg_co || null,
+          readingCount: aqicnData?.reading_count || openweatherData?.reading_count || 1,
+          source: aqicnData ? 'aqicn-3h-average' : 'openweather-3h-average'
+        };
 
-      if (validReadings.length === 0) {
-        return null;
+        // Only return if we have meaningful pollutant data
+        if (averages.pm25 > 0 || averages.no2 > 0 || averages.o3 > 0) {
+          return averages;
+        }
       }
 
-      const averages = {
-        pm25: this.calculateAverage(validReadings, 'pm25'),
-        pm10: this.calculateAverage(validReadings, 'pm10'),
-        o3: this.calculateAverage(validReadings, 'o3'),
-        no2: this.calculateAverage(validReadings, 'no2'),
-        so2: this.calculateAverage(validReadings, 'so2'),
-        co: this.calculateAverage(validReadings, 'co'),
-        readingCount: validReadings.length,
-      };
-
-      return averages;
+      return null;
     } catch (error) {
       console.error('Error in get3HourAverages:', error);
       return null;

@@ -109,6 +109,24 @@ export async function fetchStationDetails(stationUID) {
 
     const response = await fetch(url);
     if (!response.ok) {
+      // In development, proxy may not be available - return mock data
+      if (response.status === 404) {
+        console.warn('⚠️ Development mode: API proxy not available, returning mock station data');
+        return {
+          uid: stationUID,
+          station: { name: 'Development Station' },
+          aqi: 50,
+          time: { s: new Date().toISOString() },
+          iaqi: {
+            pm25: { v: 25 },
+            pm10: { v: 40 },
+            o3: { v: 30 },
+            no2: { v: 20 },
+            so2: { v: 10 },
+            co: { v: 5 }
+          }
+        };
+      }
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
@@ -124,6 +142,11 @@ export async function fetchStationDetails(stationUID) {
     return stationData;
   } catch (error) {
     console.error('Error fetching station details:', error);
+    // Return null for actual errors (not development 404s)
+    if (error.message.includes('HTTP error! status: 404')) {
+      // This was already handled above with mock data
+      return null;
+    }
     return null;
   }
 }

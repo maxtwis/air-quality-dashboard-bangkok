@@ -644,6 +644,10 @@ export class UIManager {
     averageData = null,
     openWeatherData = null,
   ) {
+    // Define indicator variables based on current mode
+    const isPM25AQHI = this.currentIndicator === 'PM25_AQHI';
+    const isCanadianAQHI = this.currentIndicator === 'AQHI_CANADA';
+
     let container = document.getElementById('station-details-container');
     if (!container) {
       container = document.createElement('div');

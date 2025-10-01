@@ -1,10 +1,147 @@
 // Browser-compatible AQHI calculation using Supabase data
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
-import {
-  calculateStationAQHIRealistic,
-  getAQHILevel,
-} from './aqhi-realistic.js';
 import { getOpenWeatherFallback } from './openweather-api.js';
+
+// Thai AQHI Parameters
+const THAI_AQHI_PARAMS = {
+  C: 105.19,
+  beta: {
+    pm25: 0.0012,
+    o3: 0.0010,
+    no2: 0.0052,
+  },
+};
+
+// Thai AQHI Categories
+export const AQHI_LEVELS = {
+  LOW: {
+    min: 0,
+    max: 3.9,
+    color: '#10b981',
+    label: 'Low',
+    description: 'Ideal air quality for outdoor activities',
+  },
+  MODERATE: {
+    min: 4,
+    max: 6.9,
+    color: '#f59e0b',
+    label: 'Moderate',
+    description: 'No need to modify outdoor activities unless experiencing symptoms',
+  },
+  HIGH: {
+    min: 7,
+    max: 10.9,
+    color: '#ef4444',
+    label: 'High',
+    description: 'Consider reducing or rescheduling strenuous outdoor activities',
+  },
+  VERY_HIGH: {
+    min: 11,
+    max: Infinity,
+    color: '#7f1d1d',
+    label: 'Very High',
+    description: 'Reduce or reschedule strenuous outdoor activities',
+  },
+};
+
+/**
+ * Calculate Thai AQHI using official Thai Health Department formula
+ */
+export function calculateThaiAQHI(pm25, no2, o3) {
+  console.log(`🧮 Calculating Thai AQHI with concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}μg/m³, O3=${o3}μg/m³`);
+
+  const riskPM25 = pm25 ? Math.exp(THAI_AQHI_PARAMS.beta.pm25 * pm25) - 1 : 0;
+  const riskO3 = o3 ? Math.exp(THAI_AQHI_PARAMS.beta.o3 * o3) - 1 : 0;
+  const riskNO2 = no2 ? Math.exp(THAI_AQHI_PARAMS.beta.no2 * no2) - 1 : 0;
+
+  const totalRiskSum = riskPM25 + riskO3 + riskNO2;
+  const aqhi = (10 / THAI_AQHI_PARAMS.C) * 100 * totalRiskSum;
+
+  console.log(`📊 Thai AQHI risks: PM2.5=${riskPM25.toFixed(4)}, NO2=${riskNO2.toFixed(4)}, O3=${riskO3.toFixed(4)}, Total=${totalRiskSum.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
+
+  return Math.max(0, Math.round(aqhi));
+}
+
+/**
+ * Get Thai AQHI level information
+ */
+export function getAQHILevel(aqhi) {
+  for (const [key, level] of Object.entries(AQHI_LEVELS)) {
+    if (aqhi >= level.min && aqhi <= level.max) {
+      return { ...level, key };
+    }
+  }
+  return { ...AQHI_LEVELS.VERY_HIGH, key: 'VERY_HIGH' };
+}
+
+/**
+ * Calculate AQHI from station data (converts AQI to concentrations first)
+ */
+export async function calculateStationAQHI(station) {
+  const { convertStationToRawConcentrations } = await import('./aqi-to-concentration.js');
+  const concentrations = convertStationToRawConcentrations(station);
+
+  return calculateThaiAQHI(
+    concentrations.pm25,
+    concentrations.no2,
+    concentrations.o3
+  );
+}
+
+/**
+ * Format AQHI for display
+ */
+export function formatAQHI(aqhi) {
+  if (aqhi === null || aqhi === undefined || isNaN(aqhi)) {
+    return 'N/A';
+  }
+  return Math.round(aqhi).toString();
+}
+
+/**
+ * Calculate AQHI statistics for multiple stations
+ */
+export function calculateAQHIStatistics(stations) {
+  if (!stations || stations.length === 0) {
+    return null;
+  }
+
+  const aqhiValues = [];
+  const categoryCounts = {
+    LOW: 0,
+    MODERATE: 0,
+    HIGH: 0,
+    VERY_HIGH: 0,
+  };
+
+  let stationsWithData = 0;
+
+  stations.forEach((station) => {
+    if (station.aqhi && typeof station.aqhi.value === 'number') {
+      aqhiValues.push(station.aqhi.value);
+      categoryCounts[station.aqhi.level.key]++;
+      stationsWithData++;
+    }
+  });
+
+  if (aqhiValues.length === 0) {
+    return null;
+  }
+
+  const average = aqhiValues.reduce((sum, val) => sum + val, 0) / aqhiValues.length;
+  const min = Math.min(...aqhiValues);
+  const max = Math.max(...aqhiValues);
+
+  return {
+    average: Math.round(average),
+    min: Math.round(min),
+    max: Math.round(max),
+    categoryCounts,
+    totalStations: stations.length,
+    stationsWithData,
+    percentComplete: Math.round((stationsWithData / stations.length) * 100),
+  };
+}
 
 class SupabaseAQHI {
   constructor() {
@@ -327,7 +464,7 @@ class SupabaseAQHI {
   async calculateAQHI(station) {
     const stationId = station.uid?.toString();
     if (!stationId) {
-      const fallbackAQHI = calculateStationAQHIRealistic(station);
+      const fallbackAQHI = await calculateStationAQHI(station);
       const aqhiLevel = getAQHILevel(fallbackAQHI);
       return {
         value: fallbackAQHI,
@@ -399,7 +536,7 @@ class SupabaseAQHI {
     }
 
     // Fallback to realistic calculation
-    const fallbackAQHI = calculateStationAQHIRealistic(station);
+    const fallbackAQHI = await calculateStationAQHI(station);
 
     // Cache fallback result for shorter time
     this.cache.set(cacheKey, {
@@ -427,16 +564,19 @@ class SupabaseAQHI {
     if (!this.supabase) {
       console.error('❌ Supabase not initialized - falling back to realistic AQHI calculations');
       // Fallback to realistic calculations
-      return stations.map(station => ({
-        ...station,
-        aqhi: {
-          value: calculateStationAQHIRealistic(station),
-          level: getAQHILevel(calculateStationAQHIRealistic(station)),
-          calculationMethod: 'fallback_no_db',
-          readingCount: 0,
-          dataQuality: 'estimated',
-          dataSources: 'fallback'
-        }
+      return Promise.all(stations.map(async (station) => {
+        const aqhiValue = await calculateStationAQHI(station);
+        return {
+          ...station,
+          aqhi: {
+            value: aqhiValue,
+            level: getAQHILevel(aqhiValue),
+            calculationMethod: 'fallback_no_db',
+            readingCount: 0,
+            dataQuality: 'estimated',
+            dataSources: 'fallback'
+          }
+        };
       }));
     }
 
@@ -515,7 +655,7 @@ class SupabaseAQHI {
                 }
               } else {
                 // Final fallback to realistic calculation
-                aqhiValue = calculateStationAQHIRealistic(station);
+                aqhiValue = await calculateStationAQHI(station);
 
                 if (stationId) {
                   this.cache.set(`aqhi_${stationId}`, {
@@ -576,16 +716,19 @@ class SupabaseAQHI {
     } catch (error) {
       console.error('❌ Error during AQHI enhancement:', error.message || error);
       // Return stations with fallback AQHI calculations
-      const fallbackStations = stations.map(station => ({
-        ...station,
-        aqhi: {
-          value: calculateStationAQHIRealistic(station),
-          level: getAQHILevel(calculateStationAQHIRealistic(station)),
-          calculationMethod: 'fallback_error',
-          readingCount: 0,
-          dataQuality: 'estimated',
-          dataSources: 'fallback'
-        }
+      const fallbackStations = await Promise.all(stations.map(async (station) => {
+        const aqhiValue = await calculateStationAQHI(station);
+        return {
+          ...station,
+          aqhi: {
+            value: aqhiValue,
+            level: getAQHILevel(aqhiValue),
+            calculationMethod: 'fallback_error',
+            readingCount: 0,
+            dataQuality: 'estimated',
+            dataSources: 'fallback'
+          }
+        };
       }));
 
       const duration = Date.now() - startTime;
@@ -609,24 +752,8 @@ class SupabaseAQHI {
       so2: station.iaqi?.so2?.v || supplementaryData.so2,
     };
 
-    // Correct AQHI formula
-    let riskPM25 = 0;
-    let riskO3 = 0;
-    let riskNO2 = 0;
-
-    if (mergedData.pm25) {
-      riskPM25 = Math.exp(0.0012 * mergedData.pm25) - 1;
-    }
-    if (mergedData.o3) {
-      riskO3 = Math.exp(0.0010 * mergedData.o3) - 1;
-    }
-    if (mergedData.no2) {
-      riskNO2 = Math.exp(0.0052 * mergedData.no2) - 1;
-    }
-
-    const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-    const aqhi = (10.0 / 105.19) * 100 * totalRiskSum;
-    const aqhiValue = Math.max(0, Math.round(aqhi));
+    // Calculate Thai AQHI using the direct calculation
+    const aqhiValue = calculateThaiAQHI(mergedData.pm25, mergedData.no2, mergedData.o3);
 
     // Log the data sources used
     const stationSources = Object.entries(mergedData)

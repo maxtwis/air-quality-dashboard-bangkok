@@ -1,7 +1,7 @@
 // PM2.5-only AQHI calculation using Supabase data
 // This module tests the hypothesis of what happens when NO2 and O3 are set to 0
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
-import { getAQHILevel } from './aqhi-realistic.js';
+import { getAQHILevel, calculateThaiAQHI } from './aqhi-supabase.js';
 
 class PM25OnlySupabaseAQHI {
   constructor() {
@@ -192,18 +192,11 @@ class PM25OnlySupabaseAQHI {
   }
 
   /**
-   * Calculate AQHI using only PM2.5 (Health Canada formula with NO2=0, O3=0)
+   * Calculate AQHI using only PM2.5 (Thai formula with NO2=0, O3=0)
    */
   calculateAQHIFromPM25Only(pm25) {
-    if (!pm25 || pm25 <= 0) return 0;
-
-    // Health Canada AQHI formula with only PM2.5 component
-    let aqhi = Math.exp(0.000487 * pm25) - 1;
-
-    // Apply the scaling factor
-    aqhi = (10.0 / 10.4) * 100 * aqhi;
-
-    return Math.max(0, Math.round(aqhi));
+    // Use the same Thai AQHI calculation but with NO2 and O3 set to 0
+    return calculateThaiAQHI(pm25, 0, 0);
   }
 
   /**

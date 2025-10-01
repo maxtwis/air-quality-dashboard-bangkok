@@ -1,7 +1,7 @@
 import { calculateStationStatistics, getAQIClass } from './utils.js';
 import { uiManager } from './ui.js';
-import { getAQHILevel, formatAQHI } from './aqhi-realistic.js';
-import { calculateAQHIStatistics } from './aqhi-realistic.js';
+import { getAQHILevel, formatAQHI } from './aqhi-supabase.js';
+import { calculateAQHIStatistics } from './aqhi-supabase.js';
 
 // Modern statistics calculation and display
 

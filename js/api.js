@@ -1,8 +1,6 @@
 import { CONFIG } from './config.js';
 import { formatBounds } from './utils.js';
-import {
-  calculateStationAQHI,
-} from './aqhi-supabase.js';
+// AQHI calculations are handled separately in specific modules
 import { supabaseAQHI } from './aqhi-supabase.js';
 import { pm25OnlySupabaseAQHI } from './aqhi-pm25-only.js';
 
@@ -120,12 +118,10 @@ export async function fetchStationDetails(stationUID) {
       throw new Error(`API Error: ${data.reason || 'Unknown error'}`);
     }
 
-    // Enhance station details with Thai AQHI
+    // Return station data without automatic AQHI calculation
+    // AQHI will be calculated separately when needed
     const stationData = data.data;
-    return {
-      ...stationData,
-      aqhi: await calculateStationAQHI(stationData),
-    };
+    return stationData;
   } catch (error) {
     console.error('Error fetching station details:', error);
     return null;

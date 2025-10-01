@@ -63,7 +63,7 @@ export function calculateThaiAQHI(pm25, no2, o3) {
 
   console.log(`📊 Thai AQHI risks: PM2.5=${riskPM25.toFixed(4)}, NO2=${riskNO2.toFixed(4)}, O3=${riskO3.toFixed(4)}, Total=${totalRisk.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
 
-  return Math.max(0, Math.round(aqhi));
+  return Math.max(1, Math.round(aqhi));
 }
 
 /**
@@ -516,7 +516,7 @@ class SupabaseAQHI {
 
         const totalRiskSum = riskPM25 + riskO3 + riskNO2;
         aqhi = (10.0 / 105.19) * totalRiskSum;
-        aqhi = Math.max(0, Math.round(aqhi)); // Round to whole number
+        aqhi = Math.max(1, Math.round(aqhi)); // Round to whole number, minimum 1
 
         // Cache the result
         this.cache.set(cacheKey, {
@@ -624,7 +624,7 @@ class SupabaseAQHI {
 
             const totalRiskSum = riskPM25 + riskO3 + riskNO2;
             aqhiValue = (10.0 / 105.19) * totalRiskSum;
-            aqhiValue = Math.max(0, Math.round(aqhiValue));
+            aqhiValue = Math.max(1, Math.round(aqhiValue));
 
             // Cache the result
             if (stationId) {

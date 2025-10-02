@@ -4,7 +4,7 @@ import { getOpenWeatherFallback } from './openweather-api.js';
 
 // Thai AQHI Parameters
 const THAI_AQHI_PARAMS = {
-  C: 10.4,
+  C: 15,
   beta: {
     pm25: 0.0012,
     o3: 0.0010,
@@ -515,7 +515,7 @@ class SupabaseAQHI {
         }
 
         const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-        aqhi = (10.0 / 10.4) * totalRiskSum;
+        aqhi = (10.0 / 15) * totalRiskSum;
         aqhi = Math.max(1, Math.round(aqhi)); // Round to whole number, minimum 1
 
         // Cache the result
@@ -623,7 +623,7 @@ class SupabaseAQHI {
             }
 
             const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-            aqhiValue = (10.0 / 10.4) * totalRiskSum;
+            aqhiValue = (10.0 / 15) * totalRiskSum;
             aqhiValue = Math.max(1, Math.round(aqhiValue));
 
             // Cache the result

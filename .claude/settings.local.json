@@ -31,7 +31,8 @@
       "Bash(move test-conversion-logic.js test-conversion-logic.cjs)",
       "Bash(ren:*)",
       "Bash(find:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []

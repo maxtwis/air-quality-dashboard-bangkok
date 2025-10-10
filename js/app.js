@@ -127,11 +127,6 @@ class ModernAirQualityDashboard {
       this.pm25AqhiCalculated
     ) {
       return this.stationsWithPM25AQHI;
-    } else if (
-      uiManager.currentIndicator === 'AQHI_CANADA' &&
-      this.canadianAqhiCalculated
-    ) {
-      return this.stationsWithCanadianAQHI;
     } else {
       return this.stations;
     }
@@ -252,42 +247,6 @@ class ModernAirQualityDashboard {
     }
   }
 
-  async calculateCanadianAQHI() {
-    if (this.isCalculatingCanadianAQHI) {
-      console.log('⏳ Canadian AQHI calculation already in progress');
-      return;
-    }
-
-    try {
-      this.isCalculatingCanadianAQHI = true;
-      uiManager.showLoading(
-        'stats-content',
-        'Calculating Canadian AQHI using 3-hour averages...',
-      );
-
-      console.log('🍁 Calculating Canadian AQHI for existing stations...');
-      const { canadianAQHI } = await import('./aqhi-canada.js');
-      this.stationsWithCanadianAQHI = await canadianAQHI.enhanceStationsWithCanadianAQHI(this.stations);
-      this.canadianAqhiCalculated = true;
-
-      console.log(
-        `✅ Canadian AQHI calculated for ${this.stationsWithCanadianAQHI.length} stations`,
-      );
-
-      // Update display if currently showing Canadian AQHI
-      if (uiManager.currentIndicator === 'AQHI_CANADA') {
-        this.updateDisplay();
-      }
-    } catch (error) {
-      console.error('❌ Error calculating Canadian AQHI:', error);
-      uiManager.showError(
-        'stats-content',
-        `Error calculating Canadian AQHI: ${error.message}`,
-      );
-    } finally {
-      this.isCalculatingCanadianAQHI = false;
-    }
-  }
 
   animateDataChanges(oldStations, newStations) {
     // Compare old vs new data and animate significant changes
@@ -343,9 +302,6 @@ class ModernAirQualityDashboard {
     } else if (indicator === 'PM25_AQHI' && !this.pm25AqhiCalculated) {
       // Calculate PM2.5-only AQHI on-demand when user switches to PM2.5 AQHI tab
       await this.calculatePM25AQHI();
-    } else if (indicator === 'AQHI_CANADA' && !this.canadianAqhiCalculated) {
-      // Calculate Canadian AQHI on-demand when user switches to Canadian AQHI tab
-      await this.calculateCanadianAQHI();
     }
 
     // Update display with current data

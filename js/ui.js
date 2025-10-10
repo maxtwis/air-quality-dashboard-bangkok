@@ -71,8 +71,6 @@ export class UIManager {
       this.updateMainDisplayAQHI(stations);
     } else if (this.currentIndicator === 'PM25_AQHI') {
       this.updateMainDisplayPM25AQHI(stations);
-    } else if (this.currentIndicator === 'AQHI_CANADA') {
-      this.updateMainDisplayCanadianAQHI(stations);
     } else {
       this.updateMainDisplayAQI(stations);
     }
@@ -231,76 +229,6 @@ export class UIManager {
     if (mainLabel) mainLabel.textContent = 'PM2.5 AQHI';
   }
 
-  updateMainDisplayCanadianAQHI(stations) {
-    // Calculate Canadian AQHI statistics
-    const validStations = stations.filter(
-      (s) => s.canadianAqhi && s.canadianAqhi.value !== undefined,
-    );
-    if (validStations.length === 0) return;
-
-    const aqhiValues = validStations.map((s) => s.canadianAqhi.value);
-    const avgAQHI = Math.round(
-      aqhiValues.reduce((a, b) => a + b, 0) / aqhiValues.length,
-    );
-
-    // Import Canadian AQHI levels
-    import('./aqhi-canada.js').then(({ getCanadianAQHILevel, formatCanadianAQHI }) => {
-      const aqhiLevel = getCanadianAQHILevel(avgAQHI);
-
-      // Map Canadian AQHI colors to existing AQI classes
-      const getCanadianAQHIClass = (level) => {
-        switch (level.key) {
-          case 'LOW':
-            return 'aqi-good';
-          case 'MODERATE':
-            return 'aqi-moderate';
-          case 'HIGH':
-            return 'aqi-unhealthy-sensitive';
-          case 'VERY_HIGH':
-            return 'aqi-unhealthy';
-          default:
-            return 'aqi-moderate';
-        }
-      };
-
-      // Update main display
-      const mainValue = document.getElementById('main-aqi-value');
-      const mainCategory = document.getElementById('main-aqi-category');
-      const mainDescription = document.getElementById('main-aqi-description');
-      const mainCircle = document.getElementById('main-aqi-circle');
-      const mainLabel = document.querySelector('.aqi-label');
-
-      if (mainValue) mainValue.textContent = formatCanadianAQHI(avgAQHI);
-      if (mainCategory) mainCategory.textContent = aqhiLevel.label;
-      if (mainDescription) {
-        // Check data quality for Canadian AQHI
-        let dataQualityNote = '';
-        if (validStations.length > 0 && validStations[0].canadianAqhi) {
-          const commonMethod =
-            validStations[0].canadianAqhi?.calculationMethod || 'current-reading';
-          const readingCount = validStations[0].canadianAqhi?.readingCount || 1;
-
-          if (commonMethod === 'current-reading') {
-            dataQualityNote = ' (Current readings - Canadian formula)';
-          } else if (commonMethod === 'supabase-average') {
-            if (readingCount >= 15) {
-              dataQualityNote = ' (3h average - Canadian formula)';
-            } else if (readingCount >= 10) {
-              dataQualityNote = ` (${readingCount} readings avg - Canadian formula)`;
-            } else {
-              dataQualityNote = ` (${readingCount} readings - Canadian formula)`;
-            }
-          }
-        } else {
-          dataQualityNote = ' (Canadian AQHI formula)';
-        }
-        mainDescription.textContent = aqhiLevel.description + dataQualityNote;
-      }
-      if (mainCircle)
-        mainCircle.className = `aqi-circle ${getCanadianAQHIClass(aqhiLevel)}`;
-      if (mainLabel) mainLabel.textContent = 'AQHI Canada';
-    });
-  }
 
   // Update map legend based on current indicator
   updateMapLegend() {
@@ -454,7 +382,6 @@ export class UIManager {
   async showStationInfo(station) {
     const isAQHI = this.currentIndicator === 'AQHI';
     const isPM25AQHI = this.currentIndicator === 'PM25_AQHI';
-    const isCanadianAQHI = this.currentIndicator === 'AQHI_CANADA';
     let value, level, cssClass, label;
 
     if (isAQHI && station.aqhi) {
@@ -468,13 +395,6 @@ export class UIManager {
       value = formatAQHI(station.pm25_aqhi.value);
       level = station.pm25_aqhi.level;
       cssClass = this.getAQHIClass(station.pm25_aqhi.value);
-      label = level.label;
-    } else if (isCanadianAQHI && station.canadianAqhi) {
-      // Use Canadian AQHI data
-      const { formatCanadianAQHI } = await import('./aqhi-canada.js');
-      value = formatCanadianAQHI(station.canadianAqhi.value);
-      level = station.canadianAqhi.level;
-      cssClass = this.getAQHIClass(station.canadianAqhi.value);
       label = level.label;
     } else {
       // Use AQI data
@@ -559,16 +479,6 @@ export class UIManager {
               avgError,
             );
           }
-        } else if (isCanadianAQHI && station.canadianAqhi) {
-          try {
-            // Import Canadian AQHI to get 3-hour averages
-            const { canadianAQHI } = await import('./aqhi-canada.js');
-            averageData = await canadianAQHI.getMergedConcentrations(
-              station.uid?.toString(),
-            );
-          } catch (avgError) {
-            console.warn('Could not fetch Canadian AQHI 3-hour averages:', avgError);
-          }
         }
 
         await this.updateStationInfoWithDetails(
@@ -633,7 +543,6 @@ export class UIManager {
   ) {
     // Define indicator variables based on current mode
     const isPM25AQHI = this.currentIndicator === 'PM25_AQHI';
-    const isCanadianAQHI = this.currentIndicator === 'AQHI_CANADA';
 
     let container = document.getElementById('station-details-container');
     if (!container) {
@@ -651,7 +560,7 @@ export class UIManager {
       const weatherData = [];
 
       // Use 3-hour averages if in any AQHI mode and available, otherwise use API data
-      const isAnyAQHI = isAQHI || isPM25AQHI || isCanadianAQHI;
+      const isAnyAQHI = isAQHI || isPM25AQHI;
       const dataSource = isAnyAQHI && averageData ? averageData : detailsData.iaqi;
 
       // Determine the correct data label based on mode and data availability

@@ -217,23 +217,12 @@ class PM25OnlySupabaseAQHI {
         console.warn(`Error fetching AQICN 3h averages for PM2.5 AQHI ${stationId}:`, aqicnError.message);
       }
 
-      // Get OpenWeather data as fallback
-      const { data: openweatherData, error: openweatherError } = await this.supabase
-        .from('current_openweather_station_3h_averages')
-        .select('avg_pm25, reading_count')
-        .eq('station_uid', stationId)
-        .single();
-
-      if (openweatherError && openweatherError.code !== 'PGRST116') {
-        console.warn(`Error fetching OpenWeather 3h averages for PM2.5 AQHI ${stationId}:`, openweatherError.message);
-      }
-
-      // Use AQICN data first, fallback to OpenWeather
-      if (aqicnData?.avg_pm25 > 0 || openweatherData?.avg_pm25 > 0) {
+      // Use AQICN data only
+      if (aqicnData?.avg_pm25 > 0) {
         return {
-          pm25: aqicnData?.avg_pm25 || openweatherData?.avg_pm25,
-          readingCount: aqicnData?.reading_count || openweatherData?.reading_count || 1,
-          source: aqicnData ? 'aqicn-3h-average' : 'openweather-3h-average'
+          pm25: aqicnData?.avg_pm25,
+          readingCount: aqicnData?.reading_count || 1,
+          source: 'aqicn-3h-average'
         };
       }
 

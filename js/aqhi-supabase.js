@@ -1,6 +1,5 @@
 // Browser-compatible AQHI calculation using Supabase data
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
-import { getOpenWeatherFallback } from './openweather-api.js';
 
 // Thai AQHI Parameters
 const THAI_AQHI_PARAMS = {
@@ -181,7 +180,7 @@ class SupabaseAQHI {
   }
 
   /**
-   * Get enhanced 3-hour averages including OpenWeather data (batch query)
+   * Get 3-hour averages from database (batch query)
    */
   async getBatch3HourAverages(stationIds) {
     if (!this.supabase || !stationIds.length) return {};
@@ -243,16 +242,6 @@ class SupabaseAQHI {
         console.warn('Error fetching AQICN 3h averages:', aqicnError.message);
       }
 
-      // Get OpenWeather data from current_openweather_station_3h_averages view
-      const { data: openweatherData, error: openweatherError } = await this.supabase
-        .from('current_openweather_station_3h_averages')
-        .select('*')
-        .in('station_uid', stationIds);
-
-      if (openweatherError) {
-        console.warn('Error fetching OpenWeather 3h averages:', openweatherError.message);
-      }
-
       // Process AQICN data
       if (aqicnData) {
         aqicnData.forEach(station => {
@@ -271,59 +260,6 @@ class SupabaseAQHI {
         });
       }
 
-      // Enhance with OpenWeather data where available
-      if (openweatherData) {
-        openweatherData.forEach(owStation => {
-          const stationId = owStation.station_uid;
-
-          if (stationAverages[stationId]) {
-            // Merge with existing AQICN data - prefer AQICN PM2.5, supplement with OpenWeather NO2/O3
-            const existing = stationAverages[stationId];
-            stationAverages[stationId] = {
-              pm25: existing.pm25 || owStation.avg_pm25,
-              pm10: existing.pm10 || owStation.avg_pm10,
-              o3: existing.o3 || owStation.avg_o3,
-              no2: existing.no2 || owStation.avg_no2,
-              so2: existing.so2 || owStation.avg_so2,
-              co: existing.co || owStation.avg_co,
-              readingCount: Math.max(existing.readingCount, owStation.reading_count),
-              dataSources: 'mixed',
-            };
-          } else if (owStation.reading_count > 0) {
-            // Only OpenWeather data available
-            stationAverages[stationId] = {
-              pm25: owStation.avg_pm25,
-              pm10: owStation.avg_pm10,
-              o3: owStation.avg_o3,
-              no2: owStation.avg_no2,
-              so2: owStation.avg_so2,
-              co: owStation.avg_co,
-              readingCount: owStation.reading_count,
-              dataSources: 'openweather',
-            };
-          }
-        });
-      }
-
-      const enhancedCount = Object.values(stationAverages).filter(
-        (avg) => avg.dataSources === 'mixed',
-      ).length;
-
-      const openweatherOnlyCount = Object.values(stationAverages).filter(
-        (avg) => avg.dataSources === 'openweather',
-      ).length;
-
-      if (enhancedCount > 0) {
-        console.log(
-          `🌐 ${enhancedCount} stations enhanced with mixed data sources`,
-        );
-      }
-
-      if (openweatherOnlyCount > 0) {
-        console.log(
-          `☁️ ${openweatherOnlyCount} stations using OpenWeather-only data`,
-        );
-      }
 
       console.log(
         `📊 Enhanced averages using views: ${Object.keys(stationAverages).length} total stations`,
@@ -414,28 +350,17 @@ class SupabaseAQHI {
         console.warn(`Error fetching AQICN 3h averages for detail panel ${stationId}:`, aqicnError.message);
       }
 
-      // Get OpenWeather data as fallback
-      const { data: openweatherData, error: openweatherError } = await this.supabase
-        .from('current_openweather_station_3h_averages')
-        .select('*')
-        .eq('station_uid', stationId)
-        .single();
-
-      if (openweatherError && openweatherError.code !== 'PGRST116') {
-        console.warn(`Error fetching OpenWeather 3h averages for detail panel ${stationId}:`, openweatherError.message);
-      }
-
-      // Merge data prioritizing AQICN, supplementing with OpenWeather
-      if (aqicnData || openweatherData) {
+      // Use AQICN data only
+      if (aqicnData) {
         const averages = {
-          pm25: aqicnData?.avg_pm25 || openweatherData?.avg_pm25 || null,
-          pm10: aqicnData?.avg_pm10 || openweatherData?.avg_pm10 || null,
-          o3: aqicnData?.avg_o3 || openweatherData?.avg_o3 || null,
-          no2: aqicnData?.avg_no2 || openweatherData?.avg_no2 || null,
-          so2: aqicnData?.avg_so2 || openweatherData?.avg_so2 || null,
-          co: aqicnData?.avg_co || openweatherData?.avg_co || null,
-          readingCount: aqicnData?.reading_count || openweatherData?.reading_count || 1,
-          source: aqicnData ? 'aqicn-3h-average' : 'openweather-3h-average'
+          pm25: aqicnData?.avg_pm25 || null,
+          pm10: aqicnData?.avg_pm10 || null,
+          o3: aqicnData?.avg_o3 || null,
+          no2: aqicnData?.avg_no2 || null,
+          so2: aqicnData?.avg_so2 || null,
+          co: aqicnData?.avg_co || null,
+          readingCount: aqicnData?.reading_count || 1,
+          source: 'aqicn-3h-average'
         };
 
         // Only return if we have meaningful pollutant data
@@ -636,53 +561,16 @@ class SupabaseAQHI {
               });
             }
           } else {
-            // Try OpenWeather fallback for missing O3/NO2 data
-            try {
-              const supplementaryData = await getOpenWeatherFallback(
-                station,
-                averages,
-              );
+            // Fallback to realistic calculation (no OpenWeather)
+            aqhiValue = await calculateStationAQHI(station);
 
-              if (supplementaryData) {
-                aqhiValue = this.calculateWithSupplementaryData(
-                  station,
-                  supplementaryData,
-                );
-
-                if (stationId) {
-                  this.cache.set(`aqhi_${stationId}`, {
-                    value: aqhiValue,
-                    timestamp: Date.now(),
-                    source: 'openweather_supplemented',
-                    readingCount: 1,
-                  });
-                }
-              } else {
-                // Final fallback to realistic calculation
-                aqhiValue = await calculateStationAQHI(station);
-
-                if (stationId) {
-                  this.cache.set(`aqhi_${stationId}`, {
-                    value: aqhiValue,
-                    timestamp: Date.now(),
-                    source: 'fallback',
-                    readingCount: 0,
-                  });
-                }
-              }
-            } catch (openWeatherError) {
-              console.warn(`OpenWeather fallback failed for ${stationId}:`, openWeatherError.message);
-              // Final fallback to realistic calculation
-              aqhiValue = calculateStationAQHIRealistic(station);
-
-              if (stationId) {
-                this.cache.set(`aqhi_${stationId}`, {
-                  value: aqhiValue,
-                  timestamp: Date.now(),
-                  source: 'fallback',
-                  readingCount: 0,
-                });
-              }
+            if (stationId) {
+              this.cache.set(`aqhi_${stationId}`, {
+                value: aqhiValue,
+                timestamp: Date.now(),
+                source: 'fallback',
+                readingCount: 0,
+              });
             }
           }
 
@@ -741,41 +629,6 @@ class SupabaseAQHI {
     }
   }
 
-  /**
-   * Calculate AQHI using station data supplemented with OpenWeather data
-   * @param {Object} station - Station data from WAQI API
-   * @param {Object} supplementaryData - Data from OpenWeather API
-   * @returns {number} AQHI value
-   */
-  calculateWithSupplementaryData(station, supplementaryData) {
-    // Merge station data with OpenWeather data, prioritizing station data
-    const mergedData = {
-      pm25: station.iaqi?.pm25?.v || supplementaryData.pm25,
-      o3: station.iaqi?.o3?.v || supplementaryData.o3,
-      no2: station.iaqi?.no2?.v || supplementaryData.no2,
-      so2: station.iaqi?.so2?.v || supplementaryData.so2,
-    };
-
-    // Calculate Thai AQHI using the direct calculation
-    const aqhiValue = calculateThaiAQHI(mergedData.pm25, mergedData.no2, mergedData.o3);
-
-    // Log the data sources used
-    const stationSources = Object.entries(mergedData)
-      .filter(([key, value]) => value !== null && station.iaqi?.[key]?.v)
-      .map(([key]) => key);
-    const openWeatherSources = Object.entries(mergedData)
-      .filter(
-        ([key, value]) =>
-          value !== null && !station.iaqi?.[key]?.v && supplementaryData[key],
-      )
-      .map(([key]) => key);
-
-    console.log(
-      `Station ${station.station?.name || station.uid}: AQHI=${aqhiValue} using station[${stationSources.join(',')}] + OpenWeather[${openWeatherSources.join(',')}]`,
-    );
-
-    return aqhiValue;
-  }
 
   /**
    * Get data quality level based on cache source and reading count
@@ -783,20 +636,13 @@ class SupabaseAQHI {
    * @param {number} readingCount - Number of readings used
    * @returns {string} Data quality level
    */
-  getDataQualityFromSource(source, readingCount = 0, dataSources = 'station') {
-    // Check if data sources indicate mixed data (station + OpenWeather)
-    if (dataSources === 'mixed') {
-      return 'enhanced';
-    }
-
+  getDataQualityFromSource(source, readingCount = 0) {
     switch (source) {
       case 'batch_stored_3h_avg':
         if (readingCount >= 15) return 'excellent';
         if (readingCount >= 10) return 'good';
         if (readingCount >= 5) return 'fair';
         return 'limited';
-      case 'openweather_supplemented':
-        return 'enhanced';
       case 'fallback':
         return 'estimated';
       default:
@@ -811,7 +657,6 @@ class SupabaseAQHI {
     const stats = {
       totalCached: this.cache.size,
       storedCalculations: 0,
-      openWeatherSupplemented: 0,
       fallbackCalculations: 0,
     };
 
@@ -821,8 +666,6 @@ class SupabaseAQHI {
         value.source === 'batch_stored_3h_avg'
       ) {
         stats.storedCalculations++;
-      } else if (value.source === 'openweather_supplemented') {
-        stats.openWeatherSupplemented++;
       } else {
         stats.fallbackCalculations++;
       }

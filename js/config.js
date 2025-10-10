@@ -47,15 +47,6 @@ export const CONFIG = {
   },
 };
 
-// OpenWeather API Configuration for O3/NO2 fallback
-export const OPENWEATHER_CONFIG = {
-  // API_KEY no longer needed client-side - handled by proxy endpoints
-  API_KEY: '', // Kept for backward compatibility, but unused
-  API_URL: 'https://api.openweathermap.org/data/2.5/air_pollution',
-  CACHE_DURATION: 10 * 60 * 1000, // 10 minutes
-  MAX_REQUESTS_PER_DAY: 1000,
-};
-
 // AQI thresholds and modern colors
 export const AQI_LEVELS = {
   GOOD: {

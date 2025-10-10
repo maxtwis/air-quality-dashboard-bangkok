@@ -571,24 +571,11 @@ export class UIManager {
           }
         }
 
-        // Fetch OpenWeather data if needed for NO₂ and O₃
-        let openWeatherData = null;
-        try {
-          const { getOpenWeatherFallback } = await import('./openweather-api.js');
-          openWeatherData = await getOpenWeatherFallback(station, averageData);
-          if (openWeatherData) {
-            console.log(`OpenWeather data fetched for station ${station.station?.name || station.uid}:`,
-                       `NO₂: ${openWeatherData.no2 || 'N/A'} μg/m³, O₃: ${openWeatherData.o3 || 'N/A'} μg/m³`);
-          }
-        } catch (owError) {
-          console.warn('Could not fetch OpenWeather supplementary data:', owError);
-        }
-
         await this.updateStationInfoWithDetails(
           detailsData,
           isAQHI || isPM25AQHI,
           averageData,
-          openWeatherData,
+          null,
         );
       } else {
         // Fallback for AQI mode - use basic station data if detailed fetch fails
@@ -736,28 +723,6 @@ export class UIManager {
         });
       }
 
-      // Add OpenWeather data for missing NO₂ and O₃ if available
-      if (openWeatherData) {
-        const existingPollutants = new Set(pollutantData.map(p => p.key));
-
-        // Add NO₂ from OpenWeather if not already present
-        if (openWeatherData.no2 !== null && openWeatherData.no2 !== undefined && !existingPollutants.has('no2')) {
-          pollutantData.push({
-            key: 'no2',
-            config: { ...POLLUTANTS.no2, name: `${POLLUTANTS.no2.name} (OW)` }, // Mark as OpenWeather source
-            value: Math.round(openWeatherData.no2 * 10) / 10,
-          });
-        }
-
-        // Add O₃ from OpenWeather if not already present
-        if (openWeatherData.o3 !== null && openWeatherData.o3 !== undefined && !existingPollutants.has('o3')) {
-          pollutantData.push({
-            key: 'o3',
-            config: { ...POLLUTANTS.o3, name: `${POLLUTANTS.o3.name} (OW)` }, // Mark as OpenWeather source
-            value: Math.round(openWeatherData.o3 * 10) / 10,
-          });
-        }
-      }
 
       // Generate pollutant HTML
       if (pollutantData.length > 0) {

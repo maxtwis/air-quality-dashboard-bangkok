@@ -126,7 +126,6 @@ function updateStatisticsPanelAQHI(stations) {
                     ${qualityBreakdown.excellent > 0 ? `<div>🎯 ${qualityBreakdown.excellent} stations with full 3+ hour average</div>` : ''}
                     ${qualityBreakdown.good > 0 ? `<div>✅ ${qualityBreakdown.good} stations with 2+ hour average</div>` : ''}
                     ${qualityBreakdown.fair > 0 ? `<div>⏳ ${qualityBreakdown.fair} stations with 1+ hour average</div>` : ''}
-                    ${qualityBreakdown.enhanced > 0 ? `<div>🌐 ${qualityBreakdown.enhanced} stations enhanced with OpenWeather</div>` : ''}
                     ${qualityBreakdown.limited > 0 ? `<div>🔄 ${qualityBreakdown.limited} stations building data</div>` : ''}
                     ${qualityBreakdown.estimated > 0 ? `<div>📊 ${qualityBreakdown.estimated} stations using estimation</div>` : ''}
                 </div>

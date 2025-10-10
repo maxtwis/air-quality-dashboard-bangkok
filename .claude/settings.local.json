@@ -30,7 +30,8 @@
       "WebFetch(domain:aqs.epa.gov)",
       "Bash(move test-conversion-logic.js test-conversion-logic.cjs)",
       "Bash(ren:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(git restore:*)"
     ],
     "deny": [],
     "ask": []

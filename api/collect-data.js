@@ -87,18 +87,7 @@ export default async function handler(req, res) {
       return detailed ? { ...station, iaqi: detailed.iaqi } : station;
     });
 
-    // 5. Collect OpenWeather data for stations missing O3/NO2
-    console.log("🌐 Starting OpenWeather data collection...");
-    let openWeatherResult = null;
-    try {
-      openWeatherResult = await collectOpenWeatherData(enhancedStations);
-      console.log("✅ OpenWeather collection successful:", openWeatherResult);
-    } catch (owError) {
-      console.error("❌ OpenWeather collection failed:", owError.message);
-      // Continue without OpenWeather data
-    }
-
-    // 6. Try to store in database (with error handling)
+    // 5. Try to store in database (with error handling)
     let storeResult = null;
     try {
       storeResult = await storeHistoricalData(enhancedStations);
@@ -112,13 +101,10 @@ export default async function handler(req, res) {
       success: true,
       stored: stations.length,
       detailedStations: detailedStations.length,
-      openWeatherData: openWeatherResult ? openWeatherResult.collected : 0,
-      openWeatherApiCalls: openWeatherResult ? openWeatherResult.apiCalls : 0,
       timestamp: new Date().toISOString(),
-      message: `Successfully fetched ${stations.length} stations (${detailedStations.length} with detailed pollutant data)${openWeatherResult ? `, enhanced ${openWeatherResult.collected} with OpenWeather (${openWeatherResult.apiCalls} API calls)` : ""}${storeResult ? " and stored to database" : " (database storage failed)"}`,
+      message: `Successfully fetched ${stations.length} stations (${detailedStations.length} with detailed pollutant data)${storeResult ? " and stored to database" : " (database storage failed)"}`,
       databaseWorking: !!storeResult,
       storeResult: storeResult,
-      openWeatherResult: openWeatherResult,
     };
 
     console.log("✅ Data collection completed:", result);
@@ -365,177 +351,3 @@ async function fetchDetailedStationData(stations, apiToken) {
 
 // Use Supabase storage method
 const storeHistoricalData = storeHistoricalDataSupabase;
-
-// OpenWeather data collection function
-async function collectOpenWeatherData(stations) {
-  console.log("🌐 Starting OpenWeather data collection for stations missing O3/NO2...");
-
-  // Check for OpenWeather API key
-  const openWeatherApiKey = process.env.OPENWEATHER_API_KEY;
-  if (!openWeatherApiKey) {
-    console.warn("⚠️ OPENWEATHER_API_KEY not found in environment variables");
-    return { success: false, message: "OpenWeather API key missing", collected: 0, apiCalls: 0 };
-  }
-
-  // Check current API usage (if we had tracking)
-  const maxDailyRequests = 950; // Safety buffer under 1000
-  let currentUsage = 0; // We'll track this later
-
-  // Identify stations needing enhancement
-  const stationsNeedingData = [];
-
-  for (const station of stations) {
-    const hasO3 = station.iaqi?.o3?.v !== undefined && station.iaqi.o3.v !== null;
-    const hasNO2 = station.iaqi?.no2?.v !== undefined && station.iaqi.no2.v !== null;
-
-    if (!hasO3 || !hasNO2) {
-      stationsNeedingData.push({
-        uid: station.uid,
-        name: station.station?.name || `Station ${station.uid}`,
-        lat: station.lat,
-        lon: station.lon,
-        missing: {
-          o3: !hasO3,
-          no2: !hasNO2
-        }
-      });
-    }
-  }
-
-  console.log(`📊 Found ${stationsNeedingData.length}/${stations.length} stations needing OpenWeather enhancement`);
-
-  if (stationsNeedingData.length === 0) {
-    return { success: true, message: "No stations need enhancement", collected: 0, apiCalls: 0 };
-  }
-
-  // Limit API calls for efficiency
-  const maxCallsThisRun = Math.min(stationsNeedingData.length, 50); // Max 50 calls per cron run
-  const stationsToProcess = stationsNeedingData.slice(0, maxCallsThisRun);
-
-  console.log(`🎯 Processing ${stationsToProcess.length} stations (limited to ${maxCallsThisRun} API calls)`);
-
-  const collectedData = [];
-  let successfulCalls = 0;
-  let failedCalls = 0;
-
-  // Process in small batches to be respectful
-  const batchSize = 5;
-
-  for (let i = 0; i < stationsToProcess.length; i += batchSize) {
-    const batch = stationsToProcess.slice(i, i + batchSize);
-    const batchNum = Math.floor(i / batchSize) + 1;
-    const totalBatches = Math.ceil(stationsToProcess.length / batchSize);
-
-    console.log(`📦 OpenWeather batch ${batchNum}/${totalBatches} (${batch.length} locations)`);
-
-    const promises = batch.map(async (stationInfo) => {
-      try {
-        const url = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${stationInfo.lat}&lon=${stationInfo.lon}&appid=${openWeatherApiKey}`;
-
-        const response = await fetch(url);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ OpenWeather API error for ${stationInfo.name}: ${response.status} - ${errorText}`);
-          failedCalls++;
-          return null;
-        }
-
-        const data = await response.json();
-        successfulCalls++;
-
-        if (!data?.list?.[0]?.components) {
-          console.warn(`⚠️ Invalid OpenWeather response for ${stationInfo.name}`);
-          return null;
-        }
-
-        const components = data.list[0].components;
-
-        // Format data for Supabase storage
-        const formattedData = {
-          lat: parseFloat(stationInfo.lat.toFixed(7)),
-          lon: parseFloat(stationInfo.lon.toFixed(7)),
-          pm25: components.pm2_5 || null,
-          pm10: components.pm10 || null,
-          o3: components.o3 || null,
-          no2: components.no2 || null,
-          so2: components.so2 || null,
-          co: components.co ? parseFloat((components.co / 1000).toFixed(3)) : null, // Convert μg/m³ to mg/m³
-          api_source: 'openweather',
-          timestamp: new Date().toISOString()
-        };
-
-        console.log(`✅ OpenWeather data for ${stationInfo.name}: PM2.5=${formattedData.pm25}, O₃=${formattedData.o3}, NO₂=${formattedData.no2}`);
-        return formattedData;
-
-      } catch (error) {
-        console.error(`❌ Error fetching OpenWeather data for ${stationInfo.name}:`, error.message);
-        failedCalls++;
-        return null;
-      }
-    });
-
-    const batchResults = await Promise.all(promises);
-    const validResults = batchResults.filter(result => result !== null);
-
-    if (validResults.length > 0) {
-      collectedData.push(...validResults);
-    }
-
-    // Small delay between batches
-    if (i + batchSize < stationsToProcess.length) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  }
-
-  // Store OpenWeather data in Supabase
-  let storedCount = 0;
-  if (collectedData.length > 0) {
-    try {
-      storedCount = await storeOpenWeatherData(collectedData);
-      console.log(`💾 Stored ${storedCount} OpenWeather readings in Supabase`);
-    } catch (storeError) {
-      console.error("❌ Failed to store OpenWeather data:", storeError.message);
-    }
-  }
-
-  const totalCalls = successfulCalls + failedCalls;
-  console.log(`📊 OpenWeather collection complete: ${successfulCalls} successful, ${failedCalls} failed (${totalCalls} total calls)`);
-
-  return {
-    success: true,
-    collected: collectedData.length,
-    stored: storedCount,
-    apiCalls: totalCalls,
-    successfulCalls,
-    failedCalls,
-    stationsNeeding: stationsNeedingData.length,
-    message: `Collected ${collectedData.length} OpenWeather readings with ${totalCalls} API calls`
-  };
-}
-
-// Store OpenWeather data in Supabase
-async function storeOpenWeatherData(openWeatherData) {
-  const { createClient } = await import("@supabase/supabase-js");
-
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY,
-  );
-
-  try {
-    const { data, error } = await supabase
-      .from('openweather_readings')
-      .insert(openWeatherData);
-
-    if (error) {
-      console.error('❌ Supabase insert error:', error);
-      throw error;
-    }
-
-    return openWeatherData.length;
-  } catch (error) {
-    console.error('❌ Error storing OpenWeather data in Supabase:', error);
-    throw error;
-  }
-}

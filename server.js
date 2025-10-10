@@ -29,7 +29,6 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     environment: {
       hasWAQI: !!process.env.WAQI_API_TOKEN,
-      hasOpenWeather: !!process.env.OPENWEATHER_API_KEY,
       hasSupabase: !!process.env.SUPABASE_URL
     }
   });
@@ -99,64 +98,6 @@ app.get('/api/waqi-proxy', async (req, res) => {
   }
 });
 
-// OpenWeather API Proxy - hides API keys from client
-app.get('/api/openweather-proxy', async (req, res) => {
-  try {
-    const { lat, lon } = req.query;
-    const apiKey = process.env.OPENWEATHER_API_KEY;
-
-    if (!apiKey) {
-      return res.status(500).json({
-        error: 'API key not configured',
-        message: 'OPENWEATHER_API_KEY environment variable is required'
-      });
-    }
-
-    if (!lat || !lon) {
-      return res.status(400).json({
-        error: 'Missing parameters',
-        message: 'lat and lon query parameters are required'
-      });
-    }
-
-    const apiUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
-
-    console.log(`🌤️ Proxying OpenWeather API request: ${lat},${lon}`);
-
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error('❌ OpenWeather API Error:', data);
-      return res.status(response.status).json({
-        error: 'OpenWeather API Error',
-        details: data,
-        timestamp: new Date().toISOString()
-      });
-    }
-
-    // Add metadata to response
-    const responseData = {
-      ...data,
-      _proxy: {
-        coordinates: { lat: parseFloat(lat), lon: parseFloat(lon) },
-        timestamp: new Date().toISOString(),
-        cached: false
-      }
-    };
-
-    return res.status(200).json(responseData);
-
-  } catch (error) {
-    console.error('❌ OpenWeather Proxy Error:', error);
-    return res.status(500).json({
-      error: 'Proxy server error',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
-
 // Serve the main application
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
@@ -171,8 +112,7 @@ app.use('*', (req, res) => {
       '/ - Main dashboard',
       '/health - Server health check',
       '/api/waqi-proxy?endpoint=bounds - Bangkok air quality stations',
-      '/api/waqi-proxy?endpoint=station&uid=ID - Individual station',
-      '/api/openweather-proxy?lat=LAT&lon=LON - Weather data'
+      '/api/waqi-proxy?endpoint=station&uid=ID - Individual station'
     ]
   });
 });
@@ -184,7 +124,6 @@ app.listen(PORT, () => {
   console.log(`🔍 Health check: http://localhost:${PORT}/health`);
   console.log(`🌐 API Proxy endpoints:`);
   console.log(`   - WAQI: http://localhost:${PORT}/api/waqi-proxy?endpoint=bounds`);
-  console.log(`   - OpenWeather: http://localhost:${PORT}/api/openweather-proxy?lat=13.7&lon=100.5`);
 
   // Check environment variables
   const envStatus = {

@@ -8,9 +8,6 @@
     "api/collect-data.js": {
       "maxDuration": 60
     },
-    "api/collect-data-enhanced.js": {
-      "maxDuration": 60
-    },
     "api/debug-collect.js": {
       "maxDuration": 30
     }

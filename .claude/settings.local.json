@@ -32,7 +32,8 @@
       "Bash(ren:*)",
       "Bash(find:*)",
       "Bash(git restore:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

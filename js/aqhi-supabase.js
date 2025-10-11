@@ -383,7 +383,7 @@ class SupabaseAQHI {
         console.warn(`Error fetching AQICN 3h averages for detail panel ${stationId}:`, aqicnError.message);
       }
 
-      // Use AQICN data only
+      // Use combined WAQI+Google data
       if (aqicnData) {
         const averages = {
           pm25: aqicnData?.avg_pm25 || null,
@@ -392,8 +392,9 @@ class SupabaseAQHI {
           no2: aqicnData?.avg_no2 || null,
           so2: aqicnData?.avg_so2 || null,
           co: aqicnData?.avg_co || null,
-          readingCount: aqicnData?.reading_count || 1,
-          source: 'aqicn-3h-average'
+          readingCount: aqicnData?.waqi_readings || 1,
+          googleReadings: aqicnData?.google_readings || 0,
+          source: 'combined-3h-average'
         };
 
         // Only return if we have meaningful pollutant data

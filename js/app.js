@@ -4,6 +4,9 @@ import {
   enhanceStationsWithAQHI,
   enhanceStationsWithPM25OnlyAQHI,
 } from './api.js';
+import { fetchGoogleAirQualityData } from './google-api.js';
+import { enhanceGoogleStationsWithAQHI } from './aqhi-google.js';
+import { enhanceWAQIWithGooglePollutants, getHybridDataStatistics } from './hybrid-data.js';
 import { initializeMap, clearMarkers } from './map.js';
 import { addMarkersToMap } from './markers.js';
 import { updateStatisticsPanel } from './statistics.js';
@@ -25,6 +28,8 @@ class ModernAirQualityDashboard {
     this.pm25AqhiCalculated = false;
     this.canadianAqhiCalculated = false;
     this.isCalculatingAQHI = false;
+    this.currentDataSource = 'WAQI'; // 'WAQI', 'GOOGLE', or 'HYBRID'
+    this.useHybridMode = true; // Default to hybrid mode for best data quality
   }
 
   async initialize() {
@@ -60,9 +65,11 @@ class ModernAirQualityDashboard {
     try {
       uiManager.showLoading('stats-content', 'Loading air quality data...');
 
-      // Load basic AQI data fast (no AQHI calculations)
+      // All data comes from WAQI API
+      // Google supplements are already added server-side in api/collect-data.js
+      // Client just reads from the API proxy (which reads fresh WAQI data)
       const stations = await fetchAirQualityData(false);
-      console.log(`📊 Loaded ${stations.length} stations (AQI mode)`);
+      console.log(`📊 Loaded ${stations.length} stations (includes Google O3/NO2 supplements from server)`);
 
       if (stations.length === 0) {
         uiManager.showError(
@@ -187,12 +194,17 @@ class ModernAirQualityDashboard {
       );
 
       console.log('🔄 Calculating AQHI for existing stations...');
-      this.stationsWithAQHI = await enhanceStationsWithAQHI(this.stations);
-      this.aqhiCalculated = true;
 
-      console.log(
-        `✅ AQHI calculated for ${this.stationsWithAQHI.length} stations`,
-      );
+      // Use appropriate AQHI calculation based on data source
+      if (this.currentDataSource === 'GOOGLE') {
+        this.stationsWithAQHI = await enhanceGoogleStationsWithAQHI(this.stations);
+        console.log(`✅ Google AQHI calculated for ${this.stationsWithAQHI.length} stations`);
+      } else {
+        this.stationsWithAQHI = await enhanceStationsWithAQHI(this.stations);
+        console.log(`✅ WAQI AQHI calculated for ${this.stationsWithAQHI.length} stations`);
+      }
+
+      this.aqhiCalculated = true;
 
       // Update display if currently showing AQHI
       if (uiManager.currentIndicator === 'AQHI') {
@@ -277,13 +289,23 @@ class ModernAirQualityDashboard {
       clearInterval(this.refreshInterval);
     }
 
-    // Set up new interval
+    // Google API: No auto-refresh to minimize costs (on-demand only)
+    // WAQI: Auto-refresh every 10 minutes (free tier)
+    if (this.currentDataSource === 'GOOGLE') {
+      console.log('💰 Google API: Auto-refresh disabled (on-demand only to minimize costs)');
+      console.log('ℹ️  Use the refresh button to manually update Google data');
+      return; // No auto-refresh for Google
+    }
+
+    // Set up auto-refresh for WAQI only
+    const interval = CONFIG.REFRESH_INTERVAL_WAQI;
     this.refreshInterval = setInterval(() => {
       this.refreshData();
-    }, CONFIG.REFRESH_INTERVAL);
+    }, interval);
 
+    const minutes = interval / 1000 / 60;
     console.log(
-      `⏰ Auto-refresh set up for every ${CONFIG.REFRESH_INTERVAL / 1000 / 60} minutes`,
+      `⏰ Auto-refresh set up for every ${minutes} minutes (${this.currentDataSource} source)`,
     );
   }
 
@@ -306,6 +328,21 @@ class ModernAirQualityDashboard {
 
     // Update display with current data
     this.updateDisplay();
+  }
+
+  async switchDataSource(dataSource) {
+    console.log(`🔄 Switching to ${dataSource} data source`);
+
+    if (this.currentDataSource === dataSource) {
+      console.log('ℹ️ Already using this data source');
+      return;
+    }
+
+    this.currentDataSource = dataSource;
+    await this.loadData();
+
+    // Restart auto-refresh with appropriate interval for new data source
+    this.setupAutoRefresh();
   }
 
   getStations() {
@@ -402,6 +439,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.refreshDashboard = () => dashboard.forceRefresh();
     window.switchIndicator = (indicator) =>
       dashboard.switchToIndicator(indicator);
+    window.switchDataSource = (dataSource) =>
+      dashboard.switchDataSource(dataSource);
     window.uiManager = uiManager;
 
     console.log('🎉 Dashboard ready!');

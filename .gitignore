@@ -109,3 +109,6 @@ js/env.js
 
 # Claude Code settings (keep local settings private)
 .claude/settings.local.json
+
+# Test output files
+test-google-api-response.json

@@ -23,7 +23,10 @@ export const CONFIG = {
   MAP_CENTER: [13.7563, 100.5018],
   MAP_ZOOM: 11,
 
-  REFRESH_INTERVAL: 600000, // 10 minutes in milliseconds
+  // Refresh intervals per data source (in milliseconds)
+  REFRESH_INTERVAL: 600000, // 10 minutes for WAQI (default)
+  REFRESH_INTERVAL_WAQI: 600000, // 10 minutes for WAQI
+  REFRESH_INTERVAL_GOOGLE: 3600000, // 1 hour for Google (to reduce API costs)
 
   API_BASE_URL: 'https://api.waqi.info',
 

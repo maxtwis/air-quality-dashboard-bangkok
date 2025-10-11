@@ -17,21 +17,6 @@ export class UIManager {
   }
 
   setupEventListeners() {
-    // Data source toggle element
-    const dataSourceToggle = document.querySelector('.data-source-toggle');
-
-    // Function to update data source toggle visibility
-    const updateDataSourceToggle = (indicator) => {
-      if (dataSourceToggle) {
-        if (indicator === 'AQHI' || indicator === 'PM25_AQHI') {
-          dataSourceToggle.style.display = 'none';
-          console.log('ℹ️ Data source toggle hidden - AQHI always uses merged WAQI+Google data');
-        } else {
-          dataSourceToggle.style.display = 'block';
-        }
-      }
-    };
-
     // Indicator toggle
     const indicatorRadios = document.querySelectorAll(
       'input[name="indicator"]',
@@ -41,38 +26,10 @@ export class UIManager {
         const indicator = e.target.value;
         this.currentIndicator = indicator;
 
-        // Update data source toggle visibility
-        updateDataSourceToggle(indicator);
-
         // Update map legend immediately
         this.updateMapLegend();
         // Use smart indicator switching instead of full refresh
         window.switchIndicator && window.switchIndicator(indicator);
-      });
-    });
-
-    // Initialize data source toggle visibility on page load
-    const checkedIndicator = document.querySelector('input[name="indicator"]:checked');
-    if (checkedIndicator) {
-      updateDataSourceToggle(checkedIndicator.value);
-    }
-
-    // Data source toggle
-    const dataSourceRadios = document.querySelectorAll(
-      'input[name="dataSource"]',
-    );
-    dataSourceRadios.forEach((radio) => {
-      radio.addEventListener('change', (e) => {
-        const dataSource = e.target.value;
-        console.log(`🔄 Switching to ${dataSource} data source...`);
-
-        // Show/hide refresh notice for Google source
-        const refreshNotice = document.getElementById('refresh-notice');
-        if (refreshNotice) {
-          refreshNotice.style.display = dataSource === 'GOOGLE' ? 'flex' : 'none';
-        }
-
-        window.switchDataSource && window.switchDataSource(dataSource);
       });
     });
 

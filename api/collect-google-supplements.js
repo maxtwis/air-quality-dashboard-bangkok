@@ -29,71 +29,49 @@ export default async function handler(req, res) {
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Step 1: Get recent WAQI stations from database (last 2 hours)
-    console.log('📊 Fetching recent WAQI stations from database...');
-    const { data: recentReadings, error: fetchError } = await supabase
-      .from('air_quality_readings')
-      .select('station_uid, o3, no2, timestamp')
-      .gte('timestamp', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
-      .order('timestamp', { ascending: false });
+    // Step 1: Get all stations from stations table
+    console.log('📊 Fetching stations from database...');
+    const { data: stations, error: stationsError } = await supabase
+      .from('stations')
+      .select('uid, name, lat, lon');
 
-    if (fetchError) {
-      throw new Error(`Failed to fetch recent readings: ${fetchError.message}`);
+    if (stationsError) {
+      throw new Error(`Failed to fetch stations: ${stationsError.message}`);
     }
 
-    // Step 2: Get unique stations from recent readings (with coordinates)
-    // Extract unique stations from readings table
-    const stationsMap = new Map();
-    for (const reading of recentReadings) {
-      if (!stationsMap.has(reading.station_uid)) {
-        stationsMap.set(reading.station_uid, {
-          uid: reading.station_uid,
-          // We'll get lat/lon from a separate query
-        });
-      }
+    if (!stations || stations.length === 0) {
+      return res.status(200).json({
+        success: true,
+        message: 'No stations found in database',
+        stationsChecked: 0,
+        supplementsAdded: 0,
+      });
     }
 
-    // Get coordinates from most recent reading for each station
-    const { data: coordData, error: coordError } = await supabase
-      .from('air_quality_readings')
-      .select('station_uid, lat, lon')
-      .in('station_uid', Array.from(stationsMap.keys()))
-      .order('timestamp', { ascending: false });
+    console.log(`📍 Found ${stations.length} stations in database`);
 
-    if (coordError) {
-      throw new Error(`Failed to fetch coordinates: ${coordError.message}`);
+    // Step 2: Check latest_station_readings or current_3h_averages for O3/NO2
+    const { data: latestReadings, error: readingsError } = await supabase
+      .from('latest_station_readings')
+      .select('station_uid, o3, no2');
+
+    if (readingsError) {
+      console.log('⚠️ Could not fetch latest readings:', readingsError.message);
+      console.log('⚠️ Assuming all stations need supplements');
     }
-
-    // Build stations array with coordinates
-    const coordMap = new Map();
-    for (const row of coordData) {
-      if (!coordMap.has(row.station_uid)) {
-        coordMap.set(row.station_uid, {
-          uid: row.station_uid,
-          lat: parseFloat(row.lat),
-          lon: parseFloat(row.lon),
-        });
-      }
-    }
-    const stations = Array.from(coordMap.values());
-
-    console.log(`📍 Found ${stations.length} unique stations in database`);
 
     // Step 3: Identify stations missing O3/NO2
     const stationsNeedingSupplements = stations.filter((station) => {
-      // Check if this station has any recent readings with O3/NO2
-      const stationReadings = recentReadings.filter(
-        (r) => r.station_uid === station.uid
-      );
+      if (!latestReadings || latestReadings.length === 0) return true;
 
-      if (stationReadings.length === 0) return true; // No recent data
+      const reading = latestReadings.find((r) => r.station_uid === station.uid);
+      if (!reading) return true; // No recent reading
 
-      // Check if any recent reading has both O3 and NO2
-      const hasCompleteData = stationReadings.some(
-        (r) => r.o3 !== null && r.no2 !== null
-      );
+      // Check if has complete O3 and NO2
+      const hasO3 = reading.o3 !== null && reading.o3 !== undefined && reading.o3 > 0;
+      const hasNO2 = reading.no2 !== null && reading.no2 !== undefined && reading.no2 > 0;
 
-      return !hasCompleteData;
+      return !hasO3 || !hasNO2; // Need supplement if missing either
     });
 
     if (stationsNeedingSupplements.length === 0) {

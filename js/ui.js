@@ -17,17 +17,32 @@ export class UIManager {
   }
 
   setupEventListeners() {
+    // Data source toggle element
+    const dataSourceToggle = document.querySelector('.data-source-toggle');
+
     // Indicator toggle
     const indicatorRadios = document.querySelectorAll(
       'input[name="indicator"]',
     );
     indicatorRadios.forEach((radio) => {
       radio.addEventListener('change', (e) => {
-        this.currentIndicator = e.target.value;
+        const indicator = e.target.value;
+        this.currentIndicator = indicator;
+
+        // Hide data source toggle for AQHI (always uses merged data)
+        if (dataSourceToggle) {
+          if (indicator === 'AQHI' || indicator === 'PM25_AQHI') {
+            dataSourceToggle.style.display = 'none';
+            console.log('ℹ️ Data source toggle hidden - AQHI always uses merged WAQI+Google data');
+          } else {
+            dataSourceToggle.style.display = 'block';
+          }
+        }
+
         // Update map legend immediately
         this.updateMapLegend();
         // Use smart indicator switching instead of full refresh
-        window.switchIndicator && window.switchIndicator(e.target.value);
+        window.switchIndicator && window.switchIndicator(indicator);
       });
     });
 
@@ -35,8 +50,6 @@ export class UIManager {
     const dataSourceRadios = document.querySelectorAll(
       'input[name="dataSource"]',
     );
-    const dataSourceToggle = document.querySelector('.data-source-toggle');
-
     dataSourceRadios.forEach((radio) => {
       radio.addEventListener('change', (e) => {
         const dataSource = e.target.value;
@@ -49,24 +62,6 @@ export class UIManager {
         }
 
         window.switchDataSource && window.switchDataSource(dataSource);
-      });
-    });
-
-    // Indicator toggle - hide data source toggle for AQHI
-    const indicatorRadios = document.querySelectorAll('input[name="indicator"]');
-    indicatorRadios.forEach((radio) => {
-      radio.addEventListener('change', (e) => {
-        const indicator = e.target.value;
-
-        // Hide data source toggle for AQHI (always uses merged data)
-        if (dataSourceToggle) {
-          if (indicator === 'AQHI' || indicator === 'PM25_AQHI') {
-            dataSourceToggle.style.display = 'none';
-            console.log('ℹ️ Data source toggle hidden - AQHI always uses merged WAQI+Google data');
-          } else {
-            dataSourceToggle.style.display = 'block';
-          }
-        }
       });
     });
 

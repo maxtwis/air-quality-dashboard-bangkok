@@ -578,18 +578,28 @@ export class UIManager {
       if (isAnyAQHI && averageData) {
         // For AQHI mode with averages, process the average data structure
         console.log('🔄 AQHI mode: Using 3-hour averages (already in μg/m³)');
+        const hasGoogleData = averageData.googleReadings > 0;
+
         Object.entries(averageData).forEach(([key, value]) => {
           if (POLLUTANTS[key] && value !== null && value !== undefined) {
+            // Add asterisk (*) for O3 and NO2 when supplemented by Google
+            const isGoogleSupplemented = hasGoogleData && (key === 'o3' || key === 'no2');
+            const nameWithMarker = isGoogleSupplemented
+              ? `${POLLUTANTS[key].name}*`
+              : POLLUTANTS[key].name;
+
             pollutantData.push({
               key,
               config: {
                 ...POLLUTANTS[key],
+                name: nameWithMarker,
                 unit: key === 'co' ? 'mg/m³' : 'μg/m³' // Ensure proper units are shown
               },
               value: Math.round(value * 10) / 10, // Round to 1 decimal place
-              isConverted: true
+              isConverted: true,
+              isGoogleSupplemented
             });
-            console.log(`   ✅ ${key.toUpperCase()}: ${Math.round(value * 10) / 10} ${key === 'co' ? 'mg/m³' : 'μg/m³'} (3h avg)`);
+            console.log(`   ✅ ${key.toUpperCase()}: ${Math.round(value * 10) / 10} ${key === 'co' ? 'mg/m³' : 'μg/m³'} (3h avg)${isGoogleSupplemented ? ' *Google' : ''}`);
           }
         });
       } else {
@@ -637,6 +647,13 @@ export class UIManager {
 
       // Generate pollutant HTML
       if (pollutantData.length > 0) {
+        const hasGoogleSupplements = pollutantData.some(item => item.isGoogleSupplemented);
+        const footnote = hasGoogleSupplements
+          ? `<div style="font-size: 0.7rem; color: var(--gray-500); margin-top: 8px; font-style: italic;">
+               * Supplemented by Google Air Quality API
+             </div>`
+          : '';
+
         pollutantHTML = `
                     <div class="pollutant-section">
                         <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; color: var(--gray-700);">
@@ -664,6 +681,7 @@ export class UIManager {
                               )
                               .join('')}
                         </div>
+                        ${footnote}
                     </div>
                 `;
       }

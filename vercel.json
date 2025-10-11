@@ -17,15 +17,5 @@
     "api/debug-collect.js": {
       "maxDuration": 30
     }
-  },
-  "crons": [
-    {
-      "path": "/api/collect-data",
-      "schedule": "*/20 * * * *"
-    },
-    {
-      "path": "/api/collect-google-supplements",
-      "schedule": "0 * * * *"
-    }
-  ]
+  }
 }

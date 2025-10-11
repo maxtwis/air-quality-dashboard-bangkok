@@ -276,16 +276,15 @@ class SupabaseAQHI {
   }
 
   /**
-   * Standard 3-hour averages (fallback method)
+   * Standard 3-hour averages (uses combined_3h_averages view)
    */
   async getBatchStandardAverages(stationIds) {
     try {
+      // Use combined_3h_averages view instead of old air_quality_readings table
       const { data, error } = await this.supabase
-        .from('air_quality_readings')
-        .select('station_uid, pm25, pm10, o3, no2, so2, co, timestamp')
-        .in('station_uid', stationIds)
-        .gte('timestamp', new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString())
-        .order('timestamp', { ascending: false });
+        .from('combined_3h_averages')
+        .select('*')
+        .in('station_uid', stationIds);
 
       if (error) {
         console.error('Error fetching standard 3h averages:', error.message);
@@ -293,34 +292,24 @@ class SupabaseAQHI {
       }
 
       if (!data || data.length === 0) {
-        console.log(`ℹ️ No stored data for ${stationIds.length} stations`);
+        console.log(`ℹ️ No 3h average data for ${stationIds.length} stations`);
         return {};
       }
 
-      // Group by station and calculate averages
+      // Convert view data to expected format (already averaged)
       const stationAverages = {};
-      const groupedData = data.reduce((acc, reading) => {
-        if (!acc[reading.station_uid]) acc[reading.station_uid] = [];
-        acc[reading.station_uid].push(reading);
-        return acc;
-      }, {});
-
-      Object.entries(groupedData).forEach(([stationId, readings]) => {
-        const validReadings = readings.filter(
-          (reading) =>
-            reading.pm25 !== null || reading.o3 !== null || reading.no2 !== null,
-        );
-
-        if (validReadings.length > 0) {
-          stationAverages[stationId] = {
-            pm25: this.calculateAverage(validReadings, 'pm25'),
-            pm10: this.calculateAverage(validReadings, 'pm10'),
-            o3: this.calculateAverage(validReadings, 'o3'),
-            no2: this.calculateAverage(validReadings, 'no2'),
-            so2: this.calculateAverage(validReadings, 'so2'),
-            co: this.calculateAverage(validReadings, 'co'),
-            readingCount: validReadings.length,
-            dataSources: 'station',
+      data.forEach(station => {
+        if (station.waqi_readings >= 1) {
+          stationAverages[station.station_uid] = {
+            pm25: station.avg_pm25,
+            pm10: station.avg_pm10,
+            o3: station.avg_o3,
+            no2: station.avg_no2,
+            so2: station.avg_so2,
+            co: station.avg_co,
+            readingCount: station.waqi_readings + (station.google_readings || 0),
+            dataQuality: station.data_quality,
+            dataSources: 'combined_waqi_google',
           };
         }
       });

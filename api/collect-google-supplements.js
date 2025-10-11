@@ -41,16 +41,44 @@ export default async function handler(req, res) {
       throw new Error(`Failed to fetch recent readings: ${fetchError.message}`);
     }
 
-    // Step 2: Get station metadata (coordinates)
-    const { data: stations, error: stationsError } = await supabase
-      .from('stations')
-      .select('uid, name, lat, lon, city, country');
-
-    if (stationsError) {
-      throw new Error(`Failed to fetch stations: ${stationsError.message}`);
+    // Step 2: Get unique stations from recent readings (with coordinates)
+    // Extract unique stations from readings table
+    const stationsMap = new Map();
+    for (const reading of recentReadings) {
+      if (!stationsMap.has(reading.station_uid)) {
+        stationsMap.set(reading.station_uid, {
+          uid: reading.station_uid,
+          // We'll get lat/lon from a separate query
+        });
+      }
     }
 
-    console.log(`📍 Found ${stations.length} stations in database`);
+    // Get coordinates from most recent reading for each station
+    const { data: coordData, error: coordError } = await supabase
+      .from('air_quality_readings')
+      .select('station_uid, station_name, lat, lon')
+      .in('station_uid', Array.from(stationsMap.keys()))
+      .order('timestamp', { ascending: false });
+
+    if (coordError) {
+      throw new Error(`Failed to fetch coordinates: ${coordError.message}`);
+    }
+
+    // Build stations array with coordinates
+    const coordMap = new Map();
+    for (const row of coordData) {
+      if (!coordMap.has(row.station_uid)) {
+        coordMap.set(row.station_uid, {
+          uid: row.station_uid,
+          name: row.station_name,
+          lat: parseFloat(row.lat),
+          lon: parseFloat(row.lon),
+        });
+      }
+    }
+    const stations = Array.from(coordMap.values());
+
+    console.log(`📍 Found ${stations.length} unique stations in database`);
 
     // Step 3: Identify stations missing O3/NO2
     const stationsNeedingSupplements = stations.filter((station) => {

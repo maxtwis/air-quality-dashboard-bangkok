@@ -56,7 +56,7 @@ export default async function handler(req, res) {
     // Get coordinates from most recent reading for each station
     const { data: coordData, error: coordError } = await supabase
       .from('air_quality_readings')
-      .select('station_uid, station_name, lat, lon')
+      .select('station_uid, lat, lon')
       .in('station_uid', Array.from(stationsMap.keys()))
       .order('timestamp', { ascending: false });
 
@@ -70,7 +70,6 @@ export default async function handler(req, res) {
       if (!coordMap.has(row.station_uid)) {
         coordMap.set(row.station_uid, {
           uid: row.station_uid,
-          name: row.station_name,
           lat: parseFloat(row.lat),
           lon: parseFloat(row.lon),
         });

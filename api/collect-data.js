@@ -219,8 +219,15 @@ async function storeHistoricalDataSupabase(stations) {
 
     // Reading data with CONVERTED CONCENTRATIONS instead of AQI values
     const reading = {
-      station_uid: station.station_uid,
+      station_uid: parseInt(station.station_uid),
       timestamp: timestamp,
+
+      // Station location info (required by waqi_data schema)
+      lat: stationData.lat,
+      lon: stationData.lon,
+      station_name: stationData.station_name || stationData.station?.name || "Unknown Station",
+      city: "Bangkok",
+
       aqi:
         typeof stationData.aqi === "number"
           ? stationData.aqi
@@ -235,16 +242,6 @@ async function storeHistoricalDataSupabase(stations) {
       no2: convertedConcentrations.no2 || null,
       so2: convertedConcentrations.so2 || null,
       co: convertedConcentrations.co || null,
-
-      // Weather data
-      temperature: extractValue(stationData, "t"),
-      humidity: extractValue(stationData, "h"),
-      pressure: extractValue(stationData, "p"),
-      wind_speed: extractValue(stationData, "w"),
-      wind_direction: extractValue(stationData, "wd"),
-
-      // Raw data for debugging (store complete station data)
-      raw_data: JSON.stringify(stationData),
     };
 
     readings.push(reading);

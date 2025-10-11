@@ -250,22 +250,13 @@ async function storeHistoricalDataSupabase(stations) {
     readings.push(reading);
   }
 
-  // Store stations (upsert)
-  if (stationsToStore.length > 0) {
-    const { error: stationsError } = await supabase
-      .from("stations")
-      .upsert(stationsToStore, {
-        onConflict: "station_uid",
-        ignoreDuplicates: false,
-      });
+  // Note: No separate stations table needed anymore
+  // All station info is stored with each reading in waqi_data table
 
-    if (stationsError) throw stationsError;
-  }
-
-  // Store readings
+  // Store readings in new waqi_data table
   if (readings.length > 0) {
     const { error: readingsError } = await supabase
-      .from("air_quality_readings")
+      .from("waqi_data")
       .insert(readings);
 
     if (readingsError) throw readingsError;

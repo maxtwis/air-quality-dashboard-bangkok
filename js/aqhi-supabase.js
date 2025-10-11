@@ -69,6 +69,9 @@ export function calculateThaiAQHI(pm25, no2, o3) {
  * Get Thai AQHI level information
  */
 export function getAQHILevel(aqhi) {
+  if (aqhi === null || aqhi === undefined || isNaN(aqhi)) {
+    return { ...AQHI_LEVELS.LOW, key: 'LOW', label: 'No Data' };
+  }
   for (const [key, level] of Object.entries(AQHI_LEVELS)) {
     if (aqhi >= level.min && aqhi <= level.max) {
       return { ...level, key };
@@ -333,6 +336,47 @@ class SupabaseAQHI {
   }
 
   /**
+   * Get latest single readings for a station (WAQI + Google merged)
+   * Used as fallback when 3-hour averages not available yet
+   */
+  async getLatestReadings(stationId) {
+    if (!this.supabase) return null;
+
+    try {
+      // Get latest WAQI reading
+      const { data: waqiData, error: waqiError } = await this.supabase
+        .from('waqi_data')
+        .select('pm25, pm10, so2, co, o3, no2')
+        .eq('station_uid', stationId)
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .single();
+
+      // Get latest Google supplement
+      const { data: googleData, error: googleError } = await this.supabase
+        .from('google_supplements')
+        .select('o3, no2')
+        .eq('station_uid', stationId)
+        .order('timestamp', { ascending: false })
+        .limit(1)
+        .single();
+
+      // Merge data: Google supplements override WAQI for O3/NO2
+      return {
+        pm25: waqiData?.pm25 || null,
+        pm10: waqiData?.pm10 || null,
+        so2: waqiData?.so2 || null,
+        co: waqiData?.co || null,
+        o3: googleData?.o3 || waqiData?.o3 || null,
+        no2: googleData?.no2 || waqiData?.no2 || null,
+      };
+    } catch (error) {
+      console.warn(`Error fetching latest readings for station ${stationId}:`, error.message);
+      return null;
+    }
+  }
+
+  /**
    * Get 3-hour averages for a single station (fallback)
    */
   async get3HourAverages(stationId) {
@@ -561,16 +605,41 @@ class SupabaseAQHI {
               });
             }
           } else {
-            // Fallback to realistic calculation (no OpenWeather)
-            aqhiValue = await calculateStationAQHI(station);
+            // Fallback: Use latest single readings from database (not 3h average yet)
+            const latestData = await this.getLatestReadings(stationId);
 
-            if (stationId) {
-              this.cache.set(`aqhi_${stationId}`, {
-                value: aqhiValue,
-                timestamp: Date.now(),
-                source: 'fallback',
-                readingCount: 0,
-              });
+            if (latestData && (latestData.pm25 || latestData.o3 || latestData.no2)) {
+              // Calculate AQHI using latest single reading
+              let riskPM25 = 0;
+              let riskO3 = 0;
+              let riskNO2 = 0;
+
+              if (latestData.pm25) {
+                riskPM25 = 100 * (Math.exp(0.0012 * latestData.pm25) - 1);
+              }
+              if (latestData.o3) {
+                riskO3 = Math.exp(0.0010 * latestData.o3) - 1;
+              }
+              if (latestData.no2) {
+                riskNO2 = Math.exp(0.0052 * latestData.no2) - 1;
+              }
+
+              const totalRiskSum = riskPM25 + riskO3 + riskNO2;
+              aqhiValue = (10.0 / 15) * totalRiskSum;
+              aqhiValue = Math.max(1, Math.round(aqhiValue));
+
+              if (stationId) {
+                this.cache.set(`aqhi_${stationId}`, {
+                  value: aqhiValue,
+                  timestamp: Date.now(),
+                  source: 'latest_single_reading',
+                  readingCount: 1,
+                });
+              }
+            } else {
+              // No data available at all - return null
+              aqhiValue = null;
+              console.warn(`⚠️ No data available for station ${stationId}`);
             }
           }
 

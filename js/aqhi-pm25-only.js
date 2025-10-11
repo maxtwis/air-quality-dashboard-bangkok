@@ -206,9 +206,9 @@ class PM25OnlySupabaseAQHI {
     if (!this.supabase) return null;
 
     try {
-      // Use the same current_3h_averages view as other AQHI implementations
+      // Use combined_3h_averages view (WAQI+Google merged)
       const { data: aqicnData, error: aqicnError } = await this.supabase
-        .from('current_3h_averages')
+        .from('combined_3h_averages')
         .select('avg_pm25, reading_count')
         .eq('station_uid', stationId)
         .single();

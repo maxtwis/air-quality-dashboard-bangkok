@@ -163,12 +163,13 @@ export default async function handler(req, res) {
 }
 
 // Find nearest 4x4 grid point for a station
+// Grid focused on Bangkok proper (excludes outer provinces)
 function findNearestGridPoint(stationLat, stationLon) {
   const gridPoints = [];
-  const latMin = 13.5;
-  const latMax = 14.0;
-  const lngMin = 100.3;
-  const lngMax = 100.9;
+  const latMin = 13.65;  // South Bangkok
+  const latMax = 13.95;  // North Bangkok
+  const lngMin = 100.45; // West Bangkok
+  const lngMax = 100.80; // East Bangkok
   const latStep = (latMax - latMin) / 3; // 4x4 grid = divide by 3
   const lngStep = (lngMax - lngMin) / 3;
 

@@ -58,6 +58,23 @@
             </label>
           </div>
 
+          <!-- Data Source Toggle -->
+          <div class="data-source-toggle">
+            <div class="source-header">Data Source</div>
+            <label class="toggle-label">
+              <input type="radio" name="dataSource" value="WAQI" checked />
+              <span class="toggle-btn">WAQI</span>
+            </label>
+            <label class="toggle-label">
+              <input type="radio" name="dataSource" value="GOOGLE" />
+              <span class="toggle-btn">Google</span>
+            </label>
+            <div class="refresh-notice" id="refresh-notice" style="display: none;">
+              <span class="notice-icon">💰</span>
+              <span class="notice-text">Google: Manual refresh only (cost saving)</span>
+            </div>
+          </div>
+
           <div class="current-aqi">
             <div class="aqi-circle aqi-good" id="main-aqi-circle">
               <div class="aqi-value" id="main-aqi-value">--</div>

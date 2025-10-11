@@ -88,6 +88,8 @@ export default async function handler(req, res) {
     });
 
     // 5. Try to store in database (with error handling)
+    // Note: Google O3/NO2 supplements are now handled by a separate cron job
+    // (api/collect-google-supplements.js runs every 60 minutes)
     let storeResult = null;
     try {
       storeResult = await storeHistoricalData(enhancedStations);

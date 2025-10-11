@@ -31,6 +31,25 @@ export class UIManager {
       });
     });
 
+    // Data source toggle
+    const dataSourceRadios = document.querySelectorAll(
+      'input[name="dataSource"]',
+    );
+    dataSourceRadios.forEach((radio) => {
+      radio.addEventListener('change', (e) => {
+        const dataSource = e.target.value;
+        console.log(`🔄 Switching to ${dataSource} data source...`);
+
+        // Show/hide refresh notice for Google source
+        const refreshNotice = document.getElementById('refresh-notice');
+        if (refreshNotice) {
+          refreshNotice.style.display = dataSource === 'GOOGLE' ? 'flex' : 'none';
+        }
+
+        window.switchDataSource && window.switchDataSource(dataSource);
+      });
+    });
+
     // Refresh button
     const refreshBtn = document.getElementById('refresh-btn');
     if (refreshBtn) {

@@ -5,11 +5,27 @@
     "api/waqi-proxy.js": {
       "maxDuration": 30
     },
+    "api/google-air-quality-proxy.js": {
+      "maxDuration": 30
+    },
     "api/collect-data.js": {
+      "maxDuration": 60
+    },
+    "api/collect-google-supplements.js": {
       "maxDuration": 60
     },
     "api/debug-collect.js": {
       "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/collect-data",
+      "schedule": "*/20 * * * *"
+    },
+    {
+      "path": "/api/collect-google-supplements",
+      "schedule": "0 * * * *"
+    }
+  ]
 }

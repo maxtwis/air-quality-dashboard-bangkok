@@ -19,14 +19,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Step 1: Get latest WAQI data from collect-data endpoint
+    // Step 1: Get latest WAQI data from waqi-proxy endpoint
     console.log('📊 Fetching WAQI stations...');
-    const waqiUrl = 'https://clean-air-bkk.vercel.app/api/waqi-proxy?bounds=13.5,100.3,14.0,100.9';
+    const waqiUrl = 'https://clean-air-bkk.vercel.app/api/waqi-proxy?endpoint=bounds&latlng=13.5,100.3,14.0,100.9';
     const waqiResponse = await fetch(waqiUrl);
     const waqiData = await waqiResponse.json();
 
     if (!waqiData || !waqiData.data) {
-      throw new Error('Failed to fetch WAQI stations');
+      throw new Error(`Failed to fetch WAQI stations: ${JSON.stringify(waqiData)}`);
     }
 
     const waqiStations = waqiData.data;

@@ -232,9 +232,9 @@ class SupabaseAQHI {
     const stationAverages = {};
 
     try {
-      // Get AQICN data from current_3h_averages view
+      // Get merged WAQI+Google data from combined_3h_averages view
       const { data: aqicnData, error: aqicnError } = await this.supabase
-        .from('current_3h_averages')
+        .from('combined_3h_averages')
         .select('*')
         .in('station_uid', stationIds);
 
@@ -339,9 +339,9 @@ class SupabaseAQHI {
     if (!this.supabase) return null;
 
     try {
-      // Use the same current_3h_averages view as the main AQHI calculation
+      // Use the merged combined_3h_averages view (WAQI+Google)
       const { data: aqicnData, error: aqicnError } = await this.supabase
-        .from('current_3h_averages')
+        .from('combined_3h_averages')
         .select('*')
         .eq('station_uid', stationId)
         .single();

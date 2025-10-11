@@ -394,6 +394,8 @@ class SupabaseAQHI {
           co: aqicnData?.avg_co || null,
           readingCount: aqicnData?.waqi_readings || 1,
           googleReadings: aqicnData?.google_readings || 0,
+          o3_source: aqicnData?.o3_source || 'WAQI',
+          no2_source: aqicnData?.no2_source || 'WAQI',
           source: 'combined-3h-average'
         };
 

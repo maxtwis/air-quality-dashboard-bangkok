@@ -582,8 +582,9 @@ export class UIManager {
 
         Object.entries(averageData).forEach(([key, value]) => {
           if (POLLUTANTS[key] && value !== null && value !== undefined) {
-            // Add asterisk (*) for O3 and NO2 when supplemented by Google
-            const isGoogleSupplemented = hasGoogleData && (key === 'o3' || key === 'no2');
+            // Add asterisk (*) only when Google actually supplemented (WAQI didn't have it)
+            const sourceKey = `${key}_source`;
+            const isGoogleSupplemented = averageData[sourceKey] === 'GOOGLE';
             const nameWithMarker = isGoogleSupplemented
               ? `${POLLUTANTS[key].name}*`
               : POLLUTANTS[key].name;

@@ -161,9 +161,12 @@ SELECT
     w.avg_pm10,
     w.avg_so2,
     w.avg_co,
-    -- O3/NO2: Use Google if available (typically 3 readings per 3 hours)
-    COALESCE(g.avg_o3, w.avg_o3) as avg_o3,
-    COALESCE(g.avg_no2, w.avg_no2) as avg_no2,
+    -- O3/NO2: Prefer WAQI, use Google only as supplement when WAQI doesn't have it
+    COALESCE(w.avg_o3, g.avg_o3) as avg_o3,
+    COALESCE(w.avg_no2, g.avg_no2) as avg_no2,
+    -- Track which source was used for O3/NO2
+    CASE WHEN w.avg_o3 IS NOT NULL THEN 'WAQI' ELSE 'GOOGLE' END as o3_source,
+    CASE WHEN w.avg_no2 IS NOT NULL THEN 'WAQI' ELSE 'GOOGLE' END as no2_source,
     -- Reading counts
     w.reading_count as waqi_readings,
     g.reading_count as google_readings,

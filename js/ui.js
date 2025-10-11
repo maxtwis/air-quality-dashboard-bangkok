@@ -20,6 +20,18 @@ export class UIManager {
     // Data source toggle element
     const dataSourceToggle = document.querySelector('.data-source-toggle');
 
+    // Function to update data source toggle visibility
+    const updateDataSourceToggle = (indicator) => {
+      if (dataSourceToggle) {
+        if (indicator === 'AQHI' || indicator === 'PM25_AQHI') {
+          dataSourceToggle.style.display = 'none';
+          console.log('ℹ️ Data source toggle hidden - AQHI always uses merged WAQI+Google data');
+        } else {
+          dataSourceToggle.style.display = 'block';
+        }
+      }
+    };
+
     // Indicator toggle
     const indicatorRadios = document.querySelectorAll(
       'input[name="indicator"]',
@@ -29,15 +41,8 @@ export class UIManager {
         const indicator = e.target.value;
         this.currentIndicator = indicator;
 
-        // Hide data source toggle for AQHI (always uses merged data)
-        if (dataSourceToggle) {
-          if (indicator === 'AQHI' || indicator === 'PM25_AQHI') {
-            dataSourceToggle.style.display = 'none';
-            console.log('ℹ️ Data source toggle hidden - AQHI always uses merged WAQI+Google data');
-          } else {
-            dataSourceToggle.style.display = 'block';
-          }
-        }
+        // Update data source toggle visibility
+        updateDataSourceToggle(indicator);
 
         // Update map legend immediately
         this.updateMapLegend();
@@ -45,6 +50,12 @@ export class UIManager {
         window.switchIndicator && window.switchIndicator(indicator);
       });
     });
+
+    // Initialize data source toggle visibility on page load
+    const checkedIndicator = document.querySelector('input[name="indicator"]:checked');
+    if (checkedIndicator) {
+      updateDataSourceToggle(checkedIndicator.value);
+    }
 
     // Data source toggle
     const dataSourceRadios = document.querySelectorAll(

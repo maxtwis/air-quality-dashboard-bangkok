@@ -162,18 +162,18 @@ export default async function handler(req, res) {
   }
 }
 
-// Find nearest 3x3 grid point for a station
+// Find nearest 4x4 grid point for a station
 function findNearestGridPoint(stationLat, stationLon) {
   const gridPoints = [];
   const latMin = 13.5;
   const latMax = 14.0;
   const lngMin = 100.3;
   const lngMax = 100.9;
-  const latStep = (latMax - latMin) / 2;
-  const lngStep = (lngMax - lngMin) / 2;
+  const latStep = (latMax - latMin) / 3; // 4x4 grid = divide by 3
+  const lngStep = (lngMax - lngMin) / 3;
 
-  for (let i = 0; i < 3; i++) {
-    for (let j = 0; j < 3; j++) {
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 4; j++) {
       gridPoints.push({
         lat: Math.round((latMin + i * latStep) * 1000) / 1000,
         lng: Math.round((lngMin + j * lngStep) * 1000) / 1000,

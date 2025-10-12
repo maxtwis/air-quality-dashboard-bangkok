@@ -221,6 +221,7 @@ async function fetchGoogleAirQuality(lat, lng, apiKey) {
 }
 
 // Extract O3 and NO2 from Google response
+// Google returns ppb - keep as ppb (Thai AQHI formula expects ppb for O3/NO2)
 function extractPollutants(googleData) {
   const result = { o3: null, no2: null };
 
@@ -228,11 +229,11 @@ function extractPollutants(googleData) {
 
   for (const pollutant of googleData.pollutants) {
     if (pollutant.code === 'o3' && pollutant.concentration?.value) {
-      // Convert ppb to µg/m³: multiply by 2.0
-      result.o3 = Math.round(pollutant.concentration.value * 2.0 * 10) / 10;
+      // Keep in ppb (Thai AQHI formula expects ppb)
+      result.o3 = Math.round(pollutant.concentration.value * 10) / 10;
     } else if (pollutant.code === 'no2' && pollutant.concentration?.value) {
-      // Convert ppb to µg/m³: multiply by 1.88
-      result.no2 = Math.round(pollutant.concentration.value * 1.88 * 10) / 10;
+      // Keep in ppb (Thai AQHI formula expects ppb)
+      result.no2 = Math.round(pollutant.concentration.value * 10) / 10;
     }
   }
 

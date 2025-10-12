@@ -47,7 +47,7 @@ export const AQHI_LEVELS = {
  * Calculate Thai AQHI using official Thai Health Department formula
  */
 export function calculateThaiAQHI(pm25, no2, o3) {
-  console.log(`🧮 Calculating Thai AQHI with concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}μg/m³, O3=${o3}μg/m³`);
+  console.log(`🧮 Calculating Thai AQHI with concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}ppb, O3=${o3}ppb`);
 
   // Calculate the risk from each pollutant
   const riskPM25 = pm25 ? 100 * (Math.exp(THAI_AQHI_PARAMS.beta.pm25 * pm25) - 1) : 0;

@@ -110,5 +110,10 @@ js/env.js
 # Claude Code settings (keep local settings private)
 .claude/settings.local.json
 
-# Test output files
+# Test files with API keys
+test-google-api.js
 test-google-api-response.json
+test-*.json
+
+# Backup directories
+.key-removal-backup/

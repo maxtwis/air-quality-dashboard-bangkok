@@ -40,13 +40,14 @@ class PM25OnlySupabaseAQHI {
   /**
    * Get 3-hour averages for multiple stations at once (batch query)
    * Only retrieves PM2.5 data for PM2.5-only AQHI calculation
+   * Uses waqi_data table (new schema)
    */
   async getBatch3HourAverages(stationIds) {
     if (!this.supabase || !stationIds.length) return {};
 
     try {
       const { data, error } = await this.supabase
-        .from('air_quality_readings')
+        .from('waqi_data')
         .select('station_uid, pm25, timestamp')
         .in('station_uid', stationIds)
         .gte(

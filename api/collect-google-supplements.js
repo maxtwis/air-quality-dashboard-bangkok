@@ -76,6 +76,7 @@ export default async function handler(req, res) {
 
     // Step 4: Fetch Google data for each grid point
     const googleDataMap = {};
+    const apiErrors = [];
 
     for (const [cacheKey, { gridPoint }] of Object.entries(gridCache)) {
       try {
@@ -94,10 +95,15 @@ export default async function handler(req, res) {
         }
       } catch (error) {
         console.error(`❌ Failed to fetch Google data for ${cacheKey}:`, error.message);
+        apiErrors.push({ gridPoint: cacheKey, error: error.message });
       }
     }
 
     console.log(`💾 Fetched Google data from ${Object.keys(googleDataMap).length} grid points`);
+
+    if (apiErrors.length > 0) {
+      console.error(`⚠️ Total API errors: ${apiErrors.length}`);
+    }
 
     // Step 5: Create supplement records
     const supplementRecords = [];
@@ -150,6 +156,7 @@ export default async function handler(req, res) {
       googleApiCalls: Object.keys(googleDataMap).length,
       supplementsAdded: supplementRecords.length,
       storedInDatabase: stored,
+      apiErrors: apiErrors.length > 0 ? apiErrors : undefined,
       message: `Successfully added O3/NO2 supplements for ${supplementRecords.length} stations`,
     });
   } catch (error) {

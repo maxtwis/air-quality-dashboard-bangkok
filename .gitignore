@@ -117,3 +117,14 @@ test-*.json
 
 # Backup directories
 .key-removal-backup/
+API-KEY-SECURITY-SUMMARY.md
+check-data-accumulation.sql
+check-google-collections.sql
+debug-combined-view.sql
+Google-API-Method.md
+grid-coordinates.md
+RESTRICT-EXISTING-KEY.md
+SECURE-GOOGLE-API-KEY.md
+show-active-grids.sql
+verify-both-systems.sql
+verify-deployment-status.sql

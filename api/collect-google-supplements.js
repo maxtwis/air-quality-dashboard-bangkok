@@ -214,7 +214,8 @@ async function fetchGoogleAirQuality(lat, lng, apiKey) {
   });
 
   if (!response.ok) {
-    throw new Error(`Google API error: ${response.status}`);
+    const errorBody = await response.text();
+    throw new Error(`Google API error: ${response.status} - ${errorBody}`);
   }
 
   return await response.json();

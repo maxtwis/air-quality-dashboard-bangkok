@@ -1,13 +1,13 @@
 // Browser-compatible AQHI calculation using Supabase data
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
 
-// Thai AQHI Parameters
+// Thai AQHI Parameters (Based on OPD/Morbidity from Thai Health Department)
 const THAI_AQHI_PARAMS = {
-  C: 15,
+  C: 105.19,  // Scaling factor (Maximum MWEC for PM2.5 AQHI/OPD)
   beta: {
-    pm25: 0.0012,
-    o3: 0.0010,
-    no2: 0.0052,
+    pm25: 0.0012,  // Beta coefficient for PM2.5 (µg/m³)
+    o3: 0.0010,    // Beta coefficient for O3 (ppb)
+    no2: 0.0052,   // Beta coefficient for NO2 (ppb)
   },
 };
 
@@ -49,18 +49,19 @@ export const AQHI_LEVELS = {
 export function calculateThaiAQHI(pm25, no2, o3) {
   console.log(`🧮 Calculating Thai AQHI with concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}ppb, O3=${o3}ppb`);
 
-  // Calculate the risk from each pollutant
-  const riskPM25 = pm25 ? 100 * (Math.exp(THAI_AQHI_PARAMS.beta.pm25 * pm25) - 1) : 0;
-  const riskO3 = o3 ? Math.exp(THAI_AQHI_PARAMS.beta.o3 * o3) - 1 : 0;
-  const riskNO2 = no2 ? Math.exp(THAI_AQHI_PARAMS.beta.no2 * no2) - 1 : 0;
+  // Calculate Percentage Excess Risk (%ER) for each pollutant
+  // Formula: %ER_i = 100 * (exp(beta_i * x_i) - 1)
+  const perErPM25 = pm25 ? 100 * (Math.exp(THAI_AQHI_PARAMS.beta.pm25 * pm25) - 1) : 0;
+  const perErO3 = o3 ? 100 * (Math.exp(THAI_AQHI_PARAMS.beta.o3 * o3) - 1) : 0;
+  const perErNO2 = no2 ? 100 * (Math.exp(THAI_AQHI_PARAMS.beta.no2 * no2) - 1) : 0;
 
-  // Sum the risks
-  const totalRisk = riskPM25 + riskO3 + riskNO2;
+  // Calculate Total Percentage Excess Risk (Sum of all %ER)
+  const totalPerER = perErPM25 + perErO3 + perErNO2;
 
-  // Apply the scaling factor
-  const aqhi = (10 / THAI_AQHI_PARAMS.C) * totalRisk;
+  // Calculate AQHI: AQHI = (10 / C) * Total %ER
+  const aqhi = (10 / THAI_AQHI_PARAMS.C) * totalPerER;
 
-  console.log(`📊 Thai AQHI risks: PM2.5=${riskPM25.toFixed(4)}, NO2=${riskNO2.toFixed(4)}, O3=${riskO3.toFixed(4)}, Total=${totalRisk.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
+  console.log(`📊 Thai AQHI %ER: PM2.5=${perErPM25.toFixed(4)}%, NO2=${perErNO2.toFixed(4)}%, O3=${perErO3.toFixed(4)}%, Total=${totalPerER.toFixed(4)}% → AQHI=${Math.round(aqhi)}`);
 
   return Math.max(1, Math.round(aqhi));
 }
@@ -454,29 +455,27 @@ class SupabaseAQHI {
 
       if (averages && (averages.pm25 || averages.o3 || averages.no2)) {
         // Calculate AQHI using Thai Health Department formula
-        let aqhi = 0;
-        let pm25Component = 0;
-        let o3Component = 0;
-        let no2Component = 0;
+        // Formula: %ER_i = 100 * (exp(beta_i * x_i) - 1)
+        // AQHI = (10 / C) * Total %ER
 
-        let riskPM25 = 0;
-        let riskO3 = 0;
-        let riskNO2 = 0;
+        let perErPM25 = 0;
+        let perErO3 = 0;
+        let perErNO2 = 0;
 
         if (averages.pm25) {
-          riskPM25 = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
+          perErPM25 = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
         }
 
         if (averages.o3) {
-          riskO3 = Math.exp(0.0010 * averages.o3) - 1;
+          perErO3 = 100 * (Math.exp(0.0010 * averages.o3) - 1);
         }
 
         if (averages.no2) {
-          riskNO2 = Math.exp(0.0052 * averages.no2) - 1;
+          perErNO2 = 100 * (Math.exp(0.0052 * averages.no2) - 1);
         }
 
-        const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-        aqhi = (10.0 / 15) * totalRiskSum;
+        const totalPerER = perErPM25 + perErO3 + perErNO2;
+        let aqhi = (10.0 / 105.19) * totalPerER;
         aqhi = Math.max(1, Math.round(aqhi)); // Round to whole number, minimum 1
 
         // Cache the result
@@ -568,23 +567,24 @@ class SupabaseAQHI {
 
           let aqhiValue;
           if (averages && (averages.pm25 || averages.o3 || averages.no2)) {
-            // Calculate AQHI using correct formula
-            let riskPM25 = 0;
-            let riskO3 = 0;
-            let riskNO2 = 0;
+            // Calculate AQHI using Thai Health Department formula
+            // Formula: %ER_i = 100 * (exp(beta_i * x_i) - 1)
+            let perErPM25 = 0;
+            let perErO3 = 0;
+            let perErNO2 = 0;
 
             if (averages.pm25) {
-              riskPM25 = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
+              perErPM25 = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
             }
             if (averages.o3) {
-              riskO3 = Math.exp(0.0010 * averages.o3) - 1;
+              perErO3 = 100 * (Math.exp(0.0010 * averages.o3) - 1);
             }
             if (averages.no2) {
-              riskNO2 = Math.exp(0.0052 * averages.no2) - 1;
+              perErNO2 = 100 * (Math.exp(0.0052 * averages.no2) - 1);
             }
 
-            const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-            aqhiValue = (10.0 / 15) * totalRiskSum;
+            const totalPerER = perErPM25 + perErO3 + perErNO2;
+            aqhiValue = (10.0 / 105.19) * totalPerER;
             aqhiValue = Math.max(1, Math.round(aqhiValue));
 
             // Cache the result
@@ -602,22 +602,22 @@ class SupabaseAQHI {
 
             if (latestData && (latestData.pm25 || latestData.o3 || latestData.no2)) {
               // Calculate AQHI using latest single reading
-              let riskPM25 = 0;
-              let riskO3 = 0;
-              let riskNO2 = 0;
+              let perErPM25 = 0;
+              let perErO3 = 0;
+              let perErNO2 = 0;
 
               if (latestData.pm25) {
-                riskPM25 = 100 * (Math.exp(0.0012 * latestData.pm25) - 1);
+                perErPM25 = 100 * (Math.exp(0.0012 * latestData.pm25) - 1);
               }
               if (latestData.o3) {
-                riskO3 = Math.exp(0.0010 * latestData.o3) - 1;
+                perErO3 = 100 * (Math.exp(0.0010 * latestData.o3) - 1);
               }
               if (latestData.no2) {
-                riskNO2 = Math.exp(0.0052 * latestData.no2) - 1;
+                perErNO2 = 100 * (Math.exp(0.0052 * latestData.no2) - 1);
               }
 
-              const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-              aqhiValue = (10.0 / 15) * totalRiskSum;
+              const totalPerER = perErPM25 + perErO3 + perErNO2;
+              aqhiValue = (10.0 / 105.19) * totalPerER;
               aqhiValue = Math.max(1, Math.round(aqhiValue));
 
               if (stationId) {

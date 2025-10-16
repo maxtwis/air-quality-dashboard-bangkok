@@ -11,13 +11,13 @@ import {
   getRawConcentration
 } from './aqi-to-concentration.js';
 
-// AQHI Parameters (reverted to original Thai values)
+// Thai AQHI Parameters (Based on OPD/Morbidity from Thai Health Department)
 const AQHI_PARAMS = {
-  C: 105.19,  
+  C: 105.19,  // Scaling factor (Maximum MWEC for PM2.5 AQHI/OPD)
   beta: {
-    pm25: 0.0012,  
-    o3: 0.0010, 
-    no2: 0.0052, 
+    pm25: 0.0012,  // Beta coefficient for PM2.5 (µg/m³)
+    o3: 0.0010,    // Beta coefficient for O3 (ppb)
+    no2: 0.0052,   // Beta coefficient for NO2 (ppb)
   },
 };
 
@@ -198,17 +198,21 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
  * @returns {number} AQHI value (0-10+)
  */
 export function calculateRealisticAQHI(pm25, no2, o3) {
-  console.log(`🧮 Calculating AQHI with RAW concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}μg/m³, O3=${o3}μg/m³`);
+  console.log(`🧮 Calculating AQHI with RAW concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}ppb, O3=${o3}ppb`);
 
-  // Correct AQHI formula: AQHI = (10/c) × 100 × [sum of excess risk terms]
-  const riskPM25 = pm25 ? Math.exp(AQHI_PARAMS.beta.pm25 * pm25) - 1 : 0;
-  const riskO3 = o3 ? Math.exp(AQHI_PARAMS.beta.o3 * o3) - 1 : 0;
-  const riskNO2 = no2 ? Math.exp(AQHI_PARAMS.beta.no2 * no2) - 1 : 0;
+  // Calculate Percentage Excess Risk (%ER) for each pollutant
+  // Formula: %ER_i = 100 * (exp(beta_i * x_i) - 1)
+  const perErPM25 = pm25 ? 100 * (Math.exp(AQHI_PARAMS.beta.pm25 * pm25) - 1) : 0;
+  const perErO3 = o3 ? 100 * (Math.exp(AQHI_PARAMS.beta.o3 * o3) - 1) : 0;
+  const perErNO2 = no2 ? 100 * (Math.exp(AQHI_PARAMS.beta.no2 * no2) - 1) : 0;
 
-  const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-  const aqhi = (10 / AQHI_PARAMS.C) * 100 * totalRiskSum;
+  // Calculate Total Percentage Excess Risk (Sum of all %ER)
+  const totalPerER = perErPM25 + perErO3 + perErNO2;
 
-  console.log(`📊 AQHI risks: PM2.5=${riskPM25.toFixed(4)}, NO2=${riskNO2.toFixed(4)}, O3=${riskO3.toFixed(4)}, Total=${totalRiskSum.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
+  // Calculate AQHI: AQHI = (10 / C) * Total %ER
+  const aqhi = (10 / AQHI_PARAMS.C) * totalPerER;
+
+  console.log(`📊 AQHI %ER: PM2.5=${perErPM25.toFixed(4)}%, NO2=${perErNO2.toFixed(4)}%, O3=${perErO3.toFixed(4)}%, Total=${totalPerER.toFixed(4)}% → AQHI=${Math.round(aqhi)}`);
 
   return Math.max(1, Math.round(aqhi));
 }

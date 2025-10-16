@@ -244,16 +244,30 @@ AQI Values (0-500 scale)
     ↓
 [Reverse Linear Interpolation]
     ↓
-Raw Concentration (native EPA units)
+Raw Concentration (native EPA units: ppb/ppm)
     ↓
-[Unit Conversion if needed]
+[Convert to μg/m³ for storage]
     ↓
-Final Concentration (μg/m³ or ppb)
+Stored Concentration (μg/m³)
     ↓
-AQHI Calculation
+[Convert to AQHI-required units]
+    ├─ PM2.5: Keep as μg/m³ ✓
+    ├─ O3: Convert μg/m³ → ppb (÷ 1962 × 1000)
+    └─ NO2: Convert μg/m³ → ppb (÷ 1.88)
+    ↓
+AQHI Calculation (PM2.5 in μg/m³, O3 & NO2 in ppb)
 ```
 
-### Example Conversion
+**Critical Note**: The Thai AQHI formula requires **different units** for different pollutants:
+- **PM2.5**: μg/m³ (as stored)
+- **O3**: ppb (NOT μg/m³) - requires conversion back from stored μg/m³
+- **NO2**: ppb (NOT μg/m³) - requires conversion back from stored μg/m³
+
+This is handled by the `getConcentrationForAQHI()` function ([aqi-to-concentration.js:254-290](js/aqi-to-concentration.js#L254-L290)).
+
+### Example Conversion: Complete Chain
+
+#### Example 1: PM2.5 (Stays in μg/m³)
 
 **Input**: PM2.5 AQI = 65 (Moderate)
 
@@ -268,7 +282,64 @@ C = (14 / 49) × 26.3 + 9.1
 C = 16.6 μg/m³
 ```
 
-**Result**: PM2.5 concentration = **16.6 μg/m³**
+**Step 3**: For AQHI calculation
+- PM2.5 is already in μg/m³ (required for AQHI) ✓
+- **Final value for AQHI**: 16.6 μg/m³
+
+#### Example 2: NO2 (Converted ppb → μg/m³ → ppb)
+
+**Input**: NO2 AQI = 42
+
+**Step 1**: Find breakpoint
+- AQI range: 0-50
+- Concentration range: 0-53 ppb
+
+**Step 2**: Linear interpolation
+```
+C = ((42 - 0) / (50 - 0)) × (53 - 0) + 0
+C = 0.84 × 53
+C = 44.52 ppb (native EPA unit)
+```
+
+**Step 3**: Convert to μg/m³ for storage
+```
+Concentration_μg/m³ = 44.52 ppb × 1.88 = 83.7 μg/m³
+```
+
+**Step 4**: Convert back to ppb for AQHI calculation
+```
+Concentration_ppb = 83.7 μg/m³ ÷ 1.88 = 44.52 ppb
+```
+
+**Final value for AQHI**: 44.52 ppb ✓
+
+#### Example 3: O3 (Converted ppm → μg/m³ → ppb)
+
+**Input**: O3 AQI = 35
+
+**Step 1**: Find breakpoint (8-hour)
+- AQI range: 0-50
+- Concentration range: 0.000-0.054 ppm
+
+**Step 2**: Linear interpolation
+```
+C = ((35 - 0) / (50 - 0)) × (0.054 - 0.000) + 0.000
+C = 0.70 × 0.054
+C = 0.0378 ppm (native EPA unit)
+```
+
+**Step 3**: Convert to μg/m³ for storage
+```
+Concentration_μg/m³ = 0.0378 ppm × 1962 = 74.16 μg/m³
+```
+
+**Step 4**: Convert to ppb for AQHI calculation
+```
+Concentration_ppm = 74.16 μg/m³ ÷ 1962 = 0.0378 ppm
+Concentration_ppb = 0.0378 ppm × 1000 = 37.8 ppb
+```
+
+**Final value for AQHI**: 37.8 ppb ✓
 
 ---
 

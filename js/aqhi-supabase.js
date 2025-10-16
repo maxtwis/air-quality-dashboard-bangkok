@@ -82,17 +82,18 @@ export function getAQHILevel(aqhi) {
 }
 
 /**
- * Calculate AQHI from station data (converts AQI to concentrations first)
+ * Calculate AQHI from station data (converts AQI to concentrations in proper units first)
  */
 export async function calculateStationAQHI(station) {
-  const { convertStationToRawConcentrations } = await import('./aqi-to-concentration.js');
-  const concentrations = convertStationToRawConcentrations(station);
+  const { convertStationToRawConcentrations, getConcentrationForAQHI } = await import('./aqi-to-concentration.js');
+  const stationWithConcentrations = convertStationToRawConcentrations(station);
 
-  return calculateThaiAQHI(
-    concentrations.pm25,
-    concentrations.no2,
-    concentrations.o3
-  );
+  // Get concentrations in AQHI-required units: PM2.5 in μg/m³, O3 and NO2 in ppb
+  const pm25 = getConcentrationForAQHI(stationWithConcentrations, 'pm25') || 0;
+  const no2 = getConcentrationForAQHI(stationWithConcentrations, 'no2') || 0;
+  const o3 = getConcentrationForAQHI(stationWithConcentrations, 'o3') || 0;
+
+  return calculateThaiAQHI(pm25, no2, o3);
 }
 
 /**

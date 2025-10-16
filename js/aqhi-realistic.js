@@ -8,7 +8,7 @@ import {
 } from './dataStore.js';
 import {
   convertStationToRawConcentrations,
-  getRawConcentration
+  getConcentrationForAQHI
 } from './aqi-to-concentration.js';
 
 // Thai AQHI Parameters (Based on OPD/Morbidity from Thai Health Department)
@@ -189,12 +189,12 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
 }
 
 /**
- * Calculate AQHI with realistic approach using RAW CONCENTRATIONS (μg/m³)
- * CRITICAL: This function expects raw concentrations, NOT AQI values!
+ * Calculate AQHI with realistic approach using PROPER UNITS for Thai AQHI formula
+ * CRITICAL: This function expects specific units per pollutant:
  *
  * @param {number} pm25 - PM2.5 concentration in μg/m³ (NOT AQI!)
- * @param {number} no2 - NO2 concentration in μg/m³ (NOT AQI!)
- * @param {number} o3 - O3 concentration in μg/m³ (NOT AQI!)
+ * @param {number} no2 - NO2 concentration in ppb (NOT μg/m³, NOT AQI!)
+ * @param {number} o3 - O3 concentration in ppb (NOT μg/m³, NOT AQI!)
  * @returns {number} AQHI value (0-10+)
  */
 export function calculateRealisticAQHI(pm25, no2, o3) {
@@ -236,18 +236,18 @@ export function getAQHILevel(aqhi) {
 export function calculateStationAQHIRealistic(station) {
   const stationId = station.uid || station.station?.name || 'unknown';
 
-  // CRITICAL FIX: Convert AQI values to raw concentrations first
-  console.log(`🔄 Converting station ${stationId} AQI values to raw concentrations...`);
+  // CRITICAL FIX: Convert AQI values to concentrations in AQHI-required units
+  console.log(`🔄 Converting station ${stationId} AQI values to AQHI-required units...`);
   const stationWithConcentrations = convertStationToRawConcentrations(station);
 
-  // Extract raw concentrations (μg/m³) instead of AQI values
+  // Extract concentrations in AQHI-required units: PM2.5 in μg/m³, O3 and NO2 in ppb
   const currentConcentrations = {
-    pm25: getRawConcentration(stationWithConcentrations, 'pm25') || 0,
-    no2: getRawConcentration(stationWithConcentrations, 'no2') || 0,
-    o3: getRawConcentration(stationWithConcentrations, 'o3') || 0,
+    pm25: getConcentrationForAQHI(stationWithConcentrations, 'pm25') || 0,
+    no2: getConcentrationForAQHI(stationWithConcentrations, 'no2') || 0,
+    o3: getConcentrationForAQHI(stationWithConcentrations, 'o3') || 0,
   };
 
-  console.log(`📊 Raw concentrations for ${stationId}:`, currentConcentrations);
+  console.log(`📊 AQHI-ready concentrations for ${stationId}: PM2.5=${currentConcentrations.pm25}μg/m³, NO2=${currentConcentrations.no2}ppb, O3=${currentConcentrations.o3}ppb`);
 
   // Store current reading for building our own moving average (now with raw concentrations)
   const dataPoints = collectCurrentReading(stationId, currentConcentrations);

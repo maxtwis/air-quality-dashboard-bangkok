@@ -242,6 +242,54 @@ export function getRawConcentration(stationData, pollutant) {
 }
 
 /**
+ * Get concentration in units required for Thai AQHI formula
+ * - PM2.5: μg/m³
+ * - O3: ppb (NOT μg/m³)
+ * - NO2: ppb (NOT μg/m³)
+ *
+ * @param {Object} stationData - Converted station data
+ * @param {string} pollutant - Pollutant name (pm25, no2, o3)
+ * @returns {number|null} - Concentration in AQHI-required units or null if unavailable
+ */
+export function getConcentrationForAQHI(stationData, pollutant) {
+  if (!stationData?.rawConcentrations?.[pollutant]) {
+    return null;
+  }
+
+  const concInUgM3 = stationData.rawConcentrations[pollutant].concentration;
+
+  // PM2.5 is already in μg/m³ (correct for AQHI)
+  if (pollutant === 'pm25' || pollutant === 'pm10') {
+    return concInUgM3;
+  }
+
+  // O3 and NO2 need to be converted from μg/m³ back to ppb for Thai AQHI formula
+  if (pollutant === 'o3') {
+    // Convert μg/m³ back to ppb (reverse of ppm → μg/m³ conversion)
+    // We stored as μg/m³, need to convert back to ppb
+    // O3 μg/m³ → ppm → ppb
+    const ppm = concInUgM3 / CONVERSION_FACTORS.o3_ppm_to_ugm3;
+    const ppb = ppm * 1000; // ppm to ppb
+    return ppb;
+  }
+
+  if (pollutant === 'no2') {
+    // Convert μg/m³ back to ppb (reverse of ppb → μg/m³ conversion)
+    const ppb = concInUgM3 / CONVERSION_FACTORS.no2_ppb_to_ugm3;
+    return ppb;
+  }
+
+  if (pollutant === 'so2') {
+    // Convert μg/m³ back to ppb (reverse of ppb → μg/m³ conversion)
+    const ppb = concInUgM3 / CONVERSION_FACTORS.so2_ppb_to_ugm3;
+    return ppb;
+  }
+
+  // Default: return as is
+  return concInUgM3;
+}
+
+/**
  * Validate conversion accuracy with known test cases
  * @returns {boolean} - True if all tests pass
  */
@@ -286,6 +334,7 @@ if (typeof window !== 'undefined') {
     aqiToConcentration,
     convertStationToRawConcentrations,
     getRawConcentration,
+    getConcentrationForAQHI,
     validateConversions,
     EPA_AQI_BREAKPOINTS,
     CONVERSION_FACTORS

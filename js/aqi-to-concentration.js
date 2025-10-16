@@ -1,9 +1,27 @@
 // US EPA AQI to Raw Concentration Converter
 // Critical for AQHI calculations which require μg/m³ values, not AQI values
+//
+// REFERENCES:
+// 1. US EPA (2024). "Technical Assistance Document for the Reporting of Daily Air Quality – the Air Quality Index (AQI)"
+//    Document: EPA-454/B-24-001
+//    URL: https://www.airnow.gov/publications/air-quality-index/technical-assistance-document-for-reporting-the-daily-aqi/
+//
+// 2. US EPA AQI Calculator
+//    URL: https://www.airnow.gov/aqi/aqi-calculator-concentration/
+//
+// 3. US EPA AQI Breakpoints (Official Table)
+//    URL: https://www.airnow.gov/sites/default/files/2020-05/aqi-technical-assistance-document-sept2018.pdf
+//
+// 4. Molecular Weight Conversions (at 25°C, 1 atm)
+//    Based on ideal gas law: μg/m³ = (ppb × molecular weight × 24.45) / 24450
+//    Reference: US EPA AP-42 Compilation of Air Pollutant Emission Factors
 
 /**
  * US EPA AQI Breakpoints (Updated 2024 for PM2.5)
  * Format: [AQI_low, AQI_high, Conc_low, Conc_high]
+ *
+ * Source: EPA-454/B-24-001 (February 2024)
+ * PM2.5 breakpoints updated in 2024, others remain from 2018
  */
 const EPA_AQI_BREAKPOINTS = {
   // PM2.5 (24-hour average, μg/m³) - Updated 2024

@@ -44,19 +44,21 @@ Based on Thai epidemiological studies:
 
 | Pollutant | Coefficient (β) | Unit | Health Impact |
 |-----------|----------------|------|---------------|
-| PM2.5 | 0.0012 | μg/m³ | Cardiovascular & respiratory mortality |
+| PM2.5 | 0.0022 | μg/m³ | Cardiovascular & respiratory mortality |
+| PM10 | 0.0009 | μg/m³ | Respiratory effects from coarse particles |
 | O3 | 0.0010 | ppb | Respiratory symptoms & mortality |
-| NO2 | 0.0052 | ppb | Respiratory inflammation |
+| NO2 | 0.0030 | ppb | Respiratory inflammation |
 
-**Implementation** ([aqhi-supabase.js:5-12](js/aqhi-supabase.js#L5-L12)):
+**Implementation** ([aqhi-supabase.js:5-13](js/aqhi-supabase.js#L5-L13)):
 
 ```javascript
 const THAI_AQHI_PARAMS = {
   C: 105.19,
   beta: {
-    pm25: 0.0012,
+    pm25: 0.0022,
+    pm10: 0.0009,
     o3: 0.0010,
-    no2: 0.0052,
+    no2: 0.0030,
   },
 };
 ```
@@ -377,12 +379,12 @@ export function calculateThaiAQHI(pm25, no2, o3) {
 
 **Calculation**:
 ```
-%ER_PM2.5 = 100 × (e^(0.0012 × 12) - 1) = 1.45%
-%ER_NO2 = 100 × (e^(0.0052 × 25) - 1) = 13.93%
+%ER_PM2.5 = 100 × (e^(0.0022 × 12) - 1) = 2.68%
+%ER_NO2 = 100 × (e^(0.0030 × 25) - 1) = 7.79%
 %ER_O3 = 100 × (e^(0.0010 × 60) - 1) = 6.18%
 
-Total %ER = 1.45 + 13.93 + 6.18 = 21.56%
-AQHI = (10/105.19) × 21.56 = 2.05 ≈ 2
+Total %ER = 2.68 + 7.79 + 6.18 = 16.65%
+AQHI = (10/105.19) × 16.65 = 1.58 ≈ 2
 ```
 
 **Result**: AQHI = **2** (Low Risk) ✅
@@ -396,15 +398,15 @@ AQHI = (10/105.19) × 21.56 = 2.05 ≈ 2
 
 **Calculation**:
 ```
-%ER_PM2.5 = 100 × (e^(0.0012 × 35) - 1) = 4.27%
-%ER_NO2 = 100 × (e^(0.0052 × 60) - 1) = 36.65%
+%ER_PM2.5 = 100 × (e^(0.0022 × 35) - 1) = 7.92%
+%ER_NO2 = 100 × (e^(0.0030 × 60) - 1) = 19.72%
 %ER_O3 = 100 × (e^(0.0010 × 80) - 1) = 8.33%
 
-Total %ER = 4.27 + 36.65 + 8.33 = 49.25%
-AQHI = (10/105.19) × 49.25 = 4.68 ≈ 5
+Total %ER = 7.92 + 19.72 + 8.33 = 35.97%
+AQHI = (10/105.19) × 35.97 = 3.42 ≈ 3
 ```
 
-**Result**: AQHI = **5** (Moderate Risk) ⚠️
+**Result**: AQHI = **3** (Low Risk) ⚠️
 
 #### Example 3: Pollution Episode
 
@@ -415,15 +417,15 @@ AQHI = (10/105.19) × 49.25 = 4.68 ≈ 5
 
 **Calculation**:
 ```
-%ER_PM2.5 = 100 × (e^(0.0012 × 85) - 1) = 10.70%
-%ER_NO2 = 100 × (e^(0.0052 × 120) - 1) = 87.62%
+%ER_PM2.5 = 100 × (e^(0.0022 × 85) - 1) = 20.70%
+%ER_NO2 = 100 × (e^(0.0030 × 120) - 1) = 43.33%
 %ER_O3 = 100 × (e^(0.0010 × 100) - 1) = 10.52%
 
-Total %ER = 10.70 + 87.62 + 10.52 = 108.84%
-AQHI = (10/105.19) × 108.84 = 10.35 ≈ 10
+Total %ER = 20.70 + 43.33 + 10.52 = 74.55%
+AQHI = (10/105.19) × 74.55 = 7.09 ≈ 7
 ```
 
-**Result**: AQHI = **10** (High Risk) 🔴
+**Result**: AQHI = **7** (High Risk) 🔴
 
 ### 4.3 Realistic Bangkok Scenarios
 
@@ -431,12 +433,12 @@ Based on actual WAQI station data (with corrected formula):
 
 | Scenario | PM2.5 | NO2 | O3 | Total %ER | AQHI | Risk Level | Typical Time |
 |----------|-------|-----|----|-----------|----|-----------|--------------|
-| Early Morning | 18 μg/m³ | 35 ppb | 40 ppb | 26.6% | **3** | Low | 5-7 AM |
-| Morning Rush | 45 μg/m³ | 85 ppb | 60 ppb | 61.9% | **6** | Moderate | 7-9 AM |
-| Midday | 38 μg/m³ | 55 ppb | 95 ppb | 47.9% | **5** | Moderate | 12-2 PM |
-| Evening Rush | 52 μg/m³ | 95 ppb | 70 ppb | 73.3% | **7** | High | 5-7 PM |
-| Heavy Pollution | 150 μg/m³ | 180 ppb | 120 ppb | 234.8% | **22** | Very High | Rare events |
-| Severe Pollution | 300 μg/m³ | 250 ppb | 150 ppb | 511.9% | **49** | Very High | Very rare |
+| Early Morning | 18 μg/m³ | 35 ppb | 40 ppb | 19.0% | **2** | Low | 5-7 AM |
+| Morning Rush | 45 μg/m³ | 85 ppb | 60 ppb | 45.6% | **4** | Moderate | 7-9 AM |
+| Midday | 38 μg/m³ | 55 ppb | 95 ppb | 36.8% | **3** | Low | 12-2 PM |
+| Evening Rush | 52 μg/m³ | 95 ppb | 70 ppb | 51.9% | **5** | Moderate | 5-7 PM |
+| Heavy Pollution | 150 μg/m³ | 180 ppb | 120 ppb | 122.9% | **12** | Very High | Rare events |
+| Severe Pollution | 300 μg/m³ | 250 ppb | 150 ppb | 229.6% | **22** | Very High | Very rare |
 
 ---
 

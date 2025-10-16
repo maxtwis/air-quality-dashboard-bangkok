@@ -5,9 +5,10 @@ import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
 const THAI_AQHI_PARAMS = {
   C: 105.19,  // Scaling factor (Maximum MWEC for PM2.5 AQHI/OPD)
   beta: {
-    pm25: 0.0012,  // Beta coefficient for PM2.5 (µg/m³)
+    pm25: 0.0022,  // Beta coefficient for PM2.5 (µg/m³)
+    pm10: 0.0009,  // Beta coefficient for PM10 (µg/m³)
     o3: 0.0010,    // Beta coefficient for O3 (ppb)
-    no2: 0.0052,   // Beta coefficient for NO2 (ppb)
+    no2: 0.0030,   // Beta coefficient for NO2 (ppb)
   },
 };
 
@@ -46,22 +47,23 @@ export const AQHI_LEVELS = {
 /**
  * Calculate Thai AQHI using official Thai Health Department formula
  */
-export function calculateThaiAQHI(pm25, no2, o3) {
-  console.log(`🧮 Calculating Thai AQHI with concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}ppb, O3=${o3}ppb`);
+export function calculateThaiAQHI(pm25, no2, o3, pm10 = null) {
+  console.log(`🧮 Calculating Thai AQHI with concentrations: PM2.5=${pm25}μg/m³, PM10=${pm10}μg/m³, NO2=${no2}ppb, O3=${o3}ppb`);
 
   // Calculate Percentage Excess Risk (%ER) for each pollutant
   // Formula: %ER_i = 100 * (exp(beta_i * x_i) - 1)
   const perErPM25 = pm25 ? 100 * (Math.exp(THAI_AQHI_PARAMS.beta.pm25 * pm25) - 1) : 0;
+  const perErPM10 = pm10 ? 100 * (Math.exp(THAI_AQHI_PARAMS.beta.pm10 * pm10) - 1) : 0;
   const perErO3 = o3 ? 100 * (Math.exp(THAI_AQHI_PARAMS.beta.o3 * o3) - 1) : 0;
   const perErNO2 = no2 ? 100 * (Math.exp(THAI_AQHI_PARAMS.beta.no2 * no2) - 1) : 0;
 
   // Calculate Total Percentage Excess Risk (Sum of all %ER)
-  const totalPerER = perErPM25 + perErO3 + perErNO2;
+  const totalPerER = perErPM25 + perErPM10 + perErO3 + perErNO2;
 
   // Calculate AQHI: AQHI = (10 / C) * Total %ER
   const aqhi = (10 / THAI_AQHI_PARAMS.C) * totalPerER;
 
-  console.log(`📊 Thai AQHI %ER: PM2.5=${perErPM25.toFixed(4)}%, NO2=${perErNO2.toFixed(4)}%, O3=${perErO3.toFixed(4)}%, Total=${totalPerER.toFixed(4)}% → AQHI=${Math.round(aqhi)}`);
+  console.log(`📊 Thai AQHI %ER: PM2.5=${perErPM25.toFixed(4)}%, PM10=${perErPM10.toFixed(4)}%, NO2=${perErNO2.toFixed(4)}%, O3=${perErO3.toFixed(4)}%, Total=${totalPerER.toFixed(4)}% → AQHI=${Math.round(aqhi)}`);
 
   return Math.max(1, Math.round(aqhi));
 }

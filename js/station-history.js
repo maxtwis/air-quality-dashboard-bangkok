@@ -90,18 +90,20 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
     // Fetch historical data
     const historyData = await AirQualityDB.getStationHistory(stationUid, hours);
 
+    console.log(`✅ Loaded ${historyData ? historyData.length : 0} data points for ${hours}h`);
+
     if (!historyData || historyData.length === 0) {
       chartContainer.innerHTML = `
         <div class="info" style="padding: 20px; text-align: center;">
           No historical data available for this station yet.
           <br><br>
           Data is collected hourly and stored for 7 days.
+          <br>
+          Requested: ${hours} hours
         </div>
       `;
       return;
     }
-
-    console.log(`✅ Loaded ${historyData.length} data points`);
 
     // Aggregate data by hour to reduce noise
     const aggregatedData = aggregateByHour(historyData);
@@ -283,11 +285,10 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
           x: {
             type: 'time',
             time: {
-              unit: 'hour',
               displayFormats: {
-                hour: hours === 24 ? 'HH:mm' : 'MMM d',
+                hour: 'HH:mm',
+                day: 'MMM d',
               },
-              tooltipFormat: 'MMM d, HH:mm',
             },
             grid: {
               display: false,
@@ -298,6 +299,7 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
                 family: "'Inter', sans-serif",
               },
               maxRotation: 0,
+              autoSkip: true,
               maxTicksLimit: hours === 24 ? 12 : 7,
             },
           },

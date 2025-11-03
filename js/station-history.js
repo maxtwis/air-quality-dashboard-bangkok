@@ -286,7 +286,7 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
               unit: hours === 24 ? 'hour' : 'day',
               displayFormats: {
                 hour: 'HH:mm',
-                day: 'MMM d',
+                day: 'MMM d HH:mm',
               },
             },
             grid: {

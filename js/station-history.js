@@ -17,6 +17,49 @@ const WHO_GUIDELINES = {
 };
 
 /**
+ * Aggregate data points by hour (average values within each hour)
+ */
+function aggregateByHour(data) {
+  if (!data || data.length === 0) return [];
+
+  // Group data by hour
+  const hourlyGroups = {};
+
+  data.forEach(point => {
+    // Round timestamp down to the hour
+    const date = new Date(point.timestamp);
+    const hourKey = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()).toISOString();
+
+    if (!hourlyGroups[hourKey]) {
+      hourlyGroups[hourKey] = [];
+    }
+    hourlyGroups[hourKey].push(point);
+  });
+
+  // Calculate averages for each hour
+  const aggregated = Object.entries(hourlyGroups).map(([hourKey, points]) => {
+    const avg = (values) => {
+      const valid = values.filter(v => v != null && !isNaN(v));
+      return valid.length > 0 ? valid.reduce((sum, v) => sum + v, 0) / valid.length : null;
+    };
+
+    return {
+      timestamp: hourKey,
+      pm25: avg(points.map(p => p.pm25)),
+      pm10: avg(points.map(p => p.pm10)),
+      o3: avg(points.map(p => p.o3)),
+      no2: avg(points.map(p => p.no2)),
+      so2: avg(points.map(p => p.so2)),
+      co: avg(points.map(p => p.co)),
+      aqi: avg(points.map(p => p.aqi)),
+    };
+  });
+
+  // Sort by timestamp
+  return aggregated.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+}
+
+/**
  * Create or update the station history chart
  */
 export async function renderStationHistoryChart(stationUid, hours = 24) {
@@ -50,6 +93,10 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
 
     console.log(`✅ Loaded ${historyData.length} data points`);
 
+    // Aggregate data by hour to reduce noise
+    const aggregatedData = aggregateByHour(historyData);
+    console.log(`📊 Aggregated to ${aggregatedData.length} hourly points`);
+
     // Restore canvas
     chartContainer.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
@@ -74,12 +121,12 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
       });
     });
 
-    // Prepare data for chart
-    const timestamps = historyData.map(d => new Date(d.timestamp));
-    const pm25Data = historyData.map(d => d.pm25);
-    const no2Data = historyData.map(d => d.no2);
-    const o3Data = historyData.map(d => d.o3);
-    const so2Data = historyData.map(d => d.so2);
+    // Prepare data for chart (use aggregated data)
+    const timestamps = aggregatedData.map(d => new Date(d.timestamp));
+    const pm25Data = aggregatedData.map(d => d.pm25);
+    const no2Data = aggregatedData.map(d => d.no2);
+    const o3Data = aggregatedData.map(d => d.o3);
+    const so2Data = aggregatedData.map(d => d.so2);
 
     // Destroy existing chart if it exists
     if (currentChart) {

@@ -71,8 +71,6 @@ export class UIManager {
   updateMainDisplay(stations) {
     if (this.currentIndicator === 'AQHI') {
       this.updateMainDisplayAQHI(stations);
-    } else if (this.currentIndicator === 'PM25_AQHI') {
-      this.updateMainDisplayPM25AQHI(stations);
     } else {
       this.updateMainDisplayAQI(stations);
     }

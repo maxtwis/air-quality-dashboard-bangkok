@@ -34,6 +34,48 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Supabase Proxy - hides API keys from client
+app.get('/api/supabase/station-history/:stationId', async (req, res) => {
+  try {
+    const { stationId } = req.params;
+    const { hours = 24 } = req.query;
+
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({
+        error: 'Supabase not configured',
+        message: 'SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required'
+      });
+    }
+
+    const timestamp = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+    const apiUrl = `${supabaseUrl}/rest/v1/waqi_data?station_uid=eq.${stationId}&timestamp=gte.${timestamp}&select=timestamp,pm25,pm10,o3,no2,so2,co,aqi&order=timestamp.asc`;
+
+    console.log(`🗄️ Proxying Supabase request: station ${stationId}, ${hours}h history`);
+
+    const response = await fetch(apiUrl, {
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`
+      }
+    });
+
+    const data = await response.json();
+
+    return res.status(200).json(data);
+
+  } catch (error) {
+    console.error('❌ Supabase Proxy Error:', error);
+    return res.status(500).json({
+      error: 'Supabase proxy error',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // WAQI API Proxy - hides API keys from client
 app.get('/api/waqi-proxy', async (req, res) => {
   try {
@@ -112,7 +154,8 @@ app.use('*', (req, res) => {
       '/ - Main dashboard',
       '/health - Server health check',
       '/api/waqi-proxy?endpoint=bounds - Bangkok air quality stations',
-      '/api/waqi-proxy?endpoint=station&uid=ID - Individual station'
+      '/api/waqi-proxy?endpoint=station&uid=ID - Individual station',
+      '/api/supabase/station-history/:stationId?hours=24 - Station history data'
     ]
   });
 });

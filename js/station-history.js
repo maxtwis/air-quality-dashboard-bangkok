@@ -153,12 +153,16 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
       return;
     }
 
+    console.log(`📊 Creating chart with ${timestamps.length} data points for ${hours}h view`);
+    console.log('Date range:', timestamps[0], 'to', timestamps[timestamps.length - 1]);
+
     // Create chart
-    currentChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: timestamps,
-        datasets: [
+    try {
+      currentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: timestamps,
+          datasets: [
           {
             label: 'PM2.5',
             data: pm25Data,
@@ -324,9 +328,17 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
             },
           },
         },
-      },
-    });
-
+      });
+      console.log('✅ Chart created successfully');
+    } catch (chartError) {
+      console.error('❌ Error creating chart:', chartError);
+      chartContainer.innerHTML = `
+        <div class="error" style="padding: 20px; text-align: center;">
+          Failed to create chart: ${chartError.message}
+        </div>
+      `;
+      return;
+    }
 
   } catch (error) {
     console.error('Error rendering station history chart:', error);

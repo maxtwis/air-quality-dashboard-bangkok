@@ -548,11 +548,11 @@ export class UIManager {
       // Determine the correct data label based on mode and data availability
       let dataLabel = 'Current';
       if (isAQHI && averageData) {
-        dataLabel = '3-Hour Average (μg/m³)';
+        dataLabel = '3-Hour Average';
       } else if (isAQHI) {
-        dataLabel = 'Current (converted to μg/m³)';
+        dataLabel = 'Current (converted)';
       } else {
-        dataLabel = 'Current (μg/m³)';
+        dataLabel = 'Current';
       }
 
       if (isAQHI && averageData) {
@@ -569,18 +569,29 @@ export class UIManager {
               ? `${POLLUTANTS[key].name}*`
               : POLLUTANTS[key].name;
 
+            // Determine correct unit for pollutant
+            let unit = 'μg/m³';
+            let displayValue = value;
+            if (key === 'co') {
+              unit = 'mg/m³';
+            } else if (key === 'no2' || key === 'o3') {
+              // Convert to ppb for gas pollutants
+              unit = 'ppb';
+              displayValue = key === 'no2' ? value / 1.88 : value / 2.0;
+            }
+
             pollutantData.push({
               key,
               config: {
                 ...POLLUTANTS[key],
                 name: nameWithMarker,
-                unit: key === 'co' ? 'mg/m³' : 'μg/m³' // Ensure proper units are shown
+                unit: unit
               },
-              value: Math.round(value * 10) / 10, // Round to 1 decimal place
+              value: Math.round(displayValue * 10) / 10, // Round to 1 decimal place
               isConverted: true,
               isGoogleSupplemented
             });
-            console.log(`   ✅ ${key.toUpperCase()}: ${Math.round(value * 10) / 10} ${key === 'co' ? 'mg/m³' : 'μg/m³'} (3h avg)${isGoogleSupplemented ? ' *Google' : ''}`);
+            console.log(`   ✅ ${key.toUpperCase()}: ${Math.round(displayValue * 10) / 10} ${unit} (3h avg)${isGoogleSupplemented ? ' *Google' : ''}`);
           }
         });
       } else {
@@ -594,17 +605,28 @@ export class UIManager {
             const rawConcentration = getRawConcentration(convertedStation, key);
 
             if (rawConcentration !== null) {
-              // Show converted concentration in μg/m³
+              // Determine correct unit and convert if needed
+              let unit = 'μg/m³';
+              let displayValue = rawConcentration;
+              if (key === 'co') {
+                unit = 'mg/m³';
+              } else if (key === 'no2' || key === 'o3') {
+                // Convert to ppb for gas pollutants
+                unit = 'ppb';
+                displayValue = key === 'no2' ? rawConcentration / 1.88 : rawConcentration / 2.0;
+              }
+
+              // Show converted concentration
               pollutantData.push({
                 key,
                 config: {
                   ...POLLUTANTS[key],
-                  unit: key === 'co' ? 'mg/m³' : 'μg/m³' // CO is in mg/m³, others in μg/m³
+                  unit: unit
                 },
-                value: Math.round(rawConcentration * 10) / 10,
+                value: Math.round(displayValue * 10) / 10,
                 isConverted: true
               });
-              console.log(`   ✅ ${key.toUpperCase()}: ${data.v} AQI → ${rawConcentration} ${key === 'co' ? 'mg/m³' : 'μg/m³'}`);
+              console.log(`   ✅ ${key.toUpperCase()}: ${data.v} AQI → ${Math.round(displayValue * 10) / 10} ${unit}`);
             } else {
               // Fallback to AQI if conversion failed
               pollutantData.push({

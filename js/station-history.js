@@ -119,7 +119,6 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
       <div style="position: relative; height: 300px;">
         <canvas id="history-chart-canvas"></canvas>
       </div>
-      <div id="chart-legend" style="margin-top: 12px; font-size: 0.85rem;"></div>
     `;
 
     // Setup toggle buttons
@@ -324,35 +323,6 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
       },
     });
 
-    // Add data quality info
-    const legendDiv = document.getElementById('chart-legend');
-    if (legendDiv) {
-      const latestReading = historyData[historyData.length - 1];
-      const oldestReading = historyData[0];
-
-      legendDiv.innerHTML = `
-        <div style="display: flex; justify-content: space-between; color: var(--gray-600); padding: 8px; background: var(--gray-50); border-radius: 6px;">
-          <div>
-            <strong>${historyData.length}</strong> readings
-          </div>
-          <div>
-            ${new Date(oldestReading.timestamp).toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-            →
-            ${new Date(latestReading.timestamp).toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </div>
-        </div>
-      `;
-    }
 
   } catch (error) {
     console.error('Error rendering station history chart:', error);

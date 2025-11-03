@@ -6,14 +6,24 @@ import { AirQualityDB } from '../lib/supabase.js';
 let currentChart = null;
 
 /**
- * WHO Air Quality Guidelines (μg/m³)
+ * WHO Air Quality Guidelines
  */
 const WHO_GUIDELINES = {
-  pm25: 5,      // 24-hour mean
-  pm10: 15,     // 24-hour mean
-  o3: 60,       // 8-hour mean
-  no2: 25,      // 24-hour mean
-  so2: 40,      // 24-hour mean
+  pm25: 5,      // μg/m³ - 24-hour mean
+  pm10: 15,     // μg/m³ - 24-hour mean
+  o3: 60,       // μg/m³ - 8-hour mean (or 30 ppb)
+  no2: 25,      // μg/m³ - 24-hour mean (or 13 ppb)
+  so2: 40,      // μg/m³ - 24-hour mean (or 15 ppb)
+};
+
+/**
+ * Unit conversion factors for gas pollutants
+ * Convert μg/m³ to ppb at 25°C, 1 atm
+ */
+const CONVERSION_FACTORS = {
+  o3: 2.0,      // O3: 1 ppb = 2.0 μg/m³
+  no2: 1.88,    // NO2: 1 ppb = 1.88 μg/m³
+  so2: 2.62,    // SO2: 1 ppb = 2.62 μg/m³
 };
 
 /**
@@ -122,11 +132,12 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
     });
 
     // Prepare data for chart (use aggregated data)
+    // Convert gas pollutants from μg/m³ to ppb for display
     const timestamps = aggregatedData.map(d => new Date(d.timestamp));
-    const pm25Data = aggregatedData.map(d => d.pm25);
-    const no2Data = aggregatedData.map(d => d.no2);
-    const o3Data = aggregatedData.map(d => d.o3);
-    const so2Data = aggregatedData.map(d => d.so2);
+    const pm25Data = aggregatedData.map(d => d.pm25); // Keep in μg/m³
+    const pm10Data = aggregatedData.map(d => d.pm10); // Keep in μg/m³
+    const no2Data = aggregatedData.map(d => d.no2 ? d.no2 / CONVERSION_FACTORS.no2 : null); // Convert to ppb
+    const o3Data = aggregatedData.map(d => d.o3 ? d.o3 / CONVERSION_FACTORS.o3 : null); // Convert to ppb
 
     // Destroy existing chart if it exists
     if (currentChart) {
@@ -159,6 +170,17 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
             pointHoverRadius: 4,
           },
           {
+            label: 'PM10',
+            data: pm10Data,
+            borderColor: '#ff9f43',
+            backgroundColor: 'rgba(255, 159, 67, 0.1)',
+            borderWidth: 2,
+            tension: 0.4,
+            fill: false,
+            pointRadius: hours === 24 ? 2 : 0,
+            pointHoverRadius: 4,
+          },
+          {
             label: 'NO₂',
             data: no2Data,
             borderColor: '#4ecdc4',
@@ -174,17 +196,6 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
             data: o3Data,
             borderColor: '#95e1d3',
             backgroundColor: 'rgba(149, 225, 211, 0.1)',
-            borderWidth: 2,
-            tension: 0.4,
-            fill: false,
-            pointRadius: hours === 24 ? 2 : 0,
-            pointHoverRadius: 4,
-          },
-          {
-            label: 'SO₂',
-            data: so2Data,
-            borderColor: '#ffd93d',
-            backgroundColor: 'rgba(255, 217, 61, 0.1)',
             borderWidth: 2,
             tension: 0.4,
             fill: false,
@@ -237,7 +248,11 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
               label: (context) => {
                 const label = context.dataset.label || '';
                 const value = context.parsed.y;
-                return value !== null ? `${label}: ${value.toFixed(1)} μg/m³` : '';
+                if (value === null) return '';
+
+                // Use correct units for each pollutant
+                const unit = (label === 'NO₂' || label === 'O₃') ? 'ppb' : 'μg/m³';
+                return `${label}: ${value.toFixed(1)} ${unit}`;
               },
             },
           },
@@ -289,9 +304,9 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
             beginAtZero: true,
             title: {
               display: true,
-              text: 'Concentration (μg/m³)',
+              text: 'Concentration (PM: μg/m³, Gases: ppb)',
               font: {
-                size: 11,
+                size: 10,
                 family: "'Inter', sans-serif",
               },
             },

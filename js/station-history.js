@@ -130,15 +130,27 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
           <button class="history-btn ${hours === 168 ? "active" : ""}" data-hours="168">7d</button>
         </div>
       </div>
-      <div style="position: relative; height: 300px;">
-        <canvas id="history-chart-canvas"></canvas>
+      <div id="chart-canvas-container" style="position: relative; height: 350px; min-height: 350px; width: 100%; display: block !important;">
+        <canvas id="history-chart-canvas" width="800" height="350" style="display: block !important;"></canvas>
       </div>
     `;
+
+    // Ensure container is visible
+    chartContainer.style.display = 'block';
+    chartContainer.style.visibility = 'visible';
+
+    // Log container dimensions
+    console.log('Chart container dimensions:', {
+      width: chartContainer.offsetWidth,
+      height: chartContainer.offsetHeight,
+      display: window.getComputedStyle(chartContainer).display
+    });
 
     // Setup toggle buttons
     const toggleButtons = chartContainer.querySelectorAll(".history-btn");
     toggleButtons.forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent event from bubbling to document click handler
         const newHours = parseInt(btn.dataset.hours);
         renderStationHistoryChart(stationUid, newHours);
       });
@@ -313,10 +325,12 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
             x: {
               type: "time",
               time: {
+                unit: hours === 24 ? "hour" : "day",
                 displayFormats: {
                   hour: "HH:mm",
                   day: "MMM d",
                 },
+                tooltipFormat: "MMM d, HH:mm",
               },
               grid: {
                 display: false,
@@ -355,6 +369,25 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
         },
       });
       console.log("✅ Chart created successfully");
+
+      // Force a small delay to ensure DOM is updated
+      setTimeout(() => {
+        const canvasCheck = document.getElementById('history-chart-canvas');
+        const containerCheck = document.getElementById('chart-canvas-container');
+        console.log('Post-creation check:', {
+          canvasExists: !!canvasCheck,
+          containerExists: !!containerCheck,
+          canvasDisplay: canvasCheck?.style.display,
+          containerDisplay: containerCheck?.style.display,
+          canvasParent: canvasCheck?.parentElement,
+          chartInstance: currentChart ? 'exists' : 'null'
+        });
+
+        if (!canvasCheck) {
+          console.error('❌ Canvas disappeared after creation!');
+        }
+      }, 100);
+
     } catch (chartError) {
       console.error("❌ Error creating chart:", chartError);
       chartContainer.innerHTML = `

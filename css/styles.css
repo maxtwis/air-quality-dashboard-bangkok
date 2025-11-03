@@ -404,17 +404,14 @@ body {
   transform: translateY(-1px);
 }
 
-/* Legend */
+/* Legend - Hidden on map, now in sidebar */
 .map-legend {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background: white;
-  padding: 16px;
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-lg);
-  z-index: 1000;
-  min-width: 200px;
+  display: none;
+}
+
+/* Sidebar Legend */
+.map-legend-sidebar {
+  margin-top: 8px;
 }
 
 .legend-title {
@@ -709,31 +706,6 @@ body {
     padding: 20px 15px;
   }
 
-  .map-legend {
-    top: 70px;
-    right: 10px;
-    left: auto;
-    bottom: auto;
-    padding: 10px;
-    min-width: 150px;
-    max-width: 180px;
-    font-size: 0.8rem;
-  }
-
-  .legend-title {
-    font-size: 0.75rem;
-    margin-bottom: 8px;
-  }
-
-  .legend-item {
-    font-size: 0.7rem;
-    gap: 6px;
-  }
-
-  .legend-dot {
-    width: 8px;
-    height: 8px;
-  }
 
   .map-controls {
     top: 10px;

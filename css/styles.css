@@ -710,10 +710,29 @@ body {
   }
 
   .map-legend {
-    bottom: 10px;
-    left: 10px;
-    padding: 12px;
-    min-width: 180px;
+    top: 70px;
+    right: 10px;
+    left: auto;
+    bottom: auto;
+    padding: 10px;
+    min-width: 150px;
+    max-width: 180px;
+    font-size: 0.8rem;
+  }
+
+  .legend-title {
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+  }
+
+  .legend-item {
+    font-size: 0.7rem;
+    gap: 6px;
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
   }
 
   .map-controls {

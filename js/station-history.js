@@ -42,7 +42,7 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
         <div class="info" style="padding: 20px; text-align: center;">
           No historical data available for this station yet.
           <br><br>
-          Data is collected every 10 minutes and stored for 7 days.
+          Data is collected hourly and stored for 7 days.
         </div>
       `;
       return;

@@ -1,9 +1,27 @@
 // US EPA AQI to Raw Concentration Converter
 // Critical for AQHI calculations which require μg/m³ values, not AQI values
+//
+// REFERENCES:
+// 1. US EPA (2024). "Technical Assistance Document for the Reporting of Daily Air Quality – the Air Quality Index (AQI)"
+//    Document: EPA-454/B-24-001
+//    URL: https://www.airnow.gov/publications/air-quality-index/technical-assistance-document-for-reporting-the-daily-aqi/
+//
+// 2. US EPA AQI Calculator
+//    URL: https://www.airnow.gov/aqi/aqi-calculator-concentration/
+//
+// 3. US EPA AQI Breakpoints (Official Table)
+//    URL: https://www.airnow.gov/sites/default/files/2020-05/aqi-technical-assistance-document-sept2018.pdf
+//
+// 4. Molecular Weight Conversions (at 25°C, 1 atm)
+//    Based on ideal gas law: μg/m³ = (ppb × molecular weight × 24.45) / 24450
+//    Reference: US EPA AP-42 Compilation of Air Pollutant Emission Factors
 
 /**
  * US EPA AQI Breakpoints (Updated 2024 for PM2.5)
  * Format: [AQI_low, AQI_high, Conc_low, Conc_high]
+ *
+ * Source: EPA-454/B-24-001 (February 2024)
+ * PM2.5 breakpoints updated in 2024, others remain from 2018
  */
 const EPA_AQI_BREAKPOINTS = {
   // PM2.5 (24-hour average, μg/m³) - Updated 2024
@@ -242,6 +260,54 @@ export function getRawConcentration(stationData, pollutant) {
 }
 
 /**
+ * Get concentration in units required for Thai AQHI formula
+ * - PM2.5: μg/m³
+ * - O3: ppb (NOT μg/m³)
+ * - NO2: ppb (NOT μg/m³)
+ *
+ * @param {Object} stationData - Converted station data
+ * @param {string} pollutant - Pollutant name (pm25, no2, o3)
+ * @returns {number|null} - Concentration in AQHI-required units or null if unavailable
+ */
+export function getConcentrationForAQHI(stationData, pollutant) {
+  if (!stationData?.rawConcentrations?.[pollutant]) {
+    return null;
+  }
+
+  const concInUgM3 = stationData.rawConcentrations[pollutant].concentration;
+
+  // PM2.5 is already in μg/m³ (correct for AQHI)
+  if (pollutant === 'pm25' || pollutant === 'pm10') {
+    return concInUgM3;
+  }
+
+  // O3 and NO2 need to be converted from μg/m³ back to ppb for Thai AQHI formula
+  if (pollutant === 'o3') {
+    // Convert μg/m³ back to ppb (reverse of ppm → μg/m³ conversion)
+    // We stored as μg/m³, need to convert back to ppb
+    // O3 μg/m³ → ppm → ppb
+    const ppm = concInUgM3 / CONVERSION_FACTORS.o3_ppm_to_ugm3;
+    const ppb = ppm * 1000; // ppm to ppb
+    return ppb;
+  }
+
+  if (pollutant === 'no2') {
+    // Convert μg/m³ back to ppb (reverse of ppb → μg/m³ conversion)
+    const ppb = concInUgM3 / CONVERSION_FACTORS.no2_ppb_to_ugm3;
+    return ppb;
+  }
+
+  if (pollutant === 'so2') {
+    // Convert μg/m³ back to ppb (reverse of ppb → μg/m³ conversion)
+    const ppb = concInUgM3 / CONVERSION_FACTORS.so2_ppb_to_ugm3;
+    return ppb;
+  }
+
+  // Default: return as is
+  return concInUgM3;
+}
+
+/**
  * Validate conversion accuracy with known test cases
  * @returns {boolean} - True if all tests pass
  */
@@ -286,6 +352,7 @@ if (typeof window !== 'undefined') {
     aqiToConcentration,
     convertStationToRawConcentrations,
     getRawConcentration,
+    getConcentrationForAQHI,
     validateConversions,
     EPA_AQI_BREAKPOINTS,
     CONVERSION_FACTORS

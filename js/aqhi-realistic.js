@@ -8,16 +8,17 @@ import {
 } from './dataStore.js';
 import {
   convertStationToRawConcentrations,
-  getRawConcentration
+  getConcentrationForAQHI
 } from './aqi-to-concentration.js';
 
-// AQHI Parameters (reverted to original Thai values)
+// Thai AQHI Parameters (Based on OPD/Morbidity from Thai Health Department)
 const AQHI_PARAMS = {
-  C: 105.19,  
+  C: 105.19,  // Scaling factor (Maximum MWEC for PM2.5 AQHI/OPD)
   beta: {
-    pm25: 0.0012,  
-    o3: 0.0010, 
-    no2: 0.0052, 
+    pm25: 0.0022,  // Beta coefficient for PM2.5 (µg/m³)
+    pm10: 0.0009,  // Beta coefficient for PM10 (µg/m³)
+    o3: 0.0010,    // Beta coefficient for O3 (ppb)
+    no2: 0.0030,   // Beta coefficient for NO2 (ppb)
   },
 };
 
@@ -189,26 +190,31 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
 }
 
 /**
- * Calculate AQHI with realistic approach using RAW CONCENTRATIONS (μg/m³)
- * CRITICAL: This function expects raw concentrations, NOT AQI values!
+ * Calculate AQHI with realistic approach using PROPER UNITS for Thai AQHI formula
+ * CRITICAL: This function expects specific units per pollutant:
  *
  * @param {number} pm25 - PM2.5 concentration in μg/m³ (NOT AQI!)
- * @param {number} no2 - NO2 concentration in μg/m³ (NOT AQI!)
- * @param {number} o3 - O3 concentration in μg/m³ (NOT AQI!)
+ * @param {number} no2 - NO2 concentration in ppb (NOT μg/m³, NOT AQI!)
+ * @param {number} o3 - O3 concentration in ppb (NOT μg/m³, NOT AQI!)
  * @returns {number} AQHI value (0-10+)
  */
-export function calculateRealisticAQHI(pm25, no2, o3) {
-  console.log(`🧮 Calculating AQHI with RAW concentrations: PM2.5=${pm25}μg/m³, NO2=${no2}μg/m³, O3=${o3}μg/m³`);
+export function calculateRealisticAQHI(pm25, no2, o3, pm10 = null) {
+  console.log(`🧮 Calculating AQHI with RAW concentrations: PM2.5=${pm25}μg/m³, PM10=${pm10}μg/m³, NO2=${no2}ppb, O3=${o3}ppb`);
 
-  // Correct AQHI formula: AQHI = (10/c) × 100 × [sum of excess risk terms]
-  const riskPM25 = pm25 ? Math.exp(AQHI_PARAMS.beta.pm25 * pm25) - 1 : 0;
-  const riskO3 = o3 ? Math.exp(AQHI_PARAMS.beta.o3 * o3) - 1 : 0;
-  const riskNO2 = no2 ? Math.exp(AQHI_PARAMS.beta.no2 * no2) - 1 : 0;
+  // Calculate Percentage Excess Risk (%ER) for each pollutant
+  // Formula: %ER_i = 100 * (exp(beta_i * x_i) - 1)
+  const perErPM25 = pm25 ? 100 * (Math.exp(AQHI_PARAMS.beta.pm25 * pm25) - 1) : 0;
+  const perErPM10 = pm10 ? 100 * (Math.exp(AQHI_PARAMS.beta.pm10 * pm10) - 1) : 0;
+  const perErO3 = o3 ? 100 * (Math.exp(AQHI_PARAMS.beta.o3 * o3) - 1) : 0;
+  const perErNO2 = no2 ? 100 * (Math.exp(AQHI_PARAMS.beta.no2 * no2) - 1) : 0;
 
-  const totalRiskSum = riskPM25 + riskO3 + riskNO2;
-  const aqhi = (10 / AQHI_PARAMS.C) * 100 * totalRiskSum;
+  // Calculate Total Percentage Excess Risk (Sum of all %ER)
+  const totalPerER = perErPM25 + perErPM10 + perErO3 + perErNO2;
 
-  console.log(`📊 AQHI risks: PM2.5=${riskPM25.toFixed(4)}, NO2=${riskNO2.toFixed(4)}, O3=${riskO3.toFixed(4)}, Total=${totalRiskSum.toFixed(4)} → AQHI=${Math.round(aqhi)}`);
+  // Calculate AQHI: AQHI = (10 / C) * Total %ER
+  const aqhi = (10 / AQHI_PARAMS.C) * totalPerER;
+
+  console.log(`📊 AQHI %ER: PM2.5=${perErPM25.toFixed(4)}%, PM10=${perErPM10.toFixed(4)}%, NO2=${perErNO2.toFixed(4)}%, O3=${perErO3.toFixed(4)}%, Total=${totalPerER.toFixed(4)}% → AQHI=${Math.round(aqhi)}`);
 
   return Math.max(1, Math.round(aqhi));
 }
@@ -232,18 +238,18 @@ export function getAQHILevel(aqhi) {
 export function calculateStationAQHIRealistic(station) {
   const stationId = station.uid || station.station?.name || 'unknown';
 
-  // CRITICAL FIX: Convert AQI values to raw concentrations first
-  console.log(`🔄 Converting station ${stationId} AQI values to raw concentrations...`);
+  // CRITICAL FIX: Convert AQI values to concentrations in AQHI-required units
+  console.log(`🔄 Converting station ${stationId} AQI values to AQHI-required units...`);
   const stationWithConcentrations = convertStationToRawConcentrations(station);
 
-  // Extract raw concentrations (μg/m³) instead of AQI values
+  // Extract concentrations in AQHI-required units: PM2.5 in μg/m³, O3 and NO2 in ppb
   const currentConcentrations = {
-    pm25: getRawConcentration(stationWithConcentrations, 'pm25') || 0,
-    no2: getRawConcentration(stationWithConcentrations, 'no2') || 0,
-    o3: getRawConcentration(stationWithConcentrations, 'o3') || 0,
+    pm25: getConcentrationForAQHI(stationWithConcentrations, 'pm25') || 0,
+    no2: getConcentrationForAQHI(stationWithConcentrations, 'no2') || 0,
+    o3: getConcentrationForAQHI(stationWithConcentrations, 'o3') || 0,
   };
 
-  console.log(`📊 Raw concentrations for ${stationId}:`, currentConcentrations);
+  console.log(`📊 AQHI-ready concentrations for ${stationId}: PM2.5=${currentConcentrations.pm25}μg/m³, NO2=${currentConcentrations.no2}ppb, O3=${currentConcentrations.o3}ppb`);
 
   // Store current reading for building our own moving average (now with raw concentrations)
   const dataPoints = collectCurrentReading(stationId, currentConcentrations);

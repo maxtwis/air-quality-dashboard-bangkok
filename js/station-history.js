@@ -23,15 +23,15 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
   try {
     console.log(`📊 Loading ${hours}h history for station ${stationUid}`);
 
-    // Show loading state
+    // Get chart container
     const chartContainer = document.getElementById('station-history-chart');
-    const canvas = document.getElementById('history-chart-canvas');
 
-    if (!chartContainer || !canvas) {
-      console.error('Chart elements not found');
+    if (!chartContainer) {
+      console.error('Chart container not found');
       return;
     }
 
+    // Show loading state
     chartContainer.innerHTML = '<div class="loading"><div class="loading-spinner"></div>Loading historical data...</div>';
 
     // Fetch historical data

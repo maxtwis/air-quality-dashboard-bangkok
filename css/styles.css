@@ -455,9 +455,12 @@ body {
   box-shadow: var(--shadow-xl);
   z-index: 1001;
   min-width: 300px;
-  max-width: 400px;
+  max-width: 600px;
+  width: 550px;
   display: none;
   animation: slideIn 0.3s ease;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
 }
 
 @keyframes slideIn {

@@ -149,11 +149,16 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
     // Setup toggle buttons
     const toggleButtons = chartContainer.querySelectorAll(".history-btn");
     toggleButtons.forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      // Handle both click and touch events for mobile
+      const handleToggle = (e) => {
         e.stopPropagation(); // Prevent event from bubbling to document click handler
+        e.preventDefault(); // Prevent default touch behavior on mobile
         const newHours = parseInt(btn.dataset.hours);
         renderStationHistoryChart(stationUid, newHours);
-      });
+      };
+
+      btn.addEventListener("click", handleToggle);
+      btn.addEventListener("touchend", handleToggle); // Handle touch events on mobile
     });
 
     // Prepare data for chart (use aggregated data)

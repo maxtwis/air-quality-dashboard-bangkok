@@ -710,6 +710,35 @@ body {
     top: 10px;
     right: 10px;
   }
+
+  /* Station History Chart Mobile Fixes */
+  .station-history {
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+
+  #chart-canvas-container {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  #history-chart-canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+
+  .history-btn {
+    /* Larger tap targets for mobile */
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    min-height: 44px; /* iOS recommended minimum tap target */
+    touch-action: manipulation; /* Disable double-tap zoom */
+    -webkit-tap-highlight-color: transparent; /* Remove tap highlight on iOS */
+  }
+
+  .history-toggle {
+    gap: 12px; /* More space between buttons on mobile */
+  }
 }
 
 /* Health Recommendations Styles */

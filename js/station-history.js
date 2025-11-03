@@ -283,11 +283,11 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
           x: {
             type: 'time',
             time: {
-              unit: hours === 24 ? 'hour' : 'day',
+              unit: 'hour',
               displayFormats: {
-                hour: 'HH:mm',
-                day: 'MMM d HH:mm',
+                hour: hours === 24 ? 'HH:mm' : 'MMM d',
               },
+              tooltipFormat: 'MMM d, HH:mm',
             },
             grid: {
               display: false,
@@ -298,6 +298,7 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
                 family: "'Inter', sans-serif",
               },
               maxRotation: 0,
+              maxTicksLimit: hours === 24 ? 12 : 7,
             },
           },
           y: {

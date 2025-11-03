@@ -95,7 +95,7 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
 
     // Show loading state
     chartContainer.innerHTML =
-      '<div class="loading"><div class="loading-spinner"></div>Loading historical data...</div>';
+      '<div class="loading"><div class="loading-spinner"></div>กำลังโหลดข้อมูลย้อนหลัง...</div>';
 
     // Fetch historical data
     const historyData = await AirQualityDB.getStationHistory(stationUid, hours);
@@ -107,11 +107,11 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
     if (!historyData || historyData.length === 0) {
       chartContainer.innerHTML = `
         <div class="info" style="padding: 20px; text-align: center;">
-          No historical data available for this station yet.
+          ยังไม่มีข้อมูลย้อนหลังสำหรับสถานีนี้
           <br><br>
-          Data is collected hourly and stored for 7 days.
+          ข้อมูลจะถูกเก็บรวบรวมทุกชั่วโมงและเก็บไว้ 7 วัน
           <br>
-          Requested: ${hours} hours
+          ช่วงเวลาที่ขอ: ${hours} ชั่วโมง
         </div>
       `;
       return;
@@ -124,10 +124,10 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
     // Restore canvas
     chartContainer.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-        <div style="font-weight: 600; font-size: 0.9rem;">Air Quality History</div>
+        <div style="font-weight: 600; font-size: 0.9rem;">สถิติคุณภาพอากาศย้อนหลัง</div>
         <div class="history-toggle" style="display: flex; gap: 8px;">
-          <button class="history-btn ${hours === 24 ? "active" : ""}" data-hours="24">24h</button>
-          <button class="history-btn ${hours === 168 ? "active" : ""}" data-hours="168">7d</button>
+          <button class="history-btn ${hours === 24 ? "active" : ""}" data-hours="24">24 ชม.</button>
+          <button class="history-btn ${hours === 168 ? "active" : ""}" data-hours="168">7 วัน</button>
         </div>
       </div>
       <div id="chart-canvas-container" style="position: relative; height: 350px; min-height: 350px; width: 100%; display: block !important;">

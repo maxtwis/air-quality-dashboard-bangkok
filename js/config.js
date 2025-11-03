@@ -55,44 +55,44 @@ export const AQI_LEVELS = {
   GOOD: {
     max: 50,
     color: "#10b981",
-    label: "Good",
+    label: "ดี",
     description:
-      "Air quality is satisfactory, and air pollution poses little or no risk.",
+      "คุณภาพอากาศอยู่ในเกณฑ์ที่น่าพอใจ และมลพิษทางอากาศมีความเสี่ยงน้อยหรือไม่มีเลย",
   },
   MODERATE: {
     max: 100,
     color: "#f59e0b",
-    label: "Moderate",
+    label: "ปานกลาง",
     description:
-      "Air quality is acceptable. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution.",
+      "คุณภาพอากาศอยู่ในเกณฑ์ที่ยอมรับได้ อย่างไรก็ตาม อาจมีความเสี่ยงต่อบางคน โดยเฉพาะผู้ที่มีความไวต่อมลพิษทางอากาศผิดปกติ",
   },
   UNHEALTHY_SENSITIVE: {
     max: 150,
     color: "#f97316",
-    label: "Unhealthy for Sensitive Groups",
+    label: "ไม่ดีต่อกลุ่มเสี่ยง",
     description:
-      "Members of sensitive groups may experience health effects. The general public is less likely to be affected.",
+      "สมาชิกในกลุ่มเสี่ยงอาจได้รับผลกระทบต่อสุขภาพ ประชาชนทั่วไปมีแนวโน้มได้รับผลกระทบน้อยกว่า",
   },
   UNHEALTHY: {
     max: 200,
     color: "#ef4444",
-    label: "Unhealthy",
+    label: "ไม่ดี",
     description:
-      "Some members of the general public may experience health effects; members of sensitive groups may experience more serious health effects.",
+      "สมาชิกบางส่วนของประชาชนทั่วไปอาจได้รับผลกระทบต่อสุขภาพ สมาชิกในกลุ่มเสี่ยงอาจได้รับผลกระทบต่อสุขภาพที่รุนแรงมากขึ้น",
   },
   VERY_UNHEALTHY: {
     max: 300,
     color: "#8b5cf6",
-    label: "Very Unhealthy",
+    label: "ไม่ดีมาก",
     description:
-      "Health alert: The risk of health effects is increased for everyone.",
+      "การเตือนสุขภาพ: ความเสี่ยงต่อผลกระทบต่อสุขภาพเพิ่มขึ้นสำหรับทุกคน",
   },
   HAZARDOUS: {
     max: Infinity,
     color: "#6b7280",
-    label: "Hazardous",
+    label: "อันตราย",
     description:
-      "Health warning of emergency conditions: everyone is more likely to be affected.",
+      "คำเตือนสุขภาพของสภาวะฉุกเฉิน: ทุกคนมีแนวโน้มที่จะได้รับผลกระทบมากขึ้น",
   },
 };
 

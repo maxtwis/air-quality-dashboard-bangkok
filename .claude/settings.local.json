@@ -12,7 +12,8 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []

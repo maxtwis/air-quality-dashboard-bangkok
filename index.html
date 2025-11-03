@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="th">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Air Quality Dashboard - Bangkok</title>
+    <title>แดชบอร์ดคุณภาพอากาศ - กรุงเทพฯ</title>
 
     <!-- Leaflet CSS -->
     <link
@@ -32,15 +32,15 @@
       <div class="sidebar">
         <div class="sidebar-header">
           <h1 class="app-title">🌬️ Breathe Bangkok</h1>
-          <p class="app-subtitle">Real-time air quality monitoring</p>
+          <p class="app-subtitle">ตรวจสอบคุณภาพอากาศแบบเรียลไทม์</p>
         </div>
 
         <div class="current-location">
           <div class="location-header">
             <span>📍</span>
-            <span>CURRENT LOCATION</span>
+            <span>ตำแหน่งปัจจุบัน</span>
           </div>
-          <div class="location-name">Bangkok, Thailand</div>
+          <div class="location-name">กรุงเทพมหานคร ประเทศไทย</div>
 
           <!-- Indicator Toggle -->
           <div class="indicator-toggle">
@@ -66,9 +66,9 @@
               <div class="aqi-label">US AQI</div>
             </div>
             <div class="aqi-details">
-              <div class="aqi-category" id="main-aqi-category">Loading...</div>
+              <div class="aqi-category" id="main-aqi-category">กำลังโหลด...</div>
               <div class="aqi-description" id="main-aqi-description">
-                Fetching air quality data...
+                กำลังดึงข้อมูลคุณภาพอากาศ...
               </div>
             </div>
           </div>
@@ -78,80 +78,60 @@
               <span class="weather-icon">🌡️</span>
               <div>
                 <div class="weather-value" id="temperature">--°C</div>
-                <div class="weather-label">Temperature</div>
+                <div class="weather-label">อุณหภูมิ</div>
               </div>
             </div>
             <div class="weather-item">
               <span class="weather-icon">💧</span>
               <div>
                 <div class="weather-value" id="humidity">--%</div>
-                <div class="weather-label">Humidity</div>
+                <div class="weather-label">ความชื้น</div>
               </div>
             </div>
             <div class="weather-item">
               <span class="weather-icon">💨</span>
               <div>
                 <div class="weather-value" id="wind">-- km/h</div>
-                <div class="weather-label">Wind Speed</div>
+                <div class="weather-label">ความเร็วลม</div>
               </div>
             </div>
             <div class="weather-item">
               <span class="weather-icon">🔄</span>
               <div>
                 <div class="weather-value" id="last-update">--</div>
-                <div class="weather-label">Last Update</div>
+                <div class="weather-label">อัปเดตล่าสุด</div>
               </div>
             </div>
           </div>
         </div>
 
         <div class="stats-section">
-          <h3 class="section-title">📊 Statistics</h3>
-          <div id="stats-content">
-            <div class="loading">
-              <div class="loading-spinner"></div>
-              Loading statistics...
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-section">
-          <h3 class="section-title">🎯 Air Quality Breakdown</h3>
-          <div class="category-stats" id="category-stats">
-            <div class="loading">
-              <div class="loading-spinner"></div>
-              Loading breakdown...
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-section">
-          <h3 class="section-title">📊 Legend</h3>
+          <h3 class="section-title">📊 คำอธิบาย</h3>
           <div class="map-legend-sidebar">
             <div class="legend-items">
               <div class="legend-item">
                 <div class="legend-dot" style="background-color: #10b981"></div>
-                <span>Good (0-50)</span>
+                <span>ดี (0-50)</span>
               </div>
               <div class="legend-item">
                 <div class="legend-dot" style="background-color: #f59e0b"></div>
-                <span>Moderate (51-100)</span>
+                <span>ปานกลาง (51-100)</span>
               </div>
               <div class="legend-item">
                 <div class="legend-dot" style="background-color: #f97316"></div>
-                <span>Unhealthy for Sensitive (101-150)</span>
+                <span>ไม่ดีต่อกลุ่มเสี่ยง (101-150)</span>
               </div>
               <div class="legend-item">
                 <div class="legend-dot" style="background-color: #ef4444"></div>
-                <span>Unhealthy (151-200)</span>
+                <span>ไม่ดี (151-200)</span>
               </div>
               <div class="legend-item">
                 <div class="legend-dot" style="background-color: #8b5cf6"></div>
-                <span>Very Unhealthy (201-300)</span>
+                <span>ไม่ดีมาก (201-300)</span>
               </div>
               <div class="legend-item">
                 <div class="legend-dot" style="background-color: #6b7280"></div>
-                <span>Hazardous (301+)</span>
+                <span>อันตราย (301+)</span>
               </div>
             </div>
           </div>
@@ -164,13 +144,13 @@
 
         <!-- Map Controls -->
         <div class="map-controls">
-          <button class="control-button" id="refresh-btn" title="Refresh Data">
+          <button class="control-button" id="refresh-btn" title="รีเฟรชข้อมูล">
             🔄
           </button>
           <button
             class="control-button"
             id="fullscreen-btn"
-            title="Toggle Fullscreen"
+            title="เปิดแบบเต็มจอ"
           >
             ⛶
           </button>
@@ -178,31 +158,31 @@
 
         <!-- Map Legend -->
         <div class="map-legend">
-          <div class="legend-title">Air Quality Index</div>
+          <div class="legend-title">ดัชนีคุณภาพอากาศ</div>
           <div class="legend-items">
             <div class="legend-item">
               <div class="legend-dot" style="background-color: #10b981"></div>
-              <span>Good (0-50)</span>
+              <span>ดี (0-50)</span>
             </div>
             <div class="legend-item">
               <div class="legend-dot" style="background-color: #f59e0b"></div>
-              <span>Moderate (51-100)</span>
+              <span>ปานกลาง (51-100)</span>
             </div>
             <div class="legend-item">
               <div class="legend-dot" style="background-color: #f97316"></div>
-              <span>Unhealthy for Sensitive (101-150)</span>
+              <span>ไม่ดีต่อกลุ่มเสี่ยง (101-150)</span>
             </div>
             <div class="legend-item">
               <div class="legend-dot" style="background-color: #ef4444"></div>
-              <span>Unhealthy (151-200)</span>
+              <span>ไม่ดี (151-200)</span>
             </div>
             <div class="legend-item">
               <div class="legend-dot" style="background-color: #8b5cf6"></div>
-              <span>Very Unhealthy (201-300)</span>
+              <span>ไม่ดีมาก (201-300)</span>
             </div>
             <div class="legend-item">
               <div class="legend-dot" style="background-color: #6b7280"></div>
-              <span>Hazardous (301+)</span>
+              <span>อันตราย (301+)</span>
             </div>
           </div>
         </div>
@@ -210,7 +190,7 @@
         <!-- Station Info Panel -->
         <div class="station-info" id="station-info">
           <div class="station-header">
-            <div class="station-name" id="station-name">Station Name</div>
+            <div class="station-name" id="station-name">ชื่อสถานี</div>
             <button class="close-button" id="close-station-btn">×</button>
           </div>
           <div class="station-aqi">
@@ -218,8 +198,8 @@
               <span id="station-aqi-value">--</span>
             </div>
             <div class="station-details">
-              <div class="station-category" id="station-category">Category</div>
-              <div class="station-time" id="station-time">Last updated: --</div>
+              <div class="station-category" id="station-category">ระดับคุณภาพ</div>
+              <div class="station-time" id="station-time">อัปเดตล่าสุด: --</div>
             </div>
           </div>
           <div class="station-history" id="station-history-chart">

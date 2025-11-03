@@ -112,6 +112,8 @@ app.post("/api/supabase/aqhi-averages", async (req, res) => {
 
     const data = await response.json();
 
+    console.log(`📦 Supabase returned ${Array.isArray(data) ? 'array' : 'object'} with ${Array.isArray(data) ? data.length : 'N/A'} items`);
+
     return res.status(200).json(data);
   } catch (error) {
     console.error("❌ AQHI Proxy Error:", error);

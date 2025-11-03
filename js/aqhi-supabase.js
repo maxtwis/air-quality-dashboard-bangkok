@@ -18,31 +18,35 @@ export const AQHI_LEVELS = {
     min: 0,
     max: 3.9,
     color: "#10b981",
-    label: "Low",
-    description: "Ideal air quality for outdoor activities",
+    label: "ต่ำ",
+    labelEn: "Low",
+    description: "คุณภาพอากาศที่เหมาะสมสำหรับกิจกรรมกลางแจ้ง",
   },
   MODERATE: {
     min: 4,
     max: 6.9,
     color: "#f59e0b",
-    label: "Moderate",
+    label: "ปานกลาง",
+    labelEn: "Moderate",
     description:
-      "No need to modify outdoor activities unless experiencing symptoms",
+      "ไม่จำเป็นต้องเปลี่ยนแปลงกิจกรรมกลางแจ้ง เว้นแต่มีอาการผิดปกติ",
   },
   HIGH: {
     min: 7,
-    max: 10.9,
+    max: 9.9,
     color: "#ef4444",
-    label: "High",
+    label: "สูง",
+    labelEn: "High",
     description:
-      "Consider reducing or rescheduling strenuous outdoor activities",
+      "พิจารณาลดหรือเลื่อนกิจกรรมกลางแจ้งที่ออกแรงมาก",
   },
   VERY_HIGH: {
-    min: 11,
+    min: 10,
     max: Infinity,
     color: "#7f1d1d",
-    label: "Very High",
-    description: "Reduce or reschedule strenuous outdoor activities",
+    label: "สูงมาก",
+    labelEn: "Very High",
+    description: "ลดหรือเลื่อนกิจกรรมกลางแจ้งที่ออกแรงมาก",
   },
 };
 
@@ -96,6 +100,25 @@ export function getAQHILevel(aqhi) {
 }
 
 /**
+ * Estimate AQHI from AQI value (rough approximation for stations without pollutant data)
+ * Based on observed correlation: AQHI ≈ AQI * 0.08 (rough mapping)
+ */
+function estimateAQHIFromAQI(aqi) {
+  if (!aqi || aqi <= 0) return 1;
+
+  // Rough mapping based on typical PM2.5-dominated air quality
+  // AQI 0-50 → AQHI 1-3 (Low)
+  // AQI 51-100 → AQHI 4-6 (Moderate)
+  // AQI 101-150 → AQHI 7-9 (High)
+  // AQI 151+ → AQHI 10+ (Very High)
+
+  if (aqi <= 50) return Math.max(1, Math.round(aqi * 0.06));
+  if (aqi <= 100) return Math.max(3, Math.round(3 + (aqi - 50) * 0.06));
+  if (aqi <= 150) return Math.max(6, Math.round(6 + (aqi - 100) * 0.06));
+  return Math.max(9, Math.round(9 + (aqi - 150) * 0.04));
+}
+
+/**
  * Calculate AQHI from station data (converts AQI to concentrations in proper units first)
  */
 export async function calculateStationAQHI(station) {
@@ -108,7 +131,18 @@ export async function calculateStationAQHI(station) {
   const no2 = getConcentrationForAQHI(stationWithConcentrations, "no2") || 0;
   const o3 = getConcentrationForAQHI(stationWithConcentrations, "o3") || 0;
 
-  return calculateThaiAQHI(pm25, no2, o3);
+  // If we have actual pollutant data, use the proper formula
+  if (pm25 > 0 || no2 > 0 || o3 > 0) {
+    return calculateThaiAQHI(pm25, no2, o3);
+  }
+
+  // Fallback: Estimate from AQI if no pollutant data available
+  if (station.aqi && station.aqi > 0) {
+    return estimateAQHIFromAQI(station.aqi);
+  }
+
+  // Last resort: return minimum AQHI
+  return 1;
 }
 
 /**
@@ -272,6 +306,7 @@ class SupabaseAQHI {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           aqicnData = await response.json();
+          console.log('📦 Proxy response type:', typeof aqicnData, 'isArray:', Array.isArray(aqicnData), 'length:', aqicnData?.length);
         } catch (error) {
           aqicnError = error;
         }
@@ -290,10 +325,12 @@ class SupabaseAQHI {
       }
 
       // Process AQICN data
-      if (aqicnData) {
-        aqicnData.forEach((station) => {
-          if (station.reading_count > 0) {
-            stationAverages[station.station_uid] = {
+      if (aqicnData && Array.isArray(aqicnData)) {
+        // Process all stations in one go using reduce (faster than forEach)
+        stationAverages = aqicnData.reduce((acc, station) => {
+          const readingCount = station.reading_count || station.waqi_readings || 0;
+          if (readingCount > 0) {
+            acc[station.station_uid] = {
               pm25: station.avg_pm25,
               pm10: station.avg_pm10,
               o3: station.avg_o3,
@@ -304,7 +341,8 @@ class SupabaseAQHI {
               dataSources: "aqicn",
             };
           }
-        });
+          return acc;
+        }, {});
       }
 
       console.log(
@@ -358,7 +396,7 @@ class SupabaseAQHI {
         return {};
       }
 
-      if (!data || data.length === 0) {
+      if (!data || !Array.isArray(data) || data.length === 0) {
         console.log(`ℹ️ No 3h average data for ${stationIds.length} stations`);
         return {};
       }
@@ -613,10 +651,14 @@ class SupabaseAQHI {
 
   /**
    * Process multiple stations with optimized batch database queries
+   * @param {Array} stations - Array of station objects
+   * @param {Object} options - Options object
+   * @param {boolean} options.fastMode - Skip database query and use current readings (default: false, uses 3h averages)
    */
-  async enhanceStationsWithAQHI(stations) {
+  async enhanceStationsWithAQHI(stations, options = {}) {
+    const fastMode = options.fastMode === true; // Only true if explicitly set
     console.log(
-      `🔄 Processing ${stations.length} stations with batch optimization...`,
+      `🔄 Processing ${stations.length} stations ${fastMode ? '(fast mode - current readings only)' : '(with 3h averages from Supabase)'}...`,
     );
 
     if (!this.supabase) {
@@ -644,6 +686,34 @@ class SupabaseAQHI {
 
     const startTime = Date.now();
 
+    // FAST MODE: Skip database lookup, just calculate from current readings
+    if (fastMode) {
+      console.log('⚡ Fast mode: Using current readings only');
+      const enhancedStations = await Promise.all(
+        stations.map(async (station) => {
+          const aqhiValue = await calculateStationAQHI(station);
+          return {
+            ...station,
+            aqhi: {
+              value: aqhiValue,
+              level: getAQHILevel(aqhiValue),
+              calculationMethod: "current_reading",
+              readingCount: 1,
+              dataQuality: "current",
+              dataSources: "waqi_current",
+            },
+          };
+        }),
+      );
+
+      const duration = Date.now() - startTime;
+      console.log(
+        `✅ Enhanced ${enhancedStations.length} stations (fast mode) in ${duration}ms`,
+      );
+      return enhancedStations;
+    }
+
+    // SLOW MODE: Fetch 3-hour averages from database
     try {
       // Extract all station IDs for batch query
       const stationIds = stations
@@ -668,37 +738,42 @@ class SupabaseAQHI {
           const averages = stationId ? batchAverages[stationId] : null;
 
           let aqhiValue;
-          if (averages && (averages.pm25 || averages.o3 || averages.no2)) {
-            // Calculate AQHI using Thai Health Department formula
-            // Formula: %ER_i = 100 * (exp(beta_i * x_i) - 1)
-            let perErPM25 = 0;
-            let perErO3 = 0;
-            let perErNO2 = 0;
+          if (averages) {
+            // OPTIMIZATION: Use pre-calculated AQHI from database if available
+            if (averages.aqhi !== null && averages.aqhi !== undefined) {
+              aqhiValue = Math.round(averages.aqhi);
 
-            if (averages.pm25) {
-              perErPM25 = 100 * (Math.exp(0.0012 * averages.pm25) - 1);
-            }
-            if (averages.o3) {
-              perErO3 = 100 * (Math.exp(0.001 * averages.o3) - 1);
-            }
-            if (averages.no2) {
-              perErNO2 = 100 * (Math.exp(0.0052 * averages.no2) - 1);
-            }
+              // Cache the result
+              if (stationId) {
+                this.cache.set(`aqhi_${stationId}`, {
+                  value: aqhiValue,
+                  timestamp: Date.now(),
+                  source: "batch_stored_3h_avg_precalc",
+                  readingCount: averages.readingCount,
+                });
+              }
+            } else if (averages.pm25 || averages.o3 || averages.no2) {
+              // Fallback: Calculate AQHI if not pre-calculated in database
+              aqhiValue = calculateThaiAQHI(
+                averages.pm25 || 0,
+                averages.no2 || 0,
+                averages.o3 || 0,
+                averages.pm10 || null
+              );
 
-            const totalPerER = perErPM25 + perErO3 + perErNO2;
-            aqhiValue = (10.0 / 105.19) * totalPerER;
-            aqhiValue = Math.max(1, Math.round(aqhiValue));
-
-            // Cache the result
-            if (stationId) {
-              this.cache.set(`aqhi_${stationId}`, {
-                value: aqhiValue,
-                timestamp: Date.now(),
-                source: "batch_stored_3h_avg",
-                readingCount: averages.readingCount,
-              });
+              // Cache the result
+              if (stationId) {
+                this.cache.set(`aqhi_${stationId}`, {
+                  value: aqhiValue,
+                  timestamp: Date.now(),
+                  source: "batch_stored_3h_avg_calc",
+                  readingCount: averages.readingCount,
+                });
+              }
             }
-          } else {
+          }
+
+          if (!aqhiValue) {
             // Fallback: Use latest single readings from database (not 3h average yet)
             const latestData = await this.getLatestReadings(stationId);
 

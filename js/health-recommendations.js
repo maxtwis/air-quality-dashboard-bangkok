@@ -138,12 +138,12 @@ class HealthRecommendationsService {
     return iconMap[description] || "person";
   }
 
-  // Get English title for group type
+  // Get Thai title for group type
   getGroupTitle(groupType) {
     const titleMap = {
-      age: "Age Groups",
-      diseases: "Health Conditions",
-      job: "Occupational Groups",
+      age: "กลุ่มอายุ",
+      diseases: "กลุ่มโรค",
+      job: "กลุ่มอาชีพ",
     };
 
     return titleMap[groupType] || groupType;

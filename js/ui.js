@@ -142,22 +142,7 @@ export class UIManager {
     if (mainCategory) mainCategory.textContent = aqhiLevel.label;
     if (mainDescription) {
       // Check data quality for AQHI with realistic approach
-      let dataQualityNote = "";
-      if (stations.length > 0 && stations[0].aqhi) {
-        const avgTimeSpan =
-          stations.reduce((sum, s) => sum + (s.aqhi?.timeSpanHours || 0), 0) /
-          stations.length;
-        const commonMethod = stations[0].aqhi?.calculationMethod || "current";
-
-        if (commonMethod === "estimated") {
-          dataQualityNote = " (Estimated from current readings)";
-        } else if (avgTimeSpan < 1) {
-          dataQualityNote = " (Building moving average...)";
-        } else if (avgTimeSpan < 3) {
-          dataQualityNote = ` (${avgTimeSpan.toFixed(1)}h average)`;
-        }
-      }
-      mainDescription.textContent = aqhiLevel.description + dataQualityNote;
+      mainDescription.textContent = aqhiLevel.description;
     }
     if (mainCircle)
       mainCircle.className = `aqi-circle ${getAQHIClass(aqhiLevel)}`;
@@ -235,127 +220,87 @@ export class UIManager {
 
   // Update map legend based on current indicator
   updateMapLegend() {
+    // Update both map overlay legend (if exists) and sidebar legend
     const legendElement = document.querySelector(".map-legend");
-    if (!legendElement) return;
+    const sidebarLegend = document.querySelector(".map-legend-sidebar");
+    const sidebarSection = sidebarLegend?.closest(".stats-section");
+    const sidebarTitle = sidebarSection?.querySelector(".section-title");
 
-    const legendTitle = legendElement.querySelector(".legend-title");
-    const legendItems = legendElement.querySelector(".legend-items");
+    if (!legendElement && !sidebarLegend) return;
+
+    // Get elements from BOTH legends
+    const legendTitle = legendElement?.querySelector(".legend-title");
+    const mapLegendItems = legendElement?.querySelector(".legend-items");
+    const sidebarLegendItems = sidebarLegend?.querySelector(".legend-items");
+
+    const aqhiLegendHTML = `
+      <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.LOW.color};"></div>
+        <span>ต่ำ (0-3)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.MODERATE.color};"></div>
+        <span>ปานกลาง (4-6)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.HIGH.color};"></div>
+        <span>สูง (7-9)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.VERY_HIGH.color};"></div>
+        <span>สูงมาก (10+)</span>
+      </div>
+    `;
+
+    const aqiLegendHTML = `
+      <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQI_LEVELS.GOOD.color};"></div>
+        <span>ดี (0-50)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQI_LEVELS.MODERATE.color};"></div>
+        <span>ปานกลาง (51-100)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQI_LEVELS.UNHEALTHY_SENSITIVE.color};"></div>
+        <span>ไม่ดีต่อกลุ่มเสี่ยง (101-150)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQI_LEVELS.UNHEALTHY.color};"></div>
+        <span>ไม่ดี (151-200)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQI_LEVELS.VERY_UNHEALTHY.color};"></div>
+        <span>ไม่ดีมาก (201-300)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQI_LEVELS.HAZARDOUS.color};"></div>
+        <span>อันตราย (301+)</span>
+      </div>
+    `;
 
     if (this.currentIndicator === "AQHI") {
       // Update to AQHI legend
       if (legendTitle) {
-        legendTitle.textContent = "Air Quality Health Index (AQHI)";
+        legendTitle.textContent = "ดัชนีคุณภาพอากาศด้านสุขภาพ (AQHI)";
       }
-
-      if (legendItems) {
-        legendItems.innerHTML = `
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.LOW.color};"></div>
-                        <span>Low (1-3)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.MODERATE.color};"></div>
-                        <span>Moderate (4-6)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.HIGH.color};"></div>
-                        <span>High (7-10)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.VERY_HIGH.color};"></div>
-                        <span>Very High (11+)</span>
-                    </div>
-                `;
+      if (sidebarTitle) {
+        sidebarTitle.textContent = "📊 คำอธิบาย AQHI";
       }
-    } else if (this.currentIndicator === "PM25_AQHI") {
-      // Update to PM2.5 AQHI legend
-      if (legendTitle) {
-        legendTitle.textContent = "PM2.5-only AQHI (NO₂ & O₃ = 0)";
-      }
-
-      if (legendItems) {
-        legendItems.innerHTML = `
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.LOW.color};"></div>
-                        <span>Low (1-3)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.MODERATE.color};"></div>
-                        <span>Moderate (4-6)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.HIGH.color};"></div>
-                        <span>High (7-10)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQHI_LEVELS.VERY_HIGH.color};"></div>
-                        <span>Very High (11+)</span>
-                    </div>
-                `;
-      }
-    } else if (this.currentIndicator === "AQHI_CANADA") {
-      // Update to Canadian AQHI legend
-      if (legendTitle) {
-        legendTitle.textContent = "Canadian Air Quality Health Index";
-      }
-
-      if (legendItems) {
-        // Import Canadian AQHI levels dynamically
-        import("./aqhi-canada.js").then(({ CANADIAN_AQHI_LEVELS }) => {
-          legendItems.innerHTML = `
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background-color: ${CANADIAN_AQHI_LEVELS.LOW.color};"></div>
-                            <span>Low Risk (1-3)</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background-color: ${CANADIAN_AQHI_LEVELS.MODERATE.color};"></div>
-                            <span>Moderate Risk (4-6)</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background-color: ${CANADIAN_AQHI_LEVELS.HIGH.color};"></div>
-                            <span>High Risk (7-10)</span>
-                        </div>
-                        <div class="legend-item">
-                            <div class="legend-dot" style="background-color: ${CANADIAN_AQHI_LEVELS.VERY_HIGH.color};"></div>
-                            <span>Very High Risk (11+)</span>
-                        </div>
-                    `;
-        });
-      }
+      // Update BOTH map and sidebar legend items
+      if (mapLegendItems) mapLegendItems.innerHTML = aqhiLegendHTML;
+      if (sidebarLegendItems) sidebarLegendItems.innerHTML = aqhiLegendHTML;
     } else {
       // Update to AQI legend
       if (legendTitle) {
-        legendTitle.textContent = "Air Quality Index (US AQI)";
+        legendTitle.textContent = "ดัชนีคุณภาพอากาศ (US AQI)";
       }
-
-      if (legendItems) {
-        legendItems.innerHTML = `
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.GOOD.color};"></div>
-                        <span>Good (0-50)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.MODERATE.color};"></div>
-                        <span>Moderate (51-100)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.UNHEALTHY_SENSITIVE.color};"></div>
-                        <span>Unhealthy for Sensitive (101-150)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.UNHEALTHY.color};"></div>
-                        <span>Unhealthy (151-200)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.VERY_UNHEALTHY.color};"></div>
-                        <span>Very Unhealthy (201-300)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background-color: ${AQI_LEVELS.HAZARDOUS.color};"></div>
-                        <span>Hazardous (301+)</span>
-                    </div>
-                `;
+      if (sidebarTitle) {
+        sidebarTitle.textContent = "📊 คำอธิบาย AQI";
       }
+      // Update BOTH map and sidebar legend items
+      if (mapLegendItems) mapLegendItems.innerHTML = aqiLegendHTML;
+      if (sidebarLegendItems) sidebarLegendItems.innerHTML = aqiLegendHTML;
     }
   }
 
@@ -375,10 +320,10 @@ export class UIManager {
 
   // Helper method to get AQHI CSS class
   getAQHIClass(aqhi) {
-    if (aqhi <= 3) return "good";
-    if (aqhi <= 6) return "moderate";
-    if (aqhi <= 10) return "unhealthy-sensitive";
-    return "hazardous";
+    if (aqhi <= 3) return "aqi-good";
+    if (aqhi <= 6) return "aqi-moderate";
+    if (aqhi <= 10) return "aqi-unhealthy-sensitive";
+    return "aqi-hazardous";
   }
 
   // Enhanced station information panel with pollutant data
@@ -795,7 +740,7 @@ export class UIManager {
       let healthHTML = `
                 <div class="health-recommendations-section" style="margin-top: 16px;">
                     <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; color: var(--gray-700);">
-                        🏥 Health Recommendations
+                        🏥 คำแนะนำ
                     </h4>
             `;
 

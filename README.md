@@ -76,11 +76,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 ### API Keys Setup
 
 #### WAQI API Token
+
 1. Go to https://aqicn.org/data-platform/token/
 2. Request a free token
 3. Add to `.env.local`
 
 #### Google Air Quality API Key
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a project or select existing
 3. Enable "Air Quality API"
@@ -113,12 +115,14 @@ The project includes serverless functions for API proxying.
 ### Switching Data Sources
 
 In the sidebar, use the **Data Source** toggle:
+
 - **WAQI**: Real monitoring stations from World Air Quality Index
 - **Google**: Grid-based air quality data from Google API
 
 ### Switching Indicators
 
 Use the **Indicator** toggle:
+
 - **AQI**: Standard US EPA Air Quality Index (0-500 scale)
 - **AQHI**: Canadian Air Quality Health Index (1-10+ scale)
 - **PM2.5 AQHI**: AQHI based solely on PM2.5 levels
@@ -154,10 +158,12 @@ air-quality-dashboard-bangkok/
 ## API Costs
 
 ### WAQI
+
 - Free tier: Sufficient for most uses
 - Rate limits: Check aqicn.org
 
 ### Google Air Quality API
+
 - Free tier: 10,000 requests/month
 - Current usage (maximally optimized): ~9-45 calls/day (~270-1,350/month)
 - Configuration: 3x3 grid, on-demand refresh only (no auto-refresh)
@@ -193,5 +199,6 @@ MIT
 ## Support
 
 For issues or questions:
+
 - Open an issue on GitHub
 - Check documentation in the repo

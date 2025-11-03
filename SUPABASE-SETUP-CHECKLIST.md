@@ -11,6 +11,7 @@ Go to: https://supabase.com/dashboard/project/YOUR_PROJECT/sql
 Copy and paste the entire contents of `supabase/update-for-google-supplements.sql` into the SQL Editor and click **Run**.
 
 This will:
+
 - ✅ Add `data_source` column (if not exists)
 - ✅ Update constraint to allow `GOOGLE_SUPPLEMENT` value
 - ✅ Create indexes for performance
@@ -20,6 +21,7 @@ This will:
 ### 3. Verify Schema Update
 
 After running the SQL, you should see:
+
 ```
 status: Schema updated successfully!
 total_readings: X
@@ -32,11 +34,13 @@ google_readings: 0 (will populate after first Google cron run)
 ### air_quality_readings Table
 
 **Before**:
+
 ```sql
 data_source VARCHAR(20) CHECK (data_source IN ('WAQI', 'GOOGLE'))
 ```
 
 **After**:
+
 ```sql
 data_source VARCHAR(20) CHECK (data_source IN ('WAQI', 'GOOGLE', 'GOOGLE_SUPPLEMENT'))
 ```
@@ -44,6 +48,7 @@ data_source VARCHAR(20) CHECK (data_source IN ('WAQI', 'GOOGLE', 'GOOGLE_SUPPLEM
 ### How Data is Stored
 
 **WAQI readings** (every 20 minutes):
+
 ```sql
 INSERT INTO air_quality_readings (
   station_uid, timestamp, pm25, pm10, so2, co, data_source
@@ -53,6 +58,7 @@ INSERT INTO air_quality_readings (
 ```
 
 **Google supplement readings** (every 60 minutes):
+
 ```sql
 INSERT INTO air_quality_readings (
   station_uid, timestamp, o3, no2, data_source
@@ -70,6 +76,7 @@ SELECT * FROM current_3h_averages WHERE station_uid = '12345';
 ```
 
 Returns:
+
 ```
 station_uid: 12345
 avg_pm25: 36.2    (from 9 WAQI readings)
@@ -123,6 +130,7 @@ LIMIT 10;
 ```
 
 **Expected**:
+
 - `waqi_count`: ~9 (WAQI readings every 20 min)
 - `google_count`: ~3 (Google readings every 60 min)
 - `avg_pm25`: populated (from WAQI)
@@ -154,22 +162,26 @@ This shows which stations are successfully getting Google O3/NO2 supplements.
 ### Issue: No Google supplement readings after 1 hour
 
 **Check 1**: Verify cron job ran successfully
+
 - Go to cron-job.org → Execution history
 - Should show 200 OK response
 
 **Check 2**: Check Vercel logs
+
 ```bash
 # View recent function logs
 curl https://vercel.com/api/logs?projectId=YOUR_PROJECT_ID
 ```
 
 Look for:
+
 ```
 📊 Found 180/188 stations needing O3/NO2 supplements
 ✅ Stored 180 supplement readings in database
 ```
 
 **Check 3**: Verify data_source constraint
+
 ```sql
 SELECT constraint_name, check_clause
 FROM information_schema.check_constraints
@@ -181,11 +193,13 @@ Should include `GOOGLE_SUPPLEMENT`.
 ### Issue: 3-hour averages not calculating
 
 **Check 1**: Verify view exists
+
 ```sql
 SELECT COUNT(*) FROM current_3h_averages;
 ```
 
 **Check 2**: Check if readings have timestamps
+
 ```sql
 SELECT COUNT(*) as total,
   COUNT(CASE WHEN timestamp IS NULL THEN 1 END) as null_timestamps
@@ -196,6 +210,7 @@ WHERE timestamp >= NOW() - INTERVAL '3 hours';
 All timestamps should be non-null.
 
 **Check 3**: Recreate view
+
 ```sql
 DROP VIEW IF EXISTS current_3h_averages CASCADE;
 -- Then re-run the CREATE VIEW statement from migration SQL
@@ -203,22 +218,24 @@ DROP VIEW IF EXISTS current_3h_averages CASCADE;
 
 ## Expected Timeline
 
-| Time | What Happens | Data in Supabase |
-|------|-------------|------------------|
-| T+0 min | Run SQL migration | Schema updated ✅ |
-| T+0-20 min | Wait for WAQI cron | WAQI readings continue as normal |
-| T+60 min | First Google cron runs | 180 Google supplement readings added ✅ |
-| T+120 min | Second Google cron | 180 more Google readings |
-| T+180 min | Third Google cron | 3-hour averages now complete ✅ |
+| Time       | What Happens           | Data in Supabase                        |
+| ---------- | ---------------------- | --------------------------------------- |
+| T+0 min    | Run SQL migration      | Schema updated ✅                       |
+| T+0-20 min | Wait for WAQI cron     | WAQI readings continue as normal        |
+| T+60 min   | First Google cron runs | 180 Google supplement readings added ✅ |
+| T+120 min  | Second Google cron     | 180 more Google readings                |
+| T+180 min  | Third Google cron      | 3-hour averages now complete ✅         |
 
 ## Data Storage Summary
 
 **Per Day**:
+
 - WAQI readings: 188 stations × 72 collections = 13,536 readings/day
 - Google supplements: 180 stations × 24 collections = 4,320 readings/day
 - **Total**: ~17,856 readings/day
 
 **Per Month** (with 7-day retention):
+
 - Active readings: ~125,000 readings
 - Storage: ~25-50 MB (depending on null values)
 

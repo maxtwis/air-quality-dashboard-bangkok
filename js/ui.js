@@ -1,11 +1,14 @@
-import { getAQILevel, getAQIClass, formatDateTime } from './utils.js';
-import { fetchStationDetails } from './api.js';
-import { POLLUTANTS, WEATHER_PARAMS, CONFIG, AQI_LEVELS } from './config.js';
-import { getAQHILevel, formatAQHI, AQHI_LEVELS } from './aqhi-supabase.js';
-import { calculateAQHIStatistics } from './aqhi-supabase.js';
-import { healthRecommendations } from './health-recommendations.js';
-import { convertStationToRawConcentrations, getRawConcentration } from './aqi-to-concentration.js';
-import { renderStationHistoryChart } from './station-history.js';
+import { getAQILevel, getAQIClass, formatDateTime } from "./utils.js";
+import { fetchStationDetails } from "./api.js";
+import { POLLUTANTS, WEATHER_PARAMS, CONFIG, AQI_LEVELS } from "./config.js";
+import { getAQHILevel, formatAQHI, AQHI_LEVELS } from "./aqhi-supabase.js";
+import { calculateAQHIStatistics } from "./aqhi-supabase.js";
+import { healthRecommendations } from "./health-recommendations.js";
+import {
+  convertStationToRawConcentrations,
+  getRawConcentration,
+} from "./aqi-to-concentration.js";
+import { renderStationHistoryChart } from "./station-history.js";
 
 // UI management functions for the modern dashboard
 
@@ -23,7 +26,7 @@ export class UIManager {
       'input[name="indicator"]',
     );
     indicatorRadios.forEach((radio) => {
-      radio.addEventListener('change', (e) => {
+      radio.addEventListener("change", (e) => {
         const indicator = e.target.value;
         this.currentIndicator = indicator;
 
@@ -35,33 +38,33 @@ export class UIManager {
     });
 
     // Refresh button
-    const refreshBtn = document.getElementById('refresh-btn');
+    const refreshBtn = document.getElementById("refresh-btn");
     if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => {
+      refreshBtn.addEventListener("click", () => {
         window.refreshDashboard && window.refreshDashboard();
       });
     }
 
     // Fullscreen button
-    const fullscreenBtn = document.getElementById('fullscreen-btn');
+    const fullscreenBtn = document.getElementById("fullscreen-btn");
     if (fullscreenBtn) {
-      fullscreenBtn.addEventListener('click', this.toggleFullscreen);
+      fullscreenBtn.addEventListener("click", this.toggleFullscreen);
     }
 
     // Close station info button
-    const closeBtn = document.getElementById('close-station-btn');
+    const closeBtn = document.getElementById("close-station-btn");
     if (closeBtn) {
-      closeBtn.addEventListener('click', this.closeStationInfo);
+      closeBtn.addEventListener("click", this.closeStationInfo);
     }
 
     // Close station info when clicking outside
-    document.addEventListener('click', (e) => {
-      const stationInfo = document.getElementById('station-info');
+    document.addEventListener("click", (e) => {
+      const stationInfo = document.getElementById("station-info");
       if (
         stationInfo &&
-        stationInfo.style.display === 'block' &&
+        stationInfo.style.display === "block" &&
         !stationInfo.contains(e.target) &&
-        !e.target.closest('.leaflet-marker-icon')
+        !e.target.closest(".leaflet-marker-icon")
       ) {
         this.closeStationInfo();
       }
@@ -70,7 +73,7 @@ export class UIManager {
 
   // Update main location display
   updateMainDisplay(stations) {
-    if (this.currentIndicator === 'AQHI') {
+    if (this.currentIndicator === "AQHI") {
       this.updateMainDisplayAQHI(stations);
     } else {
       this.updateMainDisplayAQI(stations);
@@ -81,7 +84,7 @@ export class UIManager {
 
   updateMainDisplayAQI(stations) {
     const validStations = stations.filter(
-      (s) => s.aqi !== '-' && !isNaN(parseInt(s.aqi)),
+      (s) => s.aqi !== "-" && !isNaN(parseInt(s.aqi)),
     );
     if (validStations.length === 0) return;
 
@@ -93,17 +96,17 @@ export class UIManager {
     const aqiClass = getAQIClass(avgAQI);
 
     // Update main display
-    const mainValue = document.getElementById('main-aqi-value');
-    const mainCategory = document.getElementById('main-aqi-category');
-    const mainDescription = document.getElementById('main-aqi-description');
-    const mainCircle = document.getElementById('main-aqi-circle');
-    const mainLabel = document.querySelector('.aqi-label');
+    const mainValue = document.getElementById("main-aqi-value");
+    const mainCategory = document.getElementById("main-aqi-category");
+    const mainDescription = document.getElementById("main-aqi-description");
+    const mainCircle = document.getElementById("main-aqi-circle");
+    const mainLabel = document.querySelector(".aqi-label");
 
     if (mainValue) mainValue.textContent = avgAQI;
     if (mainCategory) mainCategory.textContent = aqiLevel.label;
     if (mainDescription) mainDescription.textContent = aqiLevel.description;
     if (mainCircle) mainCircle.className = `aqi-circle ${aqiClass}`;
-    if (mainLabel) mainLabel.textContent = 'US AQI';
+    if (mainLabel) mainLabel.textContent = "US AQI";
   }
 
   updateMainDisplayAQHI(stations) {
@@ -115,41 +118,41 @@ export class UIManager {
     // Map AQHI colors to existing AQI classes
     const getAQHIClass = (level) => {
       switch (level.key) {
-        case 'LOW':
-          return 'aqi-good';
-        case 'MODERATE':
-          return 'aqi-moderate';
-        case 'HIGH':
-          return 'aqi-unhealthy-sensitive';
-        case 'VERY_HIGH':
-          return 'aqi-unhealthy';
+        case "LOW":
+          return "aqi-good";
+        case "MODERATE":
+          return "aqi-moderate";
+        case "HIGH":
+          return "aqi-unhealthy-sensitive";
+        case "VERY_HIGH":
+          return "aqi-unhealthy";
         default:
-          return 'aqi-moderate';
+          return "aqi-moderate";
       }
     };
 
     // Update main display
-    const mainValue = document.getElementById('main-aqi-value');
-    const mainCategory = document.getElementById('main-aqi-category');
-    const mainDescription = document.getElementById('main-aqi-description');
-    const mainCircle = document.getElementById('main-aqi-circle');
-    const mainLabel = document.querySelector('.aqi-label');
+    const mainValue = document.getElementById("main-aqi-value");
+    const mainCategory = document.getElementById("main-aqi-category");
+    const mainDescription = document.getElementById("main-aqi-description");
+    const mainCircle = document.getElementById("main-aqi-circle");
+    const mainLabel = document.querySelector(".aqi-label");
 
     if (mainValue) mainValue.textContent = formatAQHI(stats.average);
     if (mainCategory) mainCategory.textContent = aqhiLevel.label;
     if (mainDescription) {
       // Check data quality for AQHI with realistic approach
-      let dataQualityNote = '';
+      let dataQualityNote = "";
       if (stations.length > 0 && stations[0].aqhi) {
         const avgTimeSpan =
           stations.reduce((sum, s) => sum + (s.aqhi?.timeSpanHours || 0), 0) /
           stations.length;
-        const commonMethod = stations[0].aqhi?.calculationMethod || 'current';
+        const commonMethod = stations[0].aqhi?.calculationMethod || "current";
 
-        if (commonMethod === 'estimated') {
-          dataQualityNote = ' (Estimated from current readings)';
+        if (commonMethod === "estimated") {
+          dataQualityNote = " (Estimated from current readings)";
         } else if (avgTimeSpan < 1) {
-          dataQualityNote = ' (Building moving average...)';
+          dataQualityNote = " (Building moving average...)";
         } else if (avgTimeSpan < 3) {
           dataQualityNote = ` (${avgTimeSpan.toFixed(1)}h average)`;
         }
@@ -158,7 +161,7 @@ export class UIManager {
     }
     if (mainCircle)
       mainCircle.className = `aqi-circle ${getAQHIClass(aqhiLevel)}`;
-    if (mainLabel) mainLabel.textContent = 'AQHI';
+    if (mainLabel) mainLabel.textContent = "AQHI";
   }
 
   updateMainDisplayPM25AQHI(stations) {
@@ -177,31 +180,31 @@ export class UIManager {
     // Map AQHI colors to existing AQI classes
     const getAQHIClass = (level) => {
       switch (level.key) {
-        case 'LOW':
-          return 'aqi-good';
-        case 'MODERATE':
-          return 'aqi-moderate';
-        case 'HIGH':
-          return 'aqi-unhealthy-sensitive';
-        case 'VERY_HIGH':
-          return 'aqi-unhealthy';
+        case "LOW":
+          return "aqi-good";
+        case "MODERATE":
+          return "aqi-moderate";
+        case "HIGH":
+          return "aqi-unhealthy-sensitive";
+        case "VERY_HIGH":
+          return "aqi-unhealthy";
         default:
-          return 'aqi-moderate';
+          return "aqi-moderate";
       }
     };
 
     // Update main display
-    const mainValue = document.getElementById('main-aqi-value');
-    const mainCategory = document.getElementById('main-aqi-category');
-    const mainDescription = document.getElementById('main-aqi-description');
-    const mainCircle = document.getElementById('main-aqi-circle');
-    const mainLabel = document.querySelector('.aqi-label');
+    const mainValue = document.getElementById("main-aqi-value");
+    const mainCategory = document.getElementById("main-aqi-category");
+    const mainDescription = document.getElementById("main-aqi-description");
+    const mainCircle = document.getElementById("main-aqi-circle");
+    const mainLabel = document.querySelector(".aqi-label");
 
     if (mainValue) mainValue.textContent = formatAQHI(avgAQHI);
     if (mainCategory) mainCategory.textContent = aqhiLevel.label;
     if (mainDescription) {
       // Check data quality for PM2.5 AQHI
-      let dataQualityNote = '';
+      let dataQualityNote = "";
       if (validStations.length > 0 && validStations[0].pm25_aqhi) {
         const avgTimeSpan =
           validStations.reduce(
@@ -209,40 +212,39 @@ export class UIManager {
             0,
           ) / validStations.length;
         const commonMethod =
-          validStations[0].pm25_aqhi?.calculationMethod || 'current';
+          validStations[0].pm25_aqhi?.calculationMethod || "current";
 
-        if (commonMethod === 'current') {
-          dataQualityNote = ' (Current readings, NO₂ & O₃ = 0)';
+        if (commonMethod === "current") {
+          dataQualityNote = " (Current readings, NO₂ & O₃ = 0)";
         } else if (avgTimeSpan < 1) {
-          dataQualityNote = ' (Building 3h average, NO₂ & O₃ = 0)';
+          dataQualityNote = " (Building 3h average, NO₂ & O₃ = 0)";
         } else if (avgTimeSpan < 3) {
           dataQualityNote = ` (${avgTimeSpan.toFixed(1)}h average, NO₂ & O₃ = 0)`;
         } else {
-          dataQualityNote = ' (3h average, NO₂ & O₃ = 0)';
+          dataQualityNote = " (3h average, NO₂ & O₃ = 0)";
         }
       } else {
-        dataQualityNote = ' (PM2.5-only AQHI, NO₂ & O₃ = 0)';
+        dataQualityNote = " (PM2.5-only AQHI, NO₂ & O₃ = 0)";
       }
       mainDescription.textContent = aqhiLevel.description + dataQualityNote;
     }
     if (mainCircle)
       mainCircle.className = `aqi-circle ${getAQHIClass(aqhiLevel)}`;
-    if (mainLabel) mainLabel.textContent = 'PM2.5 AQHI';
+    if (mainLabel) mainLabel.textContent = "PM2.5 AQHI";
   }
-
 
   // Update map legend based on current indicator
   updateMapLegend() {
-    const legendElement = document.querySelector('.map-legend');
+    const legendElement = document.querySelector(".map-legend");
     if (!legendElement) return;
 
-    const legendTitle = legendElement.querySelector('.legend-title');
-    const legendItems = legendElement.querySelector('.legend-items');
+    const legendTitle = legendElement.querySelector(".legend-title");
+    const legendItems = legendElement.querySelector(".legend-items");
 
-    if (this.currentIndicator === 'AQHI') {
+    if (this.currentIndicator === "AQHI") {
       // Update to AQHI legend
       if (legendTitle) {
-        legendTitle.textContent = 'Air Quality Health Index (AQHI)';
+        legendTitle.textContent = "Air Quality Health Index (AQHI)";
       }
 
       if (legendItems) {
@@ -265,10 +267,10 @@ export class UIManager {
                     </div>
                 `;
       }
-    } else if (this.currentIndicator === 'PM25_AQHI') {
+    } else if (this.currentIndicator === "PM25_AQHI") {
       // Update to PM2.5 AQHI legend
       if (legendTitle) {
-        legendTitle.textContent = 'PM2.5-only AQHI (NO₂ & O₃ = 0)';
+        legendTitle.textContent = "PM2.5-only AQHI (NO₂ & O₃ = 0)";
       }
 
       if (legendItems) {
@@ -291,15 +293,15 @@ export class UIManager {
                     </div>
                 `;
       }
-    } else if (this.currentIndicator === 'AQHI_CANADA') {
+    } else if (this.currentIndicator === "AQHI_CANADA") {
       // Update to Canadian AQHI legend
       if (legendTitle) {
-        legendTitle.textContent = 'Canadian Air Quality Health Index';
+        legendTitle.textContent = "Canadian Air Quality Health Index";
       }
 
       if (legendItems) {
         // Import Canadian AQHI levels dynamically
-        import('./aqhi-canada.js').then(({ CANADIAN_AQHI_LEVELS }) => {
+        import("./aqhi-canada.js").then(({ CANADIAN_AQHI_LEVELS }) => {
           legendItems.innerHTML = `
                         <div class="legend-item">
                             <div class="legend-dot" style="background-color: ${CANADIAN_AQHI_LEVELS.LOW.color};"></div>
@@ -323,7 +325,7 @@ export class UIManager {
     } else {
       // Update to AQI legend
       if (legendTitle) {
-        legendTitle.textContent = 'Air Quality Index (US AQI)';
+        legendTitle.textContent = "Air Quality Index (US AQI)";
       }
 
       if (legendItems) {
@@ -359,10 +361,10 @@ export class UIManager {
 
   updateWeatherInfo() {
     const elements = {
-      temperature: '28°C',
-      humidity: '65%',
-      wind: '12 km/h',
-      'last-update': new Date().toLocaleTimeString(),
+      temperature: "28°C",
+      humidity: "65%",
+      wind: "12 km/h",
+      "last-update": new Date().toLocaleTimeString(),
     };
 
     Object.entries(elements).forEach(([id, value]) => {
@@ -373,15 +375,15 @@ export class UIManager {
 
   // Helper method to get AQHI CSS class
   getAQHIClass(aqhi) {
-    if (aqhi <= 3) return 'good';
-    if (aqhi <= 6) return 'moderate';
-    if (aqhi <= 10) return 'unhealthy-sensitive';
-    return 'hazardous';
+    if (aqhi <= 3) return "good";
+    if (aqhi <= 6) return "moderate";
+    if (aqhi <= 10) return "unhealthy-sensitive";
+    return "hazardous";
   }
 
   // Enhanced station information panel with pollutant data
   async showStationInfo(station) {
-    const isAQHI = this.currentIndicator === 'AQHI';
+    const isAQHI = this.currentIndicator === "AQHI";
     let value, level, cssClass, label;
 
     if (isAQHI && station.aqhi) {
@@ -400,14 +402,14 @@ export class UIManager {
     }
 
     // Update basic station info
-    const stationName = document.getElementById('station-name');
-    const stationAqiValue = document.getElementById('station-aqi-value');
-    const stationCategory = document.getElementById('station-category');
-    const stationTime = document.getElementById('station-time');
-    const stationAqiCircle = document.getElementById('station-aqi-circle');
+    const stationName = document.getElementById("station-name");
+    const stationAqiValue = document.getElementById("station-aqi-value");
+    const stationCategory = document.getElementById("station-category");
+    const stationTime = document.getElementById("station-time");
+    const stationAqiCircle = document.getElementById("station-aqi-circle");
 
     if (stationName) {
-      stationName.textContent = station.station?.name || 'Unknown Station';
+      stationName.textContent = station.station?.name || "Unknown Station";
     }
 
     if (stationAqiValue) {
@@ -422,7 +424,7 @@ export class UIManager {
     if (stationTime) {
       const timeStr = station.station?.time
         ? formatDateTime(station.station.time)
-        : 'Unknown';
+        : "Unknown";
       stationTime.textContent = `Last updated: ${timeStr}`;
     }
 
@@ -431,9 +433,9 @@ export class UIManager {
     }
 
     // Show the panel first
-    const stationInfo = document.getElementById('station-info');
+    const stationInfo = document.getElementById("station-info");
     if (stationInfo) {
-      stationInfo.style.display = 'block';
+      stationInfo.style.display = "block";
     }
 
     // Load historical chart
@@ -455,12 +457,12 @@ export class UIManager {
         if (isAQHI && station.aqhi) {
           try {
             // Import supabaseAQHI to get 3-hour averages
-            const { supabaseAQHI } = await import('./aqhi-supabase.js');
+            const { supabaseAQHI } = await import("./aqhi-supabase.js");
             averageData = await supabaseAQHI.get3HourAverages(
               station.uid?.toString(),
             );
           } catch (avgError) {
-            console.warn('Could not fetch 3-hour averages:', avgError);
+            console.warn("Could not fetch 3-hour averages:", avgError);
           }
         }
 
@@ -473,7 +475,9 @@ export class UIManager {
       } else {
         // Fallback for AQI mode - use basic station data if detailed fetch fails
         if (!isAQHI) {
-          console.warn('⚠️ Detailed station data unavailable, using basic station data for AQI mode');
+          console.warn(
+            "⚠️ Detailed station data unavailable, using basic station data for AQI mode",
+          );
           await this.updateStationInfoWithDetails(
             { iaqi: { pm25: { v: station.aqi || 0 } } }, // Mock structure with basic AQI
             false, // Not AQHI mode
@@ -481,22 +485,22 @@ export class UIManager {
             null, // No openWeatherData
           );
         } else {
-          this.showErrorInStationInfo('Could not load detailed data');
+          this.showErrorInStationInfo("Could not load detailed data");
         }
       }
     } catch (error) {
-      console.error('Error loading station details:', error);
-      this.showErrorInStationInfo('Error loading details');
+      console.error("Error loading station details:", error);
+      this.showErrorInStationInfo("Error loading details");
     }
   }
 
   showLoadingInStationInfo() {
     // Add loading indicator to station info panel
-    let existingDetails = document.getElementById('station-details-container');
+    let existingDetails = document.getElementById("station-details-container");
     if (!existingDetails) {
-      existingDetails = document.createElement('div');
-      existingDetails.id = 'station-details-container';
-      document.getElementById('station-info').appendChild(existingDetails);
+      existingDetails = document.createElement("div");
+      existingDetails.id = "station-details-container";
+      document.getElementById("station-info").appendChild(existingDetails);
     }
 
     existingDetails.innerHTML = `
@@ -508,7 +512,7 @@ export class UIManager {
   }
 
   showErrorInStationInfo(message) {
-    const container = document.getElementById('station-details-container');
+    const container = document.getElementById("station-details-container");
     if (container) {
       container.innerHTML = `
                 <div class="error" style="margin-top: 16px; padding: 12px; font-size: 0.875rem;">
@@ -525,17 +529,17 @@ export class UIManager {
     openWeatherData = null,
   ) {
     // Define indicator variables based on current mode
-    const isPM25AQHI = this.currentIndicator === 'PM25_AQHI';
+    const isPM25AQHI = this.currentIndicator === "PM25_AQHI";
 
-    let container = document.getElementById('station-details-container');
+    let container = document.getElementById("station-details-container");
     if (!container) {
-      container = document.createElement('div');
-      container.id = 'station-details-container';
-      document.getElementById('station-info').appendChild(container);
+      container = document.createElement("div");
+      container.id = "station-details-container";
+      document.getElementById("station-info").appendChild(container);
     }
 
-    let pollutantHTML = '';
-    let weatherHTML = '';
+    let pollutantHTML = "";
+    let weatherHTML = "";
 
     // Process pollutant data
     if (detailsData.iaqi) {
@@ -546,34 +550,34 @@ export class UIManager {
       const dataSource = isAQHI && averageData ? averageData : detailsData.iaqi;
 
       // Determine the correct data label based on mode and data availability
-      let dataLabel = 'Current';
+      let dataLabel = "Current";
       if (isAQHI && averageData) {
-        dataLabel = '3-Hour Average';
+        dataLabel = "3-Hour Average";
       }
 
       if (isAQHI && averageData) {
         // For AQHI mode with averages, process the average data structure
-        console.log('🔄 AQHI mode: Using 3-hour averages (already in μg/m³)');
+        console.log("🔄 AQHI mode: Using 3-hour averages (already in μg/m³)");
         const hasGoogleData = averageData.googleReadings > 0;
 
         Object.entries(averageData).forEach(([key, value]) => {
           if (POLLUTANTS[key] && value !== null && value !== undefined) {
             // Add asterisk (*) only when Google actually supplemented (WAQI didn't have it)
             const sourceKey = `${key}_source`;
-            const isGoogleSupplemented = averageData[sourceKey] === 'GOOGLE';
+            const isGoogleSupplemented = averageData[sourceKey] === "GOOGLE";
             const nameWithMarker = isGoogleSupplemented
               ? `${POLLUTANTS[key].name}*`
               : POLLUTANTS[key].name;
 
             // Determine correct unit for pollutant
-            let unit = 'μg/m³';
+            let unit = "μg/m³";
             let displayValue = value;
-            if (key === 'co') {
-              unit = 'mg/m³';
-            } else if (key === 'no2' || key === 'o3') {
+            if (key === "co") {
+              unit = "mg/m³";
+            } else if (key === "no2" || key === "o3") {
               // Convert to ppb for gas pollutants
-              unit = 'ppb';
-              displayValue = key === 'no2' ? value / 1.88 : value / 2.0;
+              unit = "ppb";
+              displayValue = key === "no2" ? value / 1.88 : value / 2.0;
             }
 
             pollutantData.push({
@@ -581,18 +585,22 @@ export class UIManager {
               config: {
                 ...POLLUTANTS[key],
                 name: nameWithMarker,
-                unit: unit
+                unit: unit,
               },
               value: Math.round(displayValue * 10) / 10, // Round to 1 decimal place
               isConverted: true,
-              isGoogleSupplemented
+              isGoogleSupplemented,
             });
-            console.log(`   ✅ ${key.toUpperCase()}: ${Math.round(displayValue * 10) / 10} ${unit} (3h avg)${isGoogleSupplemented ? ' *Google' : ''}`);
+            console.log(
+              `   ✅ ${key.toUpperCase()}: ${Math.round(displayValue * 10) / 10} ${unit} (3h avg)${isGoogleSupplemented ? " *Google" : ""}`,
+            );
           }
         });
       } else {
         // Standard processing for API data - CONVERT AQI TO CONCENTRATIONS
-        console.log(`🔄 Detail panel mode: ${isAQHI ? 'AQHI' : 'AQI'} - Converting AQI values to concentrations...`);
+        console.log(
+          `🔄 Detail panel mode: ${isAQHI ? "AQHI" : "AQI"} - Converting AQI values to concentrations...`,
+        );
         const convertedStation = convertStationToRawConcentrations(detailsData);
 
         Object.entries(detailsData.iaqi).forEach(([key, data]) => {
@@ -602,14 +610,17 @@ export class UIManager {
 
             if (rawConcentration !== null) {
               // Determine correct unit and convert if needed
-              let unit = 'μg/m³';
+              let unit = "μg/m³";
               let displayValue = rawConcentration;
-              if (key === 'co') {
-                unit = 'mg/m³';
-              } else if (key === 'no2' || key === 'o3') {
+              if (key === "co") {
+                unit = "mg/m³";
+              } else if (key === "no2" || key === "o3") {
                 // Convert to ppb for gas pollutants
-                unit = 'ppb';
-                displayValue = key === 'no2' ? rawConcentration / 1.88 : rawConcentration / 2.0;
+                unit = "ppb";
+                displayValue =
+                  key === "no2"
+                    ? rawConcentration / 1.88
+                    : rawConcentration / 2.0;
               }
 
               // Show converted concentration
@@ -617,21 +628,25 @@ export class UIManager {
                 key,
                 config: {
                   ...POLLUTANTS[key],
-                  unit: unit
+                  unit: unit,
                 },
                 value: Math.round(displayValue * 10) / 10,
-                isConverted: true
+                isConverted: true,
               });
-              console.log(`   ✅ ${key.toUpperCase()}: ${data.v} AQI → ${Math.round(displayValue * 10) / 10} ${unit}`);
+              console.log(
+                `   ✅ ${key.toUpperCase()}: ${data.v} AQI → ${Math.round(displayValue * 10) / 10} ${unit}`,
+              );
             } else {
               // Fallback to AQI if conversion failed
               pollutantData.push({
                 key,
-                config: { ...POLLUTANTS[key], unit: 'AQI' },
+                config: { ...POLLUTANTS[key], unit: "AQI" },
                 value: data.v,
-                isConverted: false
+                isConverted: false,
               });
-              console.log(`   ⚠️  ${key.toUpperCase()}: ${data.v} AQI (conversion failed)`);
+              console.log(
+                `   ⚠️  ${key.toUpperCase()}: ${data.v} AQI (conversion failed)`,
+              );
             }
           } else if (WEATHER_PARAMS[key]) {
             weatherData.push({
@@ -643,15 +658,16 @@ export class UIManager {
         });
       }
 
-
       // Generate pollutant HTML
       if (pollutantData.length > 0) {
-        const hasGoogleSupplements = pollutantData.some(item => item.isGoogleSupplemented);
+        const hasGoogleSupplements = pollutantData.some(
+          (item) => item.isGoogleSupplemented,
+        );
         const footnote = hasGoogleSupplements
           ? `<div style="font-size: 0.7rem; color: var(--gray-500); margin-top: 8px; font-style: italic;">
                * Supplemented by Google Air Quality API
              </div>`
-          : '';
+          : "";
 
         pollutantHTML = `
                     <div class="pollutant-section">
@@ -678,7 +694,7 @@ export class UIManager {
                                 </div>
                             `,
                               )
-                              .join('')}
+                              .join("")}
                         </div>
                         ${footnote}
                     </div>
@@ -711,7 +727,7 @@ export class UIManager {
                                 </div>
                             `,
                               )
-                              .join('')}
+                              .join("")}
                         </div>
                     </div>
                 `;
@@ -719,7 +735,7 @@ export class UIManager {
     }
 
     // Add attribution if available
-    let attributionHTML = '';
+    let attributionHTML = "";
     if (detailsData.attributions && detailsData.attributions.length > 0) {
       attributionHTML = `
                 <div class="attribution-section" style="margin-top: 16px;">
@@ -735,14 +751,14 @@ export class UIManager {
                             </a>
                         `,
                           )
-                          .join(' • ')}
+                          .join(" • ")}
                     </div>
                 </div>
             `;
     }
 
     // Generate health recommendations HTML
-    let healthHTML = '';
+    let healthHTML = "";
     if (isAQHI && this.enhancedStationData) {
       healthHTML = await this.generateHealthRecommendationsHTML(
         this.enhancedStationData,
@@ -759,21 +775,21 @@ export class UIManager {
       // Get AQHI value from station data - use displayed value for consistency
       const aqhiValue = station.aqhi?.displayValue || station.aqhi?.value || 0;
 
-      if (aqhiValue === 0 || aqhiValue === '-') return '';
+      if (aqhiValue === 0 || aqhiValue === "-") return "";
 
       // Load recommendations if not loaded
       await healthRecommendations.loadRecommendations();
       // Convert "15+" to 15 for numerical processing
       const numericAqhiValue =
-        typeof aqhiValue === 'string' && aqhiValue.includes('+')
-          ? parseInt(aqhiValue.replace('+', ''))
+        typeof aqhiValue === "string" && aqhiValue.includes("+")
+          ? parseInt(aqhiValue.replace("+", ""))
           : aqhiValue;
 
       const groupedRecs =
         healthRecommendations.getGroupedRecommendations(numericAqhiValue);
 
       if (!groupedRecs || Object.keys(groupedRecs).length === 0) {
-        return '';
+        return "";
       }
 
       let healthHTML = `
@@ -824,10 +840,10 @@ export class UIManager {
                                     align-items: center;
                                     justify-content: center;
                                     padding: 0;
-                                    border: 2px solid ${isFirst ? 'var(--primary-color)' : 'var(--gray-300)'};
+                                    border: 2px solid ${isFirst ? "var(--primary-color)" : "var(--gray-300)"};
                                     border-radius: 50%;
-                                    background: ${isFirst ? 'var(--primary-color)' : 'white'};
-                                    color: ${isFirst ? 'white' : 'var(--gray-600)'};
+                                    background: ${isFirst ? "var(--primary-color)" : "white"};
+                                    color: ${isFirst ? "white" : "var(--gray-600)"};
                                     cursor: pointer;
                                     transition: all 0.2s ease;
                                     width: 56px;
@@ -871,8 +887,8 @@ export class UIManager {
       healthHTML += `</div>`;
       return healthHTML;
     } catch (error) {
-      console.error('Error generating health recommendations:', error);
-      return '';
+      console.error("Error generating health recommendations:", error);
+      return "";
     }
   }
 
@@ -883,16 +899,16 @@ export class UIManager {
     }
 
     // Update button states
-    const buttons = document.querySelectorAll('.population-group-btn');
+    const buttons = document.querySelectorAll(".population-group-btn");
     buttons.forEach((btn, index) => {
       const isSelected = index === groupIndex;
-      btn.style.border = `2px solid ${isSelected ? 'var(--primary-color)' : 'var(--gray-300)'}`;
-      btn.style.background = isSelected ? 'var(--primary-color)' : 'white';
-      btn.style.color = isSelected ? 'white' : 'var(--gray-600)';
+      btn.style.border = `2px solid ${isSelected ? "var(--primary-color)" : "var(--gray-300)"}`;
+      btn.style.background = isSelected ? "var(--primary-color)" : "white";
+      btn.style.color = isSelected ? "white" : "var(--gray-600)";
     });
 
     // Update recommendation text
-    const textElement = document.getElementById('health-recommendation-text');
+    const textElement = document.getElementById("health-recommendation-text");
     if (textElement) {
       const group = this.currentHealthGroups[groupIndex];
       textElement.innerHTML = `
@@ -908,9 +924,9 @@ export class UIManager {
 
   // Close station information panel
   closeStationInfo() {
-    const stationInfo = document.getElementById('station-info');
+    const stationInfo = document.getElementById("station-info");
     if (stationInfo) {
-      stationInfo.style.display = 'none';
+      stationInfo.style.display = "none";
     }
     this.currentStationDetails = null;
   }
@@ -919,17 +935,17 @@ export class UIManager {
   toggleFullscreen() {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((err) => {
-        console.log('Error attempting to enable fullscreen:', err);
+        console.log("Error attempting to enable fullscreen:", err);
       });
     } else {
       document.exitFullscreen().catch((err) => {
-        console.log('Error attempting to exit fullscreen:', err);
+        console.log("Error attempting to exit fullscreen:", err);
       });
     }
   }
 
   // Show loading state
-  showLoading(elementId, message = 'Loading...') {
+  showLoading(elementId, message = "Loading...") {
     const element = document.getElementById(elementId);
     if (element) {
       element.innerHTML = `
@@ -956,23 +972,23 @@ export class UIManager {
   // Update category breakdown
   updateCategoryBreakdown(categories) {
     const categoryData = [
-      { name: 'Good', count: categories.good, color: '#10b981' },
-      { name: 'Moderate', count: categories.moderate, color: '#f59e0b' },
+      { name: "Good", count: categories.good, color: "#10b981" },
+      { name: "Moderate", count: categories.moderate, color: "#f59e0b" },
       {
-        name: 'Unhealthy for Sensitive',
+        name: "Unhealthy for Sensitive",
         count: categories.unhealthySensitive,
-        color: '#f97316',
+        color: "#f97316",
       },
-      { name: 'Unhealthy', count: categories.unhealthy, color: '#ef4444' },
+      { name: "Unhealthy", count: categories.unhealthy, color: "#ef4444" },
       {
-        name: 'Very Unhealthy',
+        name: "Very Unhealthy",
         count: categories.veryUnhealthy,
-        color: '#8b5cf6',
+        color: "#8b5cf6",
       },
-      { name: 'Hazardous', count: categories.hazardous, color: '#6b7280' },
+      { name: "Hazardous", count: categories.hazardous, color: "#6b7280" },
     ].filter((cat) => cat.count > 0);
 
-    const categoryStatsElement = document.getElementById('category-stats');
+    const categoryStatsElement = document.getElementById("category-stats");
     if (categoryStatsElement) {
       if (categoryData.length === 0) {
         categoryStatsElement.innerHTML =
@@ -990,7 +1006,7 @@ export class UIManager {
                 </div>
             `,
         )
-        .join('');
+        .join("");
     }
   }
 

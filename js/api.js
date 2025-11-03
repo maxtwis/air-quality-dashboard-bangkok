@@ -1,8 +1,8 @@
-import { CONFIG } from './config.js';
-import { formatBounds } from './utils.js';
+import { CONFIG } from "./config.js";
+import { formatBounds } from "./utils.js";
 // AQHI calculations are handled separately in specific modules
-import { supabaseAQHI } from './aqhi-supabase.js';
-import { pm25OnlySupabaseAQHI } from './aqhi-pm25-only.js';
+import { supabaseAQHI } from "./aqhi-supabase.js";
+import { pm25OnlySupabaseAQHI } from "./aqhi-pm25-only.js";
 
 // Enhanced API handling functions with pollutant data and AQHI calculations
 
@@ -12,7 +12,7 @@ export async function fetchAirQualityData(includeAQHI = false) {
     // Use proxy endpoint to hide API keys
     const url = `/api/waqi-proxy?endpoint=bounds`;
 
-    console.log('Fetching data from proxy:', url);
+    console.log("Fetching data from proxy:", url);
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -20,10 +20,10 @@ export async function fetchAirQualityData(includeAQHI = false) {
     }
 
     const data = await response.json();
-    console.log('API Response:', data);
+    console.log("API Response:", data);
 
-    if (data.status !== 'ok') {
-      throw new Error(`API Error: ${data.data || 'Unknown error'}`);
+    if (data.status !== "ok") {
+      throw new Error(`API Error: ${data.data || "Unknown error"}`);
     }
 
     const stations = data.data || [];
@@ -31,18 +31,18 @@ export async function fetchAirQualityData(includeAQHI = false) {
     if (includeAQHI) {
       // Initialize Thai AQHI on first call
       if (!fetchAirQualityData._initialized) {
-        console.log('🔄 Initialized Thai AQHI calculation system');
+        console.log("🔄 Initialized Thai AQHI calculation system");
         fetchAirQualityData._initialized = true;
       }
 
       // Enhanced AQHI calculations using stored data
       console.log(
-        '🔄 Calculating enhanced AQHI using stored 3-hour averages...',
+        "🔄 Calculating enhanced AQHI using stored 3-hour averages...",
       );
       const enhancedStations =
         await supabaseAQHI.enhanceStationsWithAQHI(stations);
 
-      console.log('📊 Server-side collection active - client storage disabled');
+      console.log("📊 Server-side collection active - client storage disabled");
       console.log(
         `✅ Enhanced AQHI calculated for ${enhancedStations.length} stations`,
       );
@@ -53,7 +53,7 @@ export async function fetchAirQualityData(includeAQHI = false) {
     console.log(`✅ Fetched ${stations.length} stations (AQI only, fast mode)`);
     return stations;
   } catch (error) {
-    console.error('Error fetching air quality data:', error);
+    console.error("Error fetching air quality data:", error);
     throw error;
   }
 }
@@ -63,11 +63,11 @@ export async function enhanceStationsWithAQHI(stations) {
   try {
     // Initialize Thai AQHI on first call
     if (!fetchAirQualityData._initialized) {
-      console.log('🔄 Initialized Thai AQHI calculation system');
+      console.log("🔄 Initialized Thai AQHI calculation system");
       fetchAirQualityData._initialized = true;
     }
 
-    console.log('🔄 Enhancing existing stations with AQHI calculations...');
+    console.log("🔄 Enhancing existing stations with AQHI calculations...");
     const enhancedStations =
       await supabaseAQHI.enhanceStationsWithAQHI(stations);
     console.log(
@@ -76,7 +76,7 @@ export async function enhanceStationsWithAQHI(stations) {
 
     return enhancedStations;
   } catch (error) {
-    console.error('Error enhancing stations with AQHI:', error);
+    console.error("Error enhancing stations with AQHI:", error);
     throw error;
   }
 }
@@ -85,7 +85,7 @@ export async function enhanceStationsWithAQHI(stations) {
 export async function enhanceStationsWithPM25OnlyAQHI(stations) {
   try {
     console.log(
-      '🔄 Enhancing existing stations with PM2.5-only AQHI calculations...',
+      "🔄 Enhancing existing stations with PM2.5-only AQHI calculations...",
     );
     const enhancedStations =
       await pm25OnlySupabaseAQHI.enhanceStationsWithPM25OnlyAQHI(stations);
@@ -95,7 +95,7 @@ export async function enhanceStationsWithPM25OnlyAQHI(stations) {
 
     return enhancedStations;
   } catch (error) {
-    console.error('Error enhancing stations with PM2.5-only AQHI:', error);
+    console.error("Error enhancing stations with PM2.5-only AQHI:", error);
     throw error;
   }
 }
@@ -105,7 +105,7 @@ export async function fetchStationDetails(stationUID) {
   try {
     // Use proxy endpoint to hide API keys
     const url = `/api/waqi-proxy?endpoint=station&uid=${stationUID}`;
-    console.log('Fetching station details from proxy:', url);
+    console.log("Fetching station details from proxy:", url);
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -114,8 +114,8 @@ export async function fetchStationDetails(stationUID) {
 
     const data = await response.json();
 
-    if (data.status !== 'ok') {
-      throw new Error(`API Error: ${data.reason || 'Unknown error'}`);
+    if (data.status !== "ok") {
+      throw new Error(`API Error: ${data.reason || "Unknown error"}`);
     }
 
     // Return station data without automatic AQHI calculation
@@ -123,7 +123,7 @@ export async function fetchStationDetails(stationUID) {
     const stationData = data.data;
     return stationData;
   } catch (error) {
-    console.error('Error fetching station details:', error);
+    console.error("Error fetching station details:", error);
     return null;
   }
 }
@@ -141,13 +141,13 @@ export async function fetchCurrentLocationData() {
     }
 
     const data = await response.json();
-    if (data.status === 'ok' && data.data && data.data.length > 0) {
+    if (data.status === "ok" && data.data && data.data.length > 0) {
       // Return the first station as current location fallback
       return data.data[0];
     }
     return null;
   } catch (error) {
-    console.error('Error fetching current location data:', error);
+    console.error("Error fetching current location data:", error);
     return null;
   }
 }
@@ -163,9 +163,9 @@ export async function fetchCurrentLocationDataDirect() {
     }
 
     const data = await response.json();
-    return data.status === 'ok' ? data.data : null;
+    return data.status === "ok" ? data.data : null;
   } catch (error) {
-    console.error('Error fetching current location data:', error);
+    console.error("Error fetching current location data:", error);
     return null;
   }
 }

@@ -3,6 +3,7 @@
 ## Overview
 
 **Hybrid Mode** combines the best of both data sources:
+
 - **WAQI**: Primary source for all pollutants (PM2.5, PM10, etc.)
 - **Google API**: Supplements only missing O₃ and NO₂ data
 
@@ -11,20 +12,22 @@ This dramatically reduces Google API costs while ensuring complete data for accu
 ## Why Hybrid Mode?
 
 ### Problem
+
 Many WAQI stations in Bangkok don't report O₃ (Ozone) and NO₂ (Nitrogen Dioxide), which are **essential** for AQHI calculations.
 
 ### Solution
+
 - Use WAQI as primary (free, comprehensive network)
 - Use Google API only to fill gaps in O₃/NO₂
 - Result: Complete data with minimal API costs
 
 ### Cost Comparison
 
-| Mode | API Calls | Monthly Cost | Data Completeness |
-|------|-----------|--------------|-------------------|
-| **WAQI Only** | 0 | Free | ❌ Missing O₃/NO₂ |
-| **Google Only** | 9 per fetch | ~$0-10/month | ✅ Complete |
-| **Hybrid** | 1-3 per fetch | ~$0/month | ✅ Complete |
+| Mode            | API Calls     | Monthly Cost | Data Completeness |
+| --------------- | ------------- | ------------ | ----------------- |
+| **WAQI Only**   | 0             | Free         | ❌ Missing O₃/NO₂ |
+| **Google Only** | 9 per fetch   | ~$0-10/month | ✅ Complete       |
+| **Hybrid**      | 1-3 per fetch | ~$0/month    | ✅ Complete       |
 
 **Hybrid mode uses 67-89% fewer Google API calls than full Google mode!**
 
@@ -99,7 +102,7 @@ Hybrid mode is **enabled by default**:
 ```javascript
 class ModernAirQualityDashboard {
   constructor() {
-    this.currentDataSource = 'WAQI';
+    this.currentDataSource = "WAQI";
     this.useHybridMode = true; // ← Hybrid mode ON by default
   }
 }
@@ -110,7 +113,7 @@ class ModernAirQualityDashboard {
 In [js/app.js](js/app.js#L73-L85):
 
 ```javascript
-if (this.currentDataSource === 'WAQI' && this.useHybridMode) {
+if (this.currentDataSource === "WAQI" && this.useHybridMode) {
   // 1. Fetch WAQI data
   stations = await fetchAirQualityData(false);
 
@@ -140,6 +143,7 @@ function findNearestGridPoint(stationLat, stationLon) {
 ### Scenario: 40 WAQI Stations in Bangkok
 
 **Station Analysis**:
+
 ```
 Total stations: 40
 ✅ Complete data (PM2.5, PM10, O3, NO2): 12 stations
@@ -151,6 +155,7 @@ Stations needing Google data: 28
 ```
 
 **Grid Point Mapping**:
+
 ```
 28 stations map to these nearest grid points:
 - Grid (13.5, 100.3): 6 stations
@@ -176,27 +181,30 @@ Google API calls: 4 ✅
 ### Monthly Usage Estimates
 
 **Typical Bangkok Scenario**:
+
 - 40 WAQI stations total
 - ~25-30 need O₃/NO₂ supplement
 - Maps to ~3-5 unique grid points
 
 **Per Fetch**:
+
 - WAQI calls: 0 (free)
 - Google calls: 3-5 (hybrid)
 
 **Monthly** (5 manual fetches/day):
+
 - Daily: 15-25 calls
 - Monthly: 450-750 calls
 - **Well within 10K free tier!** ✅
 
 ### Comparison Table
 
-| Mode | Calls/Fetch | Calls/Month | Free Tier | Cost |
-|------|-------------|-------------|-----------|------|
-| WAQI Only | 0 | 0 | N/A | Free |
-| Hybrid | 3-5 | 450-750 | ✅ Yes | **$0** |
-| Google Grid (9) | 9 | 1,350 | ✅ Yes | $0 |
-| Google Full | 40 | 6,000 | ✅ Yes | $0 |
+| Mode            | Calls/Fetch | Calls/Month | Free Tier | Cost   |
+| --------------- | ----------- | ----------- | --------- | ------ |
+| WAQI Only       | 0           | 0           | N/A       | Free   |
+| Hybrid          | 3-5         | 450-750     | ✅ Yes    | **$0** |
+| Google Grid (9) | 9           | 1,350       | ✅ Yes    | $0     |
+| Google Full     | 40          | 6,000       | ✅ Yes    | $0     |
 
 All approaches stay within free tier, but **Hybrid uses the least API calls!**
 
@@ -206,11 +214,11 @@ All approaches stay within free tier, but **Hybrid uses the least API calls!**
 
 ```javascript
 // In station popup:
-"📊 Data Sources:"
-"✓ PM2.5: WAQI"
-"✓ PM10: WAQI"
-"✓ O3: Google (supplemented)"  // ← Google-sourced
-"✓ NO2: Google (supplemented)" // ← Google-sourced
+"📊 Data Sources:";
+"✓ PM2.5: WAQI";
+"✓ PM10: WAQI";
+"✓ O3: Google (supplemented)"; // ← Google-sourced
+"✓ NO2: Google (supplemented)"; // ← Google-sourced
 ```
 
 ### Console Output
@@ -271,7 +279,7 @@ WHERE station_uid = '12345';
 
 ```javascript
 // In js/app.js constructor
-this.useHybridMode = true;  // ← Set to false to disable
+this.useHybridMode = true; // ← Set to false to disable
 
 // Or toggle at runtime
 window.dashboard.useHybridMode = false;
@@ -289,12 +297,12 @@ function analyzeStationsForMissingPollutants(waqiStations) {
 
   // Check for SO2
   if (!station.iaqi?.so2?.v) {
-    missingPollutants.push('so2');
+    missingPollutants.push("so2");
   }
 
   // Check for CO
   if (!station.iaqi?.co?.v) {
-    missingPollutants.push('co');
+    missingPollutants.push("co");
   }
 }
 ```
@@ -349,26 +357,31 @@ LIMIT 10;
 ## Benefits
 
 ### ✅ Cost Efficiency
+
 - 67-89% fewer Google API calls vs full Google mode
 - ~450-750 calls/month (vs 1,350 for Google grid)
 - Stays well within 10K free tier
 
 ### ✅ Data Completeness
+
 - All stations have O₃ and NO₂ for AQHI
 - No missing pollutant gaps
 - Accurate health risk calculations
 
 ### ✅ Smart Caching
+
 - Multiple stations share same grid point
 - Automatic deduplication
 - Minimal redundant API calls
 
 ### ✅ Transparency
+
 - Each pollutant tagged with source
 - Console shows exactly what was supplemented
 - Full visibility into hybrid process
 
 ### ✅ Performance
+
 - Parallel API calls (non-blocking)
 - Cached grid points
 - No UI lag
@@ -421,7 +434,7 @@ window.dashboard.useHybridMode = savedMode;
 ### Get Data Source Breakdown
 
 ```javascript
-import { getStationDataSources } from './hybrid-data.js';
+import { getStationDataSources } from "./hybrid-data.js";
 
 const station = window.dashboard.stations[0];
 const sources = getStationDataSources(station);

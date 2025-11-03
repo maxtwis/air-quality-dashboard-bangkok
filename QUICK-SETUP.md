@@ -25,6 +25,7 @@ curl https://clean-air-bkk.vercel.app/api/collect-google-supplements
 ```
 
 **Expected response**:
+
 ```json
 {
   "success": true,
@@ -42,6 +43,7 @@ curl https://clean-air-bkk.vercel.app/api/collect-google-supplements
 ### Check cron-job.org
 
 Your hourly cron job should show:
+
 - ✅ Status: 200 OK
 - ✅ Response time: ~20-40 seconds
 - ✅ Response contains `"success": true`
@@ -112,15 +114,15 @@ Your app reads supplements & combines with WAQI data
 
 ### google_supplements
 
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key |
-| station_uid | INTEGER | WAQI station ID |
-| timestamp | TIMESTAMPTZ | When supplement was collected |
-| o3 | DECIMAL | O3 concentration (µg/m³) |
-| no2 | DECIMAL | NO2 concentration (µg/m³) |
-| grid_lat | DECIMAL | Source grid point latitude |
-| grid_lon | DECIMAL | Source grid point longitude |
+| Column      | Type        | Description                   |
+| ----------- | ----------- | ----------------------------- |
+| id          | UUID        | Primary key                   |
+| station_uid | INTEGER     | WAQI station ID               |
+| timestamp   | TIMESTAMPTZ | When supplement was collected |
+| o3          | DECIMAL     | O3 concentration (µg/m³)      |
+| no2         | DECIMAL     | NO2 concentration (µg/m³)     |
+| grid_lat    | DECIMAL     | Source grid point latitude    |
+| grid_lon    | DECIMAL     | Source grid point longitude   |
 
 ### Views
 
@@ -132,11 +134,13 @@ Your app reads supplements & combines with WAQI data
 ### Issue: Endpoint returns error
 
 **Test endpoint directly**:
+
 ```bash
 curl https://clean-air-bkk.vercel.app/api/collect-google-supplements
 ```
 
 Check the error message:
+
 - **"Google API key not configured"**: Add key to Vercel env vars
 - **"Failed to fetch WAQI stations"**: Check if waqi-proxy is working
 - **"Failed to store"**: Run the Supabase SQL script
@@ -144,22 +148,26 @@ Check the error message:
 ### Issue: No data in google_supplements table
 
 **Check 1**: Verify table exists
+
 ```sql
 SELECT table_name FROM information_schema.tables
 WHERE table_name = 'google_supplements';
 ```
 
 **Check 2**: Check cron execution
+
 - Go to cron-job.org → Execution history
 - Should show recent successful runs
 
 **Check 3**: Check Vercel logs
+
 - Go to Vercel Dashboard → Functions → Logs
 - Filter by `collect-google-supplements`
 
 ### Issue: Google API quota exceeded
 
 Check usage:
+
 1. Go to https://console.cloud.google.com/
 2. APIs & Services → Dashboard
 3. Air Quality API → Quotas
@@ -181,6 +189,7 @@ Once all checked, you're done! 🎉
 The supplements are now stored in Supabase. To use them in your app:
 
 1. **Join with WAQI data**:
+
 ```sql
 SELECT
   w.station_uid,

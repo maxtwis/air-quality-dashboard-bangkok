@@ -1,32 +1,35 @@
 // Google Air Quality Supplement Collection (Simple Version)
 // Fetches O3/NO2 from Google API for WAQI stations missing these pollutants
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const googleApiKey = process.env.GOOGLE_AIR_QUALITY_API_KEY;
 
 export default async function handler(req, res) {
-  console.log('🌐 Starting Google O3/NO2 supplement collection...');
+  console.log("🌐 Starting Google O3/NO2 supplement collection...");
 
   if (!googleApiKey) {
-    console.log('⚠️ Google API key not configured');
+    console.log("⚠️ Google API key not configured");
     return res.status(200).json({
       success: true,
-      message: 'Google API key not configured - no supplements collected',
+      message: "Google API key not configured - no supplements collected",
     });
   }
 
   try {
     // Step 1: Get latest WAQI data from waqi-proxy endpoint
-    console.log('📊 Fetching WAQI stations...');
-    const waqiUrl = 'https://clean-air-bkk.vercel.app/api/waqi-proxy?endpoint=bounds&latlng=13.5,100.3,14.0,100.9';
+    console.log("📊 Fetching WAQI stations...");
+    const waqiUrl =
+      "https://clean-air-bkk.vercel.app/api/waqi-proxy?endpoint=bounds&latlng=13.5,100.3,14.0,100.9";
     const waqiResponse = await fetch(waqiUrl);
     const waqiData = await waqiResponse.json();
 
     if (!waqiData || !waqiData.data) {
-      throw new Error(`Failed to fetch WAQI stations: ${JSON.stringify(waqiData)}`);
+      throw new Error(
+        `Failed to fetch WAQI stations: ${JSON.stringify(waqiData)}`,
+      );
     }
 
     const waqiStations = waqiData.data;
@@ -40,17 +43,17 @@ export default async function handler(req, res) {
     });
 
     if (stationsNeedingSupplements.length === 0) {
-      console.log('✅ All stations have complete O3/NO2 data');
+      console.log("✅ All stations have complete O3/NO2 data");
       return res.status(200).json({
         success: true,
-        message: 'All stations have complete O3/NO2 data',
+        message: "All stations have complete O3/NO2 data",
         stationsChecked: waqiStations.length,
         supplementsAdded: 0,
       });
     }
 
     console.log(
-      `📊 Found ${stationsNeedingSupplements.length}/${waqiStations.length} stations needing supplements`
+      `📊 Found ${stationsNeedingSupplements.length}/${waqiStations.length} stations needing supplements`,
     );
 
     // Step 3: Map stations to nearest grid points (3x3 grid)
@@ -71,7 +74,7 @@ export default async function handler(req, res) {
 
     const uniqueGridPoints = Object.keys(gridCache).length;
     console.log(
-      `🎯 ${uniqueGridPoints} unique grid points needed for ${stationsNeedingSupplements.length} stations`
+      `🎯 ${uniqueGridPoints} unique grid points needed for ${stationsNeedingSupplements.length} stations`,
     );
 
     // Step 4: Fetch Google data for each grid point
@@ -84,22 +87,27 @@ export default async function handler(req, res) {
         const googleData = await fetchGoogleAirQuality(
           gridPoint.lat,
           gridPoint.lng,
-          googleApiKey
+          googleApiKey,
         );
 
         if (googleData) {
           googleDataMap[cacheKey] = extractPollutants(googleData);
           console.log(
-            `✅ Got Google data: O3=${googleDataMap[cacheKey].o3 || 'N/A'}, NO2=${googleDataMap[cacheKey].no2 || 'N/A'}`
+            `✅ Got Google data: O3=${googleDataMap[cacheKey].o3 || "N/A"}, NO2=${googleDataMap[cacheKey].no2 || "N/A"}`,
           );
         }
       } catch (error) {
-        console.error(`❌ Failed to fetch Google data for ${cacheKey}:`, error.message);
+        console.error(
+          `❌ Failed to fetch Google data for ${cacheKey}:`,
+          error.message,
+        );
         apiErrors.push({ gridPoint: cacheKey, error: error.message });
       }
     }
 
-    console.log(`💾 Fetched Google data from ${Object.keys(googleDataMap).length} grid points`);
+    console.log(
+      `💾 Fetched Google data from ${Object.keys(googleDataMap).length} grid points`,
+    );
 
     if (apiErrors.length > 0) {
       console.error(`⚠️ Total API errors: ${apiErrors.length}`);
@@ -109,7 +117,9 @@ export default async function handler(req, res) {
     const supplementRecords = [];
     const timestamp = new Date().toISOString();
 
-    for (const [cacheKey, { gridPoint, stations }] of Object.entries(gridCache)) {
+    for (const [cacheKey, { gridPoint, stations }] of Object.entries(
+      gridCache,
+    )) {
       const googleData = googleDataMap[cacheKey];
       if (!googleData || (!googleData.o3 && !googleData.no2)) continue;
 
@@ -131,21 +141,23 @@ export default async function handler(req, res) {
       try {
         const supabase = createClient(supabaseUrl, supabaseKey);
         const { error: insertError } = await supabase
-          .from('google_supplements')
+          .from("google_supplements")
           .insert(supplementRecords);
 
         if (insertError) {
-          console.error('❌ Failed to store in Supabase:', insertError.message);
+          console.error("❌ Failed to store in Supabase:", insertError.message);
         } else {
           stored = supplementRecords.length;
           console.log(`✅ Stored ${stored} supplement records in Supabase`);
         }
       } catch (dbError) {
-        console.error('❌ Database error:', dbError.message);
+        console.error("❌ Database error:", dbError.message);
       }
     }
 
-    console.log(`💰 Total Google API calls: ${Object.keys(googleDataMap).length}`);
+    console.log(
+      `💰 Total Google API calls: ${Object.keys(googleDataMap).length}`,
+    );
 
     return res.status(200).json({
       success: true,
@@ -160,9 +172,9 @@ export default async function handler(req, res) {
       message: `Successfully added O3/NO2 supplements for ${supplementRecords.length} stations`,
     });
   } catch (error) {
-    console.error('❌ Error in Google supplement collection:', error);
+    console.error("❌ Error in Google supplement collection:", error);
     return res.status(500).json({
-      error: 'Collection failed',
+      error: "Collection failed",
       message: error.message,
       timestamp: new Date().toISOString(),
     });
@@ -173,10 +185,10 @@ export default async function handler(req, res) {
 // Grid focused on Bangkok proper (excludes outer provinces)
 function findNearestGridPoint(stationLat, stationLon) {
   const gridPoints = [];
-  const latMin = 13.65;  // South Bangkok
-  const latMax = 13.95;  // North Bangkok
+  const latMin = 13.65; // South Bangkok
+  const latMax = 13.95; // North Bangkok
   const lngMin = 100.45; // West Bangkok
-  const lngMax = 100.80; // East Bangkok
+  const lngMax = 100.8; // East Bangkok
   const latStep = (latMax - latMin) / 3; // 4x4 grid = divide by 3
   const lngStep = (lngMax - lngMin) / 3;
 
@@ -194,8 +206,7 @@ function findNearestGridPoint(stationLat, stationLon) {
 
   for (const point of gridPoints) {
     const dist = Math.sqrt(
-      Math.pow(stationLat - point.lat, 2) +
-        Math.pow(stationLon - point.lng, 2)
+      Math.pow(stationLat - point.lat, 2) + Math.pow(stationLon - point.lng, 2),
     );
     if (dist < minDist) {
       minDist = dist;
@@ -211,12 +222,12 @@ async function fetchGoogleAirQuality(lat, lng, apiKey) {
   const url = `https://airquality.googleapis.com/v1/currentConditions:lookup?key=${apiKey}`;
 
   const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       location: { latitude: lat, longitude: lng },
-      extraComputations: ['POLLUTANT_CONCENTRATION', 'LOCAL_AQI'],
-      languageCode: 'en',
+      extraComputations: ["POLLUTANT_CONCENTRATION", "LOCAL_AQI"],
+      languageCode: "en",
     }),
   });
 
@@ -236,10 +247,10 @@ function extractPollutants(googleData) {
   if (!googleData.pollutants) return result;
 
   for (const pollutant of googleData.pollutants) {
-    if (pollutant.code === 'o3' && pollutant.concentration?.value) {
+    if (pollutant.code === "o3" && pollutant.concentration?.value) {
       // Keep in ppb (Thai AQHI formula expects ppb)
       result.o3 = Math.round(pollutant.concentration.value * 10) / 10;
-    } else if (pollutant.code === 'no2' && pollutant.concentration?.value) {
+    } else if (pollutant.code === "no2" && pollutant.concentration?.value) {
       // Keep in ppb (Thai AQHI formula expects ppb)
       result.no2 = Math.round(pollutant.concentration.value * 10) / 10;
     }

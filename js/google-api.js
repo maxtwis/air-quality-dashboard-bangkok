@@ -1,6 +1,6 @@
 // Google Air Quality API Integration
 
-import { storeGoogleDataInSupabase } from './google-data-storage.js';
+import { storeGoogleDataInSupabase } from "./google-data-storage.js";
 
 /**
  * Fetch air quality data for Bangkok area using Google Air Quality API
@@ -13,34 +13,48 @@ export async function fetchGoogleAirQualityData(storeData = true) {
     // Create a grid of points across Bangkok
     const bangkokGrid = generateBangkokGrid();
 
-    console.log(`🌐 Fetching Google Air Quality data for ${bangkokGrid.length} locations...`);
+    console.log(
+      `🌐 Fetching Google Air Quality data for ${bangkokGrid.length} locations...`,
+    );
 
     // Fetch data for all grid points in parallel
-    const promises = bangkokGrid.map(point => fetchGoogleAirQualityPoint(point.lat, point.lng));
+    const promises = bangkokGrid.map((point) =>
+      fetchGoogleAirQualityPoint(point.lat, point.lng),
+    );
     const results = await Promise.all(promises);
 
     // Filter out failed requests and format as stations
     const stations = results
-      .filter(result => result !== null)
-      .map((data, index) => formatGoogleDataAsStation(data, bangkokGrid[index]));
+      .filter((result) => result !== null)
+      .map((data, index) =>
+        formatGoogleDataAsStation(data, bangkokGrid[index]),
+      );
 
-    console.log(`✅ Fetched Google Air Quality data for ${stations.length} locations`);
+    console.log(
+      `✅ Fetched Google Air Quality data for ${stations.length} locations`,
+    );
 
     // Store data in Supabase for 3-hour averages and AQHI calculations
     if (storeData && stations.length > 0) {
-      console.log('💾 Storing Google data in Supabase for AQHI calculations...');
+      console.log(
+        "💾 Storing Google data in Supabase for AQHI calculations...",
+      );
       const storeResult = await storeGoogleDataInSupabase(stations);
       if (storeResult.stored) {
-        console.log(`✅ Stored ${storeResult.readings} Google readings in database`);
+        console.log(
+          `✅ Stored ${storeResult.readings} Google readings in database`,
+        );
       } else {
-        console.warn('⚠️ Failed to store Google data:', storeResult.reason || storeResult.error);
+        console.warn(
+          "⚠️ Failed to store Google data:",
+          storeResult.reason || storeResult.error,
+        );
       }
     }
 
     return stations;
-
   } catch (error) {
-    console.error('Error fetching Google Air Quality data:', error);
+    console.error("Error fetching Google Air Quality data:", error);
     throw error;
   }
 }
@@ -54,13 +68,14 @@ export async function fetchGoogleAirQualityPoint(lat, lng) {
 
     const response = await fetch(url);
     if (!response.ok) {
-      console.warn(`Failed to fetch Google data for ${lat},${lng}: ${response.status}`);
+      console.warn(
+        `Failed to fetch Google data for ${lat},${lng}: ${response.status}`,
+      );
       return null;
     }
 
     const data = await response.json();
     return data;
-
   } catch (error) {
     console.error(`Error fetching Google data for ${lat},${lng}:`, error);
     return null;
@@ -81,12 +96,12 @@ function generateBangkokGrid() {
 
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
-      const lat = 13.5 + (i * latStep);
-      const lng = 100.3 + (j * lngStep);
+      const lat = 13.5 + i * latStep;
+      const lng = 100.3 + j * lngStep;
       grid.push({
         lat: Math.round(lat * 1000) / 1000,
         lng: Math.round(lng * 1000) / 1000,
-        name: `Bangkok Grid ${i + 1}-${j + 1}`
+        name: `Bangkok Grid ${i + 1}-${j + 1}`,
       });
     }
   }
@@ -99,20 +114,20 @@ function generateBangkokGrid() {
  */
 function formatGoogleDataAsStation(googleData, gridPoint) {
   // Extract AQI from indexes array (US EPA AQI)
-  const usAqi = googleData.indexes?.find(idx => idx.code === 'uaqi');
+  const usAqi = googleData.indexes?.find((idx) => idx.code === "uaqi");
   const aqi = usAqi?.aqi || 0;
 
   // Extract pollutant concentrations
   const pollutants = {};
 
   if (googleData.pollutants) {
-    googleData.pollutants.forEach(pollutant => {
+    googleData.pollutants.forEach((pollutant) => {
       const code = pollutant.code?.toLowerCase();
       const value = pollutant.concentration?.value;
 
       if (code && value !== undefined) {
         pollutants[code] = {
-          v: Math.round(value * 10) / 10
+          v: Math.round(value * 10) / 10,
         };
       }
     });
@@ -126,11 +141,11 @@ function formatGoogleDataAsStation(googleData, gridPoint) {
       name: gridPoint.name,
       geo: [gridPoint.lat, gridPoint.lng],
       url: `google-station-${gridPoint.lat}-${gridPoint.lng}`,
-      country: 'TH'
+      country: "TH",
     },
     lat: gridPoint.lat,
     lon: gridPoint.lng,
-    _source: 'google',
+    _source: "google",
     _rawData: googleData,
 
     // Add pollutant data if available
@@ -145,9 +160,9 @@ function formatGoogleDataAsStation(googleData, gridPoint) {
     // Add timestamp
     time: {
       s: new Date().toISOString(),
-      tz: '+07:00',
-      v: Math.floor(Date.now() / 1000)
-    }
+      tz: "+07:00",
+      v: Math.floor(Date.now() / 1000),
+    },
   };
 }
 
@@ -158,7 +173,7 @@ export function extractGooglePollutants(googleData) {
   const pollutants = {};
 
   if (googleData.pollutants) {
-    googleData.pollutants.forEach(pollutant => {
+    googleData.pollutants.forEach((pollutant) => {
       const code = pollutant.code?.toLowerCase();
       if (!code) return;
 
@@ -167,7 +182,7 @@ export function extractGooglePollutants(googleData) {
         unit: pollutant.concentration?.units,
         fullName: pollutant.fullName,
         displayName: pollutant.displayName,
-        additionalInfo: pollutant.additionalInfo
+        additionalInfo: pollutant.additionalInfo,
       };
     });
   }
@@ -179,12 +194,12 @@ export function extractGooglePollutants(googleData) {
  * Convert Google AQI to traditional color coding
  */
 export function getGoogleAqiColor(aqi) {
-  if (aqi <= 50) return '#10b981';      // Good - Green
-  if (aqi <= 100) return '#f59e0b';     // Moderate - Yellow
-  if (aqi <= 150) return '#f97316';     // Unhealthy for Sensitive - Orange
-  if (aqi <= 200) return '#ef4444';     // Unhealthy - Red
-  if (aqi <= 300) return '#8b5cf6';     // Very Unhealthy - Purple
-  return '#6b7280';                      // Hazardous - Maroon
+  if (aqi <= 50) return "#10b981"; // Good - Green
+  if (aqi <= 100) return "#f59e0b"; // Moderate - Yellow
+  if (aqi <= 150) return "#f97316"; // Unhealthy for Sensitive - Orange
+  if (aqi <= 200) return "#ef4444"; // Unhealthy - Red
+  if (aqi <= 300) return "#8b5cf6"; // Very Unhealthy - Purple
+  return "#6b7280"; // Hazardous - Maroon
 }
 
 /**
@@ -196,21 +211,22 @@ export async function compareDataSources(lat, lng) {
     const [googleData, waqiData] = await Promise.all([
       fetchGoogleAirQualityPoint(lat, lng),
       // You would need to implement WAQI point fetch
-      null
+      null,
     ]);
 
     return {
-      google: googleData ? {
-        aqi: googleData.indexes?.find(idx => idx.code === 'uaqi')?.aqi,
-        pollutants: googleData.pollutants?.length || 0,
-        timestamp: googleData._proxy?.timestamp
-      } : null,
+      google: googleData
+        ? {
+            aqi: googleData.indexes?.find((idx) => idx.code === "uaqi")?.aqi,
+            pollutants: googleData.pollutants?.length || 0,
+            timestamp: googleData._proxy?.timestamp,
+          }
+        : null,
       waqi: waqiData,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
-
   } catch (error) {
-    console.error('Error comparing data sources:', error);
+    console.error("Error comparing data sources:", error);
     return null;
   }
 }

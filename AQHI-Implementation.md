@@ -77,11 +77,11 @@ AQHI = (10/10.4) × 100 × [
 
 ### Example Calculations (Realistic Bangkok Concentrations)
 
-| Scenario | PM2.5 | NO2 | O3 | AQHI | Risk Level |
-|----------|--------|-----|----|----|------------|
-| Good day | 12 μg/m³ | 25 μg/m³ | 60 μg/m³ | **6** | Moderate Risk |
-| Typical weekday | 25 μg/m³ | 40 μg/m³ | 80 μg/m³ | **9** | High Risk |
-| Heavy traffic | 35 μg/m³ | 60 μg/m³ | 100 μg/m³ | **12** | Very High Risk |
+| Scenario          | PM2.5    | NO2      | O3        | AQHI   | Risk Level     |
+| ----------------- | -------- | -------- | --------- | ------ | -------------- |
+| Good day          | 12 μg/m³ | 25 μg/m³ | 60 μg/m³  | **6**  | Moderate Risk  |
+| Typical weekday   | 25 μg/m³ | 40 μg/m³ | 80 μg/m³  | **9**  | High Risk      |
+| Heavy traffic     | 35 μg/m³ | 60 μg/m³ | 100 μg/m³ | **12** | Very High Risk |
 | Pollution episode | 50 μg/m³ | 80 μg/m³ | 120 μg/m³ | **16** | Very High Risk |
 
 ## Data Quality Indicators

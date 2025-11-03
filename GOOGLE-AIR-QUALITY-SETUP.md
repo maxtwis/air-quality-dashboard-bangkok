@@ -5,6 +5,7 @@ This document explains how to set up and use the Google Air Quality API integrat
 ## Overview
 
 The dashboard uses a **hybrid data approach**:
+
 - **WAQI (World Air Quality Index)** - Primary source, 188 real monitoring stations in Bangkok
 - **Google Air Quality API** - Supplements WAQI data ONLY for missing O3 and NO2 pollutants
 
@@ -25,6 +26,7 @@ The dashboard uses a **hybrid data approach**:
 #### For Local Development
 
 Add to `.env.local`:
+
 ```
 GOOGLE_AIR_QUALITY_API_KEY=your_api_key_here
 ```
@@ -47,6 +49,7 @@ The integration uses a proxy endpoint at `/api/google-air-quality-proxy.js` to k
 **Important**: This is NOT a separate data source. Google supplements WAQI data server-side.
 
 **Architecture**:
+
 1. **Cron job** runs every 20 minutes on the server
 2. Fetches **188 WAQI stations** from Bangkok
 3. Identifies stations **missing O3 or NO2** data
@@ -60,6 +63,7 @@ The integration uses a proxy endpoint at `/api/google-air-quality-proxy.js` to k
 ### Smart Caching
 
 Multiple WAQI stations are mapped to the same nearest grid point, dramatically reducing API calls:
+
 - 188 WAQI stations in Bangkok
 - Typically 60-100+ stations missing O3/NO2
 - But only need **3-5 grid points** due to geographic clustering
@@ -68,6 +72,7 @@ Multiple WAQI stations are mapped to the same nearest grid point, dramatically r
 ### Grid System
 
 3x3 grid across Bangkok (13.5-14.0°N, 100.3-100.9°E):
+
 ```
 Grid Point 1: (13.5, 100.3)  Grid Point 2: (13.5, 100.6)  Grid Point 3: (13.5, 100.9)
 Grid Point 4: (13.75, 100.3) Grid Point 5: (13.75, 100.6) Grid Point 6: (13.75, 100.9)
@@ -99,6 +104,7 @@ You can verify the hybrid data is working:
 ## API Costs
 
 Google Air Quality API pricing (as of 2025):
+
 - **Free Tier**: 10,000 requests/month
 - Additional requests: Check [Google Cloud Pricing](https://cloud.google.com/maps-platform/pricing)
 
@@ -109,6 +115,7 @@ Google Air Quality API pricing (as of 2025):
 **WAQI Stations**: 188 (free, unlimited)
 
 **Monthly Usage**:
+
 - Collections per day: 72 (every 20 minutes)
 - Collections per month: 2,160
 - Google API calls: 2,160 × 4 (avg) = **8,640 calls/month** ✅
@@ -122,6 +129,7 @@ Google Air Quality API pricing (as of 2025):
 4. **Supplement Only**: Only calls Google for missing pollutants, not full dataset
 
 **Cost Savings**:
+
 - **Naive approach** (188 stations × 72 collections/day): ~408,000 calls/month 💸
 - **Grid approach** (9 points × 72 collections/day): ~19,440 calls/month ⚠️
 - **Smart caching** (4 points × 72 collections/day): **8,640 calls/month** ✅
@@ -132,19 +140,15 @@ Google Air Quality API pricing (as of 2025):
 ### Files Modified/Created
 
 **Primary Implementation** (Server-Side):
+
 1. **api/collect-data.js** - Added `supplementWithGoogleData()` function
 2. **api/google-air-quality-proxy.js** - Proxy endpoint for secure API key handling
 
-**Database**:
-3. **supabase/add-data-source-column.sql** - Schema update for tracking data sources
+**Database**: 3. **supabase/add-data-source-column.sql** - Schema update for tracking data sources
 
-**Client-Side** (Simplified):
-4. **js/app.js** - Reads hybrid data from Supabase
-5. **js/aqhi-supabase.js** - AQHI calculations using complete pollutant data
+**Client-Side** (Simplified): 4. **js/app.js** - Reads hybrid data from Supabase 5. **js/aqhi-supabase.js** - AQHI calculations using complete pollutant data
 
-**Configuration**:
-6. **vercel.json** - Cron job configuration (20-minute intervals)
-7. **.env.local** / Vercel env vars - Google API key storage
+**Configuration**: 6. **vercel.json** - Cron job configuration (20-minute intervals) 7. **.env.local** / Vercel env vars - Google API key storage
 
 ### API Response Format
 
@@ -202,20 +206,24 @@ Google Air Quality API pricing (as of 2025):
 ### Why Hybrid is Better than Separate Sources
 
 ✅ **Best of Both Worlds**:
+
 - WAQI: Real station locations and PM2.5 data (primary pollutant)
 - Google: Fills O3/NO2 gaps for complete AQHI calculations
 
 ✅ **Cost Effective**:
+
 - Only 8,640 Google calls/month (vs 408,000 naive approach)
 - Stays within free tier
 - WAQI remains free and unlimited
 
 ✅ **Scientifically Accurate**:
+
 - Complete pollutant data for Health Canada's AQHI formula
 - 3-hour moving averages for all pollutants
 - No stations skipped due to missing data
 
 ✅ **Transparent to Users**:
+
 - Single unified dataset
 - No confusion about which source to use
 - All 188 stations show complete information
@@ -231,5 +239,6 @@ Google Air Quality API pricing (as of 2025):
 ## Support
 
 For issues or questions:
+
 - Google API: [Google Cloud Support](https://cloud.google.com/support)
 - This integration: Open an issue in the repository

@@ -1,8 +1,12 @@
 // AQHI calculations for Google Air Quality data
 // Uses stored Google data from Supabase for 3-hour moving averages
 
-import { supabaseAQHI, calculateThaiAQHI, getAQHILevel } from './aqhi-supabase.js';
-import { getGoogle3HourAverages } from './google-data-storage.js';
+import {
+  supabaseAQHI,
+  calculateThaiAQHI,
+  getAQHILevel,
+} from "./aqhi-supabase.js";
+import { getGoogle3HourAverages } from "./google-data-storage.js";
 
 /**
  * Enhance Google stations with AQHI calculations
@@ -11,7 +15,9 @@ import { getGoogle3HourAverages } from './google-data-storage.js';
  * @returns {Promise<Array>} Stations with AQHI data
  */
 export async function enhanceGoogleStationsWithAQHI(googleStations) {
-  console.log(`🔄 Enhancing ${googleStations.length} Google stations with AQHI...`);
+  console.log(
+    `🔄 Enhancing ${googleStations.length} Google stations with AQHI...`,
+  );
 
   if (!googleStations || googleStations.length === 0) {
     return [];
@@ -19,26 +25,31 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
 
   try {
     // Get station UIDs
-    const stationUids = googleStations.map(s => s.uid).filter(Boolean);
+    const stationUids = googleStations.map((s) => s.uid).filter(Boolean);
 
     // Fetch 3-hour averages for Google stations from Supabase
     const averagesMap = await getGoogle3HourAverages(stationUids);
 
-    console.log(`📊 Got 3-hour averages for ${Object.keys(averagesMap).length} Google stations`);
+    console.log(
+      `📊 Got 3-hour averages for ${Object.keys(averagesMap).length} Google stations`,
+    );
 
     // Enhance each station with AQHI
-    const enhancedStations = googleStations.map(station => {
+    const enhancedStations = googleStations.map((station) => {
       const stationId = station.uid;
       const averages = averagesMap[stationId];
 
       let aqhiData;
 
-      if (averages && (averages.avg_pm25 || averages.avg_o3 || averages.avg_no2)) {
+      if (
+        averages &&
+        (averages.avg_pm25 || averages.avg_o3 || averages.avg_no2)
+      ) {
         // We have 3-hour averages - calculate AQHI
         const aqhiValue = calculateThaiAQHI(
           averages.avg_pm25 || 0,
           averages.avg_no2 || 0,
-          averages.avg_o3 || 0
+          averages.avg_o3 || 0,
         );
 
         const readingCount = averages.reading_count || 0;
@@ -47,11 +58,11 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
         aqhiData = {
           value: aqhiValue,
           level: getAQHILevel(aqhiValue),
-          calculationMethod: '3h_avg',
+          calculationMethod: "3h_avg",
           readingCount: readingCount,
           dataQuality: dataQuality.level,
           dataQualityIcon: dataQuality.icon,
-          dataSources: 'google_supabase',
+          dataSources: "google_supabase",
           averages: {
             pm25: averages.avg_pm25,
             pm10: averages.avg_pm10,
@@ -66,7 +77,9 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
           },
         };
 
-        console.log(`✅ Station ${stationId}: AQHI=${aqhiValue} (${dataQuality.level}, ${readingCount} readings)`);
+        console.log(
+          `✅ Station ${stationId}: AQHI=${aqhiValue} (${dataQuality.level}, ${readingCount} readings)`,
+        );
       } else {
         // No 3-hour averages yet - use current reading
         const currentPM25 = station.iaqi?.pm25?.v || 0;
@@ -74,31 +87,37 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
         const currentO3 = station.iaqi?.o3?.v || 0;
 
         if (currentPM25 || currentNO2 || currentO3) {
-          const aqhiValue = calculateThaiAQHI(currentPM25, currentNO2, currentO3);
+          const aqhiValue = calculateThaiAQHI(
+            currentPM25,
+            currentNO2,
+            currentO3,
+          );
 
           aqhiData = {
             value: aqhiValue,
             level: getAQHILevel(aqhiValue),
-            calculationMethod: 'current',
+            calculationMethod: "current",
             readingCount: 0,
-            dataQuality: 'limited',
-            dataQualityIcon: '🔄',
-            dataSources: 'google_current',
-            note: 'Using current reading - 3-hour average not yet available',
+            dataQuality: "limited",
+            dataQualityIcon: "🔄",
+            dataSources: "google_current",
+            note: "Using current reading - 3-hour average not yet available",
           };
 
-          console.log(`⏳ Station ${stationId}: AQHI=${aqhiValue} (current reading, building history)`);
+          console.log(
+            `⏳ Station ${stationId}: AQHI=${aqhiValue} (current reading, building history)`,
+          );
         } else {
           // No data at all
           aqhiData = {
             value: null,
             level: null,
-            calculationMethod: 'none',
+            calculationMethod: "none",
             readingCount: 0,
-            dataQuality: 'no_data',
-            dataQualityIcon: '❌',
-            dataSources: 'none',
-            note: 'No pollutant data available',
+            dataQuality: "no_data",
+            dataQualityIcon: "❌",
+            dataSources: "none",
+            note: "No pollutant data available",
           };
 
           console.log(`❌ Station ${stationId}: No pollutant data available`);
@@ -111,24 +130,27 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
       };
     });
 
-    const validCount = enhancedStations.filter(s => s.aqhi?.value !== null).length;
-    console.log(`✅ Enhanced ${validCount}/${googleStations.length} Google stations with AQHI`);
+    const validCount = enhancedStations.filter(
+      (s) => s.aqhi?.value !== null,
+    ).length;
+    console.log(
+      `✅ Enhanced ${validCount}/${googleStations.length} Google stations with AQHI`,
+    );
 
     return enhancedStations;
-
   } catch (error) {
-    console.error('❌ Error enhancing Google stations with AQHI:', error);
+    console.error("❌ Error enhancing Google stations with AQHI:", error);
 
     // Return stations with error indicator
-    return googleStations.map(station => ({
+    return googleStations.map((station) => ({
       ...station,
       aqhi: {
         value: null,
         level: null,
-        calculationMethod: 'error',
+        calculationMethod: "error",
         error: error.message,
-        dataQuality: 'error',
-        dataQualityIcon: '⚠️',
+        dataQuality: "error",
+        dataQualityIcon: "⚠️",
       },
     }));
   }
@@ -141,15 +163,19 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
  */
 function getDataQuality(readingCount) {
   if (readingCount >= 15) {
-    return { level: 'excellent', icon: '🎯', label: 'Excellent (15+ readings)' };
+    return {
+      level: "excellent",
+      icon: "🎯",
+      label: "Excellent (15+ readings)",
+    };
   } else if (readingCount >= 10) {
-    return { level: 'good', icon: '✅', label: 'Good (10+ readings)' };
+    return { level: "good", icon: "✅", label: "Good (10+ readings)" };
   } else if (readingCount >= 5) {
-    return { level: 'fair', icon: '⏳', label: 'Fair (5+ readings)' };
+    return { level: "fair", icon: "⏳", label: "Fair (5+ readings)" };
   } else if (readingCount >= 1) {
-    return { level: 'limited', icon: '🔄', label: 'Limited (<5 readings)' };
+    return { level: "limited", icon: "🔄", label: "Limited (<5 readings)" };
   } else {
-    return { level: 'no_data', icon: '❌', label: 'No data' };
+    return { level: "no_data", icon: "❌", label: "No data" };
   }
 }
 
@@ -159,7 +185,7 @@ function getDataQuality(readingCount) {
  * @returns {Object} Statistics
  */
 export function calculateGoogleAQHIStatistics(enhancedStations) {
-  const validStations = enhancedStations.filter(s => s.aqhi?.value !== null);
+  const validStations = enhancedStations.filter((s) => s.aqhi?.value !== null);
 
   if (validStations.length === 0) {
     return {
@@ -171,8 +197,9 @@ export function calculateGoogleAQHIStatistics(enhancedStations) {
     };
   }
 
-  const aqhiValues = validStations.map(s => s.aqhi.value);
-  const average = aqhiValues.reduce((sum, val) => sum + val, 0) / aqhiValues.length;
+  const aqhiValues = validStations.map((s) => s.aqhi.value);
+  const average =
+    aqhiValues.reduce((sum, val) => sum + val, 0) / aqhiValues.length;
   const min = Math.min(...aqhiValues);
   const max = Math.max(...aqhiValues);
 
@@ -184,8 +211,8 @@ export function calculateGoogleAQHIStatistics(enhancedStations) {
     very_high: 0,
   };
 
-  validStations.forEach(station => {
-    const levelKey = station.aqhi.level?.key?.toLowerCase() || 'unknown';
+  validStations.forEach((station) => {
+    const levelKey = station.aqhi.level?.key?.toLowerCase() || "unknown";
     if (distribution[levelKey] !== undefined) {
       distribution[levelKey]++;
     }
@@ -198,6 +225,6 @@ export function calculateGoogleAQHIStatistics(enhancedStations) {
     min,
     max,
     distribution,
-    dataSource: 'google',
+    dataSource: "google",
   };
 }

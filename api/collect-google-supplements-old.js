@@ -1,28 +1,28 @@
 // Google Air Quality Supplement Collection (Runs Every 60 Minutes)
 // Supplements WAQI stations with missing O3/NO2 from Google API
 
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const googleApiKey = process.env.GOOGLE_AIR_QUALITY_API_KEY;
 
 export default async function handler(req, res) {
-  console.log('🌐 Starting Google O3/NO2 supplement collection...');
+  console.log("🌐 Starting Google O3/NO2 supplement collection...");
 
   if (!supabaseUrl || !supabaseKey) {
-    console.error('❌ Missing Supabase configuration');
+    console.error("❌ Missing Supabase configuration");
     return res.status(500).json({
-      error: 'Supabase not configured',
-      message: 'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required',
+      error: "Supabase not configured",
+      message: "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required",
     });
   }
 
   if (!googleApiKey) {
-    console.log('⚠️ Google API key not configured - skipping supplements');
+    console.log("⚠️ Google API key not configured - skipping supplements");
     return res.status(200).json({
       success: true,
-      message: 'Google API key not configured - no supplements collected',
+      message: "Google API key not configured - no supplements collected",
     });
   }
 
@@ -30,10 +30,10 @@ export default async function handler(req, res) {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Step 1: Get all stations from stations table
-    console.log('📊 Fetching stations from database...');
+    console.log("📊 Fetching stations from database...");
     const { data: stations, error: stationsError } = await supabase
-      .from('stations')
-      .select('uid, name, lat, lon');
+      .from("stations")
+      .select("uid, name, lat, lon");
 
     if (stationsError) {
       throw new Error(`Failed to fetch stations: ${stationsError.message}`);
@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     if (!stations || stations.length === 0) {
       return res.status(200).json({
         success: true,
-        message: 'No stations found in database',
+        message: "No stations found in database",
         stationsChecked: 0,
         supplementsAdded: 0,
       });
@@ -52,12 +52,12 @@ export default async function handler(req, res) {
 
     // Step 2: Check latest_station_readings or current_3h_averages for O3/NO2
     const { data: latestReadings, error: readingsError } = await supabase
-      .from('latest_station_readings')
-      .select('station_uid, o3, no2');
+      .from("latest_station_readings")
+      .select("station_uid, o3, no2");
 
     if (readingsError) {
-      console.log('⚠️ Could not fetch latest readings:', readingsError.message);
-      console.log('⚠️ Assuming all stations need supplements');
+      console.log("⚠️ Could not fetch latest readings:", readingsError.message);
+      console.log("⚠️ Assuming all stations need supplements");
     }
 
     // Step 3: Identify stations missing O3/NO2
@@ -68,24 +68,26 @@ export default async function handler(req, res) {
       if (!reading) return true; // No recent reading
 
       // Check if has complete O3 and NO2
-      const hasO3 = reading.o3 !== null && reading.o3 !== undefined && reading.o3 > 0;
-      const hasNO2 = reading.no2 !== null && reading.no2 !== undefined && reading.no2 > 0;
+      const hasO3 =
+        reading.o3 !== null && reading.o3 !== undefined && reading.o3 > 0;
+      const hasNO2 =
+        reading.no2 !== null && reading.no2 !== undefined && reading.no2 > 0;
 
       return !hasO3 || !hasNO2; // Need supplement if missing either
     });
 
     if (stationsNeedingSupplements.length === 0) {
-      console.log('✅ All stations have complete O3/NO2 data');
+      console.log("✅ All stations have complete O3/NO2 data");
       return res.status(200).json({
         success: true,
-        message: 'All stations have complete O3/NO2 data',
+        message: "All stations have complete O3/NO2 data",
         stationsChecked: stations.length,
         supplementsAdded: 0,
       });
     }
 
     console.log(
-      `📊 Found ${stationsNeedingSupplements.length}/${stations.length} stations needing O3/NO2 supplements`
+      `📊 Found ${stationsNeedingSupplements.length}/${stations.length} stations needing O3/NO2 supplements`,
     );
 
     // Step 4: Map stations to nearest grid points (smart caching)
@@ -106,7 +108,7 @@ export default async function handler(req, res) {
 
     const uniqueGridPoints = Object.keys(gridCache).length;
     console.log(
-      `🎯 ${uniqueGridPoints} unique grid points needed for ${stationsNeedingSupplements.length} stations`
+      `🎯 ${uniqueGridPoints} unique grid points needed for ${stationsNeedingSupplements.length} stations`,
     );
 
     // Step 5: Fetch Google data for each unique grid point
@@ -118,25 +120,25 @@ export default async function handler(req, res) {
         const googleData = await fetchGoogleAirQuality(
           gridPoint.lat,
           gridPoint.lng,
-          googleApiKey
+          googleApiKey,
         );
 
         if (googleData) {
           googleDataMap[cacheKey] = extractGooglePollutants(googleData);
           console.log(
-            `✅ Got Google data for ${cacheKey}: O3=${googleDataMap[cacheKey].o3 || 'N/A'}, NO2=${googleDataMap[cacheKey].no2 || 'N/A'}`
+            `✅ Got Google data for ${cacheKey}: O3=${googleDataMap[cacheKey].o3 || "N/A"}, NO2=${googleDataMap[cacheKey].no2 || "N/A"}`,
           );
         }
       } catch (error) {
         console.error(
           `❌ Failed to fetch Google data for ${cacheKey}:`,
-          error.message
+          error.message,
         );
       }
     }
 
     console.log(
-      `💾 Fetched Google data from ${Object.keys(googleDataMap).length} grid points`
+      `💾 Fetched Google data from ${Object.keys(googleDataMap).length} grid points`,
     );
 
     // Step 6: Create supplement readings for Supabase
@@ -144,7 +146,7 @@ export default async function handler(req, res) {
     const timestamp = new Date().toISOString();
 
     for (const [cacheKey, { stations: stationGroup }] of Object.entries(
-      gridCache
+      gridCache,
     )) {
       const googleData = googleDataMap[cacheKey];
       if (!googleData || (!googleData.o3 && !googleData.no2)) continue;
@@ -155,7 +157,7 @@ export default async function handler(req, res) {
           timestamp: timestamp,
           o3: googleData.o3 || null,
           no2: googleData.no2 || null,
-          data_source: 'GOOGLE_SUPPLEMENT',
+          data_source: "GOOGLE_SUPPLEMENT",
         });
       }
     }
@@ -163,7 +165,7 @@ export default async function handler(req, res) {
     // Step 7: Store supplements in database
     if (supplementReadings.length > 0) {
       const { error: insertError } = await supabase
-        .from('air_quality_readings')
+        .from("air_quality_readings")
         .insert(supplementReadings);
 
       if (insertError) {
@@ -171,11 +173,13 @@ export default async function handler(req, res) {
       }
 
       console.log(
-        `✅ Stored ${supplementReadings.length} supplement readings in database`
+        `✅ Stored ${supplementReadings.length} supplement readings in database`,
       );
     }
 
-    console.log(`💰 Total Google API calls: ${Object.keys(googleDataMap).length}`);
+    console.log(
+      `💰 Total Google API calls: ${Object.keys(googleDataMap).length}`,
+    );
 
     return res.status(200).json({
       success: true,
@@ -188,9 +192,9 @@ export default async function handler(req, res) {
       message: `Successfully added O3/NO2 supplements for ${supplementReadings.length} station readings`,
     });
   } catch (error) {
-    console.error('❌ Error in Google supplement collection:', error);
+    console.error("❌ Error in Google supplement collection:", error);
     return res.status(500).json({
-      error: 'Collection failed',
+      error: "Collection failed",
       message: error.message,
       timestamp: new Date().toISOString(),
     });
@@ -221,8 +225,7 @@ function findNearestGridPoint(stationLat, stationLon) {
 
   for (const point of gridPoints) {
     const dist = Math.sqrt(
-      Math.pow(stationLat - point.lat, 2) +
-        Math.pow(stationLon - point.lng, 2)
+      Math.pow(stationLat - point.lat, 2) + Math.pow(stationLon - point.lng, 2),
     );
     if (dist < minDist) {
       minDist = dist;
@@ -238,12 +241,12 @@ async function fetchGoogleAirQuality(lat, lng, apiKey) {
   const url = `https://airquality.googleapis.com/v1/currentConditions:lookup?key=${apiKey}`;
 
   const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       location: { latitude: lat, longitude: lng },
-      extraComputations: ['POLLUTANT_CONCENTRATION', 'LOCAL_AQI'],
-      languageCode: 'en',
+      extraComputations: ["POLLUTANT_CONCENTRATION", "LOCAL_AQI"],
+      languageCode: "en",
     }),
   });
 
@@ -261,10 +264,10 @@ function extractGooglePollutants(googleData) {
   if (!googleData.pollutants) return result;
 
   for (const pollutant of googleData.pollutants) {
-    if (pollutant.code === 'o3' && pollutant.concentration?.value) {
+    if (pollutant.code === "o3" && pollutant.concentration?.value) {
       // Convert ppb to µg/m³ for O3: multiply by 2.0
       result.o3 = Math.round(pollutant.concentration.value * 2.0 * 10) / 10;
-    } else if (pollutant.code === 'no2' && pollutant.concentration?.value) {
+    } else if (pollutant.code === "no2" && pollutant.concentration?.value) {
       // Convert ppb to µg/m³ for NO2: multiply by 1.88
       result.no2 = Math.round(pollutant.concentration.value * 1.88 * 10) / 10;
     }

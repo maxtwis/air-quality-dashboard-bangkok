@@ -3,6 +3,7 @@
 ## 🎯 What This Does
 
 Creates two separate tables:
+
 1. **waqi_data** - Stores WAQI pollutants (PM2.5, PM10, SO2, CO)
 2. **google_supplements** - Stores Google O3/NO2 matched to each station
 3. **combined_3h_averages** view - Joins both for AQHI calculations
@@ -61,6 +62,7 @@ Copy **entire contents** of [supabase/step2-create-new.sql](supabase/step2-creat
 **Click "Run"**
 
 ✅ Should see:
+
 ```
 status: Fresh schema created successfully!
 waqi_records: 0
@@ -82,6 +84,7 @@ ORDER BY table_name;
 ```
 
 Should show:
+
 - ✅ waqi_data
 - ✅ google_supplements
 
@@ -96,6 +99,7 @@ curl https://clean-air-bkk.vercel.app/api/collect-google-supplements
 ```
 
 **Expected response**:
+
 ```json
 {
   "success": true,
@@ -159,12 +163,12 @@ This gives you complete pollutant data for AQHI calculation! 🎉
 
 ## ⏱️ Timeline
 
-| Time | What Happens |
-|------|-------------|
-| T+0 min | Run SQL setup (both steps) |
-| T+20 min | First WAQI collection (waqi_data gets 127 records) |
-| T+60 min | First Google collection (google_supplements gets 127 records) |
-| T+3 hours | combined_3h_averages fully populated |
+| Time      | What Happens                                                  |
+| --------- | ------------------------------------------------------------- |
+| T+0 min   | Run SQL setup (both steps)                                    |
+| T+20 min  | First WAQI collection (waqi_data gets 127 records)            |
+| T+60 min  | First Google collection (google_supplements gets 127 records) |
+| T+3 hours | combined_3h_averages fully populated                          |
 
 ---
 
@@ -175,6 +179,7 @@ This gives you complete pollutant data for AQHI calculation! 🎉
 **Solution**: Make sure you ran both Step 1 AND Step 2 in Supabase.
 
 Verify table exists:
+
 ```sql
 SELECT COUNT(*) FROM google_supplements;
 ```

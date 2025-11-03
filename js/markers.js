@@ -1,7 +1,7 @@
-import { getMap } from './map.js';
-import { getAQIColor, isValidStation } from './utils.js';
-import { uiManager } from './ui.js';
-import { formatAQHI } from './aqhi-supabase.js';
+import { getMap } from "./map.js";
+import { getAQIColor, isValidStation } from "./utils.js";
+import { uiManager } from "./ui.js";
+import { formatAQHI } from "./aqhi-supabase.js";
 
 // Modern marker creation and management
 
@@ -10,16 +10,16 @@ export function createModernMarkerIcon(value, color) {
   const textLength = value.toString().length;
   const isLongText = textLength > 3;
   const width = isLongText ? Math.max(38, textLength * 9) : 32;
-  const fontSize = isLongText ? '9px' : '11px';
+  const fontSize = isLongText ? "9px" : "11px";
 
   return L.divIcon({
-    className: 'custom-marker',
+    className: "custom-marker",
     html: `
             <div style="
                 background-color: ${color};
                 width: ${width}px;
                 height: 32px;
-                border-radius: ${isLongText ? '16px' : '50%'};
+                border-radius: ${isLongText ? "16px" : "50%"};
                 border: 3px solid white;
                 box-shadow: 0 4px 12px rgba(0,0,0,0.15);
                 display: flex;
@@ -46,12 +46,12 @@ export function createModernMarkerIcon(value, color) {
 export function addMarkersToMap(stations) {
   const map = getMap();
   if (!map) {
-    console.error('Map not initialized');
+    console.error("Map not initialized");
     return [];
   }
 
   const markers = [];
-  const isAQHI = uiManager.currentIndicator === 'AQHI';
+  const isAQHI = uiManager.currentIndicator === "AQHI";
 
   stations.forEach((station) => {
     if (!isValidStation(station)) return;
@@ -76,16 +76,16 @@ export function addMarkersToMap(stations) {
     const marker = L.marker([station.lat, station.lon], { icon }).addTo(map);
 
     // Add click handler to show station info
-    marker.on('click', () => {
+    marker.on("click", () => {
       uiManager.showStationInfo(station);
     });
 
     // Add hover effects
-    marker.on('mouseover', function () {
+    marker.on("mouseover", function () {
       // Optional: Add hover popup or tooltip
     });
 
-    marker.on('mouseout', function () {
+    marker.on("mouseout", function () {
       // Optional: Remove hover effects
     });
 
@@ -104,7 +104,7 @@ export function addSingleMarker(station) {
   const map = getMap();
   if (!map) return null;
 
-  const isAQHI = uiManager.currentIndicator === 'AQHI';
+  const isAQHI = uiManager.currentIndicator === "AQHI";
   let value, color;
 
   if (isAQHI && station.aqhi) {
@@ -120,7 +120,7 @@ export function addSingleMarker(station) {
   const marker = L.marker([station.lat, station.lon], { icon }).addTo(map);
 
   // Add click handler
-  marker.on('click', () => {
+  marker.on("click", () => {
     uiManager.showStationInfo(station);
   });
 
@@ -140,7 +140,7 @@ export function animateMarkerUpdate(marker, newValue, newColor) {
   if (!marker || !marker.stationData) return;
 
   // If only AQI value provided (backward compatibility)
-  if (typeof newValue === 'number' && !newColor) {
+  if (typeof newValue === "number" && !newColor) {
     newColor = getAQIColor(newValue);
   }
 
@@ -149,7 +149,7 @@ export function animateMarkerUpdate(marker, newValue, newColor) {
   // Add animation class temporarily
   const markerElement = marker.getElement();
   if (markerElement) {
-    markerElement.style.transition = 'all 0.3s ease';
+    markerElement.style.transition = "all 0.3s ease";
     setTimeout(() => {
       marker.setIcon(icon);
     }, 150);
@@ -158,7 +158,7 @@ export function animateMarkerUpdate(marker, newValue, newColor) {
   }
 
   // Update stored data
-  if (typeof newValue === 'number') {
+  if (typeof newValue === "number") {
     marker.stationData.aqi = newValue.toString();
   }
 }
@@ -167,11 +167,11 @@ export function animateMarkerUpdate(marker, newValue, newColor) {
 export function highlightMarker(marker) {
   const markerElement = marker.getElement();
   if (markerElement) {
-    const markerDiv = markerElement.querySelector('div');
+    const markerDiv = markerElement.querySelector("div");
     if (markerDiv) {
-      markerDiv.style.transform = 'scale(1.2)';
-      markerDiv.style.boxShadow = '0 8px 20px rgba(0,0,0,0.3)';
-      markerDiv.style.zIndex = '1000';
+      markerDiv.style.transform = "scale(1.2)";
+      markerDiv.style.boxShadow = "0 8px 20px rgba(0,0,0,0.3)";
+      markerDiv.style.zIndex = "1000";
     }
   }
 }
@@ -180,11 +180,11 @@ export function highlightMarker(marker) {
 export function unhighlightMarker(marker) {
   const markerElement = marker.getElement();
   if (markerElement) {
-    const markerDiv = markerElement.querySelector('div');
+    const markerDiv = markerElement.querySelector("div");
     if (markerDiv) {
-      markerDiv.style.transform = 'scale(1)';
-      markerDiv.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-      markerDiv.style.zIndex = 'auto';
+      markerDiv.style.transform = "scale(1)";
+      markerDiv.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+      markerDiv.style.zIndex = "auto";
     }
   }
 }

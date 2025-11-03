@@ -1,4 +1,5 @@
 # AQHI Implementation Report
+
 ## Air Quality Dashboard - Bangkok
 
 **Report Date**: January 2025
@@ -34,6 +35,7 @@ AQHI = (10/C) × 100 × [Σ(eᵝⁱˣⁱ - 1)]
 ```
 
 Where:
+
 - **C** = 105.19 (Thai scaling constant)
 - **β** = Health risk coefficient for each pollutant
 - **x** = 3-hour moving average concentration
@@ -42,12 +44,12 @@ Where:
 
 Based on Thai epidemiological studies:
 
-| Pollutant | Coefficient (β) | Unit | Health Impact |
-|-----------|----------------|------|---------------|
-| PM2.5 | 0.0022 | μg/m³ | Cardiovascular & respiratory mortality |
-| PM10 | 0.0009 | μg/m³ | Respiratory effects from coarse particles |
-| O3 | 0.0010 | ppb | Respiratory symptoms & mortality |
-| NO2 | 0.0030 | ppb | Respiratory inflammation |
+| Pollutant | Coefficient (β) | Unit  | Health Impact                             |
+| --------- | --------------- | ----- | ----------------------------------------- |
+| PM2.5     | 0.0022          | μg/m³ | Cardiovascular & respiratory mortality    |
+| PM10      | 0.0009          | μg/m³ | Respiratory effects from coarse particles |
+| O3        | 0.0010          | ppb   | Respiratory symptoms & mortality          |
+| NO2       | 0.0030          | ppb   | Respiratory inflammation                  |
 
 **Implementation** ([aqhi-supabase.js:5-13](js/aqhi-supabase.js#L5-L13)):
 
@@ -57,20 +59,20 @@ const THAI_AQHI_PARAMS = {
   beta: {
     pm25: 0.0022,
     pm10: 0.0009,
-    o3: 0.0010,
-    no2: 0.0030,
+    o3: 0.001,
+    no2: 0.003,
   },
 };
 ```
 
 ### AQHI Categories
 
-| Level | Range | Color | Health Message |
-|-------|-------|-------|----------------|
-| **Low** | 0-3.9 | Green | Ideal air quality for outdoor activities |
-| **Moderate** | 4-6.9 | Yellow | No need to modify activities unless experiencing symptoms |
-| **High** | 7-10.9 | Red | Consider reducing strenuous outdoor activities |
-| **Very High** | 11+ | Dark Red | Reduce or reschedule strenuous outdoor activities |
+| Level         | Range  | Color    | Health Message                                            |
+| ------------- | ------ | -------- | --------------------------------------------------------- |
+| **Low**       | 0-3.9  | Green    | Ideal air quality for outdoor activities                  |
+| **Moderate**  | 4-6.9  | Yellow   | No need to modify activities unless experiencing symptoms |
+| **High**      | 7-10.9 | Red      | Consider reducing strenuous outdoor activities            |
+| **Very High** | 11+    | Dark Red | Reduce or reschedule strenuous outdoor activities         |
 
 ---
 
@@ -86,12 +88,14 @@ The World Air Quality Index (WAQI) project provides real-time air quality data f
 ### WAQI API Capabilities
 
 ✅ **Available**:
+
 - Real-time pollutant readings (updated every 10-60 minutes)
 - Station locations and metadata
 - Multiple pollutants: PM2.5, PM10, NO2, O3, SO2, CO
 - Weather data: temperature, humidity, wind
 
 ❌ **Not Available**:
+
 - Historical data access (major limitation)
 - 3-hour moving averages
 - Hourly time series data
@@ -114,12 +118,12 @@ WAQI provides pollutant data as **AQI (Air Quality Index) values**, not raw conc
   "uid": 9212,
   "aqi": 65,
   "iaqi": {
-    "pm25": { "v": 65 },    // PM2.5 AQI value (NOT μg/m³)
-    "pm10": { "v": 42 },    // PM10 AQI value
-    "o3": { "v": 28 },      // Ozone AQI value
-    "no2": { "v": 15 },     // NO2 AQI value
-    "t": { "v": 32 },       // Temperature
-    "h": { "v": 65 }        // Humidity
+    "pm25": { "v": 65 }, // PM2.5 AQI value (NOT μg/m³)
+    "pm10": { "v": 42 }, // PM10 AQI value
+    "o3": { "v": 28 }, // Ozone AQI value
+    "no2": { "v": 15 }, // NO2 AQI value
+    "t": { "v": 32 }, // Temperature
+    "h": { "v": 65 } // Humidity
   }
 }
 ```
@@ -145,6 +149,7 @@ AQI = ((I_Hi - I_Lo) / (C_Hi - C_Lo)) × (C - C_Lo) + I_Lo
 ```
 
 Where:
+
 - **I_Hi, I_Lo** = Upper and lower AQI breakpoints
 - **C_Hi, C_Lo** = Upper and lower concentration breakpoints
 - **C** = Actual concentration
@@ -160,12 +165,13 @@ C = ((AQI - I_Lo) / (I_Hi - I_Lo)) × (C_Hi - C_Lo) + C_Lo
 **Implementation** ([aqi-to-concentration.js:105-164](js/aqi-to-concentration.js#L105-L164)):
 
 ```javascript
-function aqiToConcentration(aqi, pollutant, avgPeriod = '8hr') {
+function aqiToConcentration(aqi, pollutant, avgPeriod = "8hr") {
   // Find the correct EPA breakpoint range
   const [aqiLo, aqiHi, concLo, concHi] = selectedBreakpoint;
 
   // EPA linear interpolation formula (reverse)
-  const concentration = ((aqi - aqiLo) / (aqiHi - aqiLo)) * (concHi - concLo) + concLo;
+  const concentration =
+    ((aqi - aqiLo) / (aqiHi - aqiLo)) * (concHi - concLo) + concLo;
 
   // Convert units if needed (ppm/ppb to μg/m³)
   return finalConcentration;
@@ -178,34 +184,34 @@ Our implementation uses official EPA breakpoints (updated 2024):
 
 #### PM2.5 Breakpoints (μg/m³)
 
-| AQI Range | Concentration Range (μg/m³) | Category |
-|-----------|----------------------------|----------|
-| 0-50 | 0.0 - 9.0 | Good |
-| 51-100 | 9.1 - 35.4 | Moderate |
-| 101-150 | 35.5 - 55.4 | Unhealthy for Sensitive |
-| 151-200 | 55.5 - 125.4 | Unhealthy |
-| 201-300 | 125.5 - 225.4 | Very Unhealthy |
-| 301-500 | 225.5 - 325.4 | Hazardous |
+| AQI Range | Concentration Range (μg/m³) | Category                |
+| --------- | --------------------------- | ----------------------- |
+| 0-50      | 0.0 - 9.0                   | Good                    |
+| 51-100    | 9.1 - 35.4                  | Moderate                |
+| 101-150   | 35.5 - 55.4                 | Unhealthy for Sensitive |
+| 151-200   | 55.5 - 125.4                | Unhealthy               |
+| 201-300   | 125.5 - 225.4               | Very Unhealthy          |
+| 301-500   | 225.5 - 325.4               | Hazardous               |
 
 #### PM10 Breakpoints (μg/m³)
 
-| AQI Range | Concentration Range (μg/m³) | Category |
-|-----------|----------------------------|----------|
-| 0-50 | 0 - 54 | Good |
-| 51-100 | 55 - 154 | Moderate |
-| 101-150 | 155 - 254 | Unhealthy for Sensitive |
-| 151-200 | 255 - 354 | Unhealthy |
+| AQI Range | Concentration Range (μg/m³) | Category                |
+| --------- | --------------------------- | ----------------------- |
+| 0-50      | 0 - 54                      | Good                    |
+| 51-100    | 55 - 154                    | Moderate                |
+| 101-150   | 155 - 254                   | Unhealthy for Sensitive |
+| 151-200   | 255 - 354                   | Unhealthy               |
 
 #### Ozone (O3) Breakpoints
 
 **8-hour average** (primary):
 
-| AQI Range | Concentration (ppm) | Concentration (μg/m³) | Category |
-|-----------|--------------------|-----------------------|----------|
-| 0-50 | 0.000 - 0.054 | 0 - 106 | Good |
-| 51-100 | 0.055 - 0.070 | 108 - 137 | Moderate |
-| 101-150 | 0.071 - 0.085 | 139 - 167 | Unhealthy for Sensitive |
-| 151-200 | 0.086 - 0.105 | 169 - 206 | Unhealthy |
+| AQI Range | Concentration (ppm) | Concentration (μg/m³) | Category                |
+| --------- | ------------------- | --------------------- | ----------------------- |
+| 0-50      | 0.000 - 0.054       | 0 - 106               | Good                    |
+| 51-100    | 0.055 - 0.070       | 108 - 137             | Moderate                |
+| 101-150   | 0.071 - 0.085       | 139 - 167             | Unhealthy for Sensitive |
+| 151-200   | 0.086 - 0.105       | 169 - 206             | Unhealthy               |
 
 **Conversion factor**: 1 ppm O3 = 1962 μg/m³ (at 25°C, 1 atm)
 
@@ -213,12 +219,12 @@ Our implementation uses official EPA breakpoints (updated 2024):
 
 **1-hour average** (ppb):
 
-| AQI Range | Concentration (ppb) | Concentration (μg/m³) | Category |
-|-----------|--------------------|-----------------------|----------|
-| 0-50 | 0 - 53 | 0 - 100 | Good |
-| 51-100 | 54 - 100 | 102 - 188 | Moderate |
-| 101-150 | 101 - 360 | 190 - 677 | Unhealthy for Sensitive |
-| 151-200 | 361 - 649 | 679 - 1220 | Unhealthy |
+| AQI Range | Concentration (ppb) | Concentration (μg/m³) | Category                |
+| --------- | ------------------- | --------------------- | ----------------------- |
+| 0-50      | 0 - 53              | 0 - 100               | Good                    |
+| 51-100    | 54 - 100            | 102 - 188             | Moderate                |
+| 101-150   | 101 - 360           | 190 - 677             | Unhealthy for Sensitive |
+| 151-200   | 361 - 649           | 679 - 1220            | Unhealthy               |
 
 **Conversion factor**: 1 ppb NO2 = 1.88 μg/m³ (at 25°C, 1 atm)
 
@@ -228,10 +234,10 @@ Molecular weight-based conversions at standard conditions (25°C, 1 atm):
 
 ```javascript
 const CONVERSION_FACTORS = {
-  o3_ppm_to_ugm3: 1962,    // O3: ppm → μg/m³ (MW=48)
-  no2_ppb_to_ugm3: 1.88,   // NO2: ppb → μg/m³ (MW=46)
-  so2_ppb_to_ugm3: 2.62,   // SO2: ppb → μg/m³ (MW=64)
-  co_ppm_to_mgm3: 1.15     // CO: ppm → mg/m³ (MW=28)
+  o3_ppm_to_ugm3: 1962, // O3: ppm → μg/m³ (MW=48)
+  no2_ppb_to_ugm3: 1.88, // NO2: ppb → μg/m³ (MW=46)
+  so2_ppb_to_ugm3: 2.62, // SO2: ppb → μg/m³ (MW=64)
+  co_ppm_to_mgm3: 1.15, // CO: ppm → mg/m³ (MW=28)
 };
 ```
 
@@ -261,6 +267,7 @@ AQHI Calculation (PM2.5 in μg/m³, O3 & NO2 in ppb)
 ```
 
 **Critical Note**: The Thai AQHI formula requires **different units** for different pollutants:
+
 - **PM2.5**: μg/m³ (as stored)
 - **O3**: ppb (NOT μg/m³) - requires conversion back from stored μg/m³
 - **NO2**: ppb (NOT μg/m³) - requires conversion back from stored μg/m³
@@ -274,10 +281,12 @@ This is handled by the `getConcentrationForAQHI()` function ([aqi-to-concentrati
 **Input**: PM2.5 AQI = 65 (Moderate)
 
 **Step 1**: Find breakpoint
+
 - AQI range: 51-100
 - Concentration range: 9.1-35.4 μg/m³
 
 **Step 2**: Linear interpolation
+
 ```
 C = ((65 - 51) / (100 - 51)) × (35.4 - 9.1) + 9.1
 C = (14 / 49) × 26.3 + 9.1
@@ -285,6 +294,7 @@ C = 16.6 μg/m³
 ```
 
 **Step 3**: For AQHI calculation
+
 - PM2.5 is already in μg/m³ (required for AQHI) ✓
 - **Final value for AQHI**: 16.6 μg/m³
 
@@ -293,10 +303,12 @@ C = 16.6 μg/m³
 **Input**: NO2 AQI = 42
 
 **Step 1**: Find breakpoint
+
 - AQI range: 0-50
 - Concentration range: 0-53 ppb
 
 **Step 2**: Linear interpolation
+
 ```
 C = ((42 - 0) / (50 - 0)) × (53 - 0) + 0
 C = 0.84 × 53
@@ -304,11 +316,13 @@ C = 44.52 ppb (native EPA unit)
 ```
 
 **Step 3**: Convert to μg/m³ for storage
+
 ```
 Concentration_μg/m³ = 44.52 ppb × 1.88 = 83.7 μg/m³
 ```
 
 **Step 4**: Convert back to ppb for AQHI calculation
+
 ```
 Concentration_ppb = 83.7 μg/m³ ÷ 1.88 = 44.52 ppb
 ```
@@ -320,10 +334,12 @@ Concentration_ppb = 83.7 μg/m³ ÷ 1.88 = 44.52 ppb
 **Input**: O3 AQI = 35
 
 **Step 1**: Find breakpoint (8-hour)
+
 - AQI range: 0-50
 - Concentration range: 0.000-0.054 ppm
 
 **Step 2**: Linear interpolation
+
 ```
 C = ((35 - 0) / (50 - 0)) × (0.054 - 0.000) + 0.000
 C = 0.70 × 0.054
@@ -331,11 +347,13 @@ C = 0.0378 ppm (native EPA unit)
 ```
 
 **Step 3**: Convert to μg/m³ for storage
+
 ```
 Concentration_μg/m³ = 0.0378 ppm × 1962 = 74.16 μg/m³
 ```
 
 **Step 4**: Convert to ppb for AQHI calculation
+
 ```
 Concentration_ppm = 74.16 μg/m³ ÷ 1962 = 0.0378 ppm
 Concentration_ppb = 0.0378 ppm × 1000 = 37.8 ppb
@@ -355,7 +373,7 @@ Concentration_ppb = 0.0378 ppm × 1000 = 37.8 ppb
 export function calculateThaiAQHI(pm25, no2, o3) {
   // Step 1: Calculate risk from each pollutant
   const riskPM25 = pm25 ? 100 * (Math.exp(0.0012 * pm25) - 1) : 0;
-  const riskO3 = o3 ? Math.exp(0.0010 * o3) - 1 : 0;
+  const riskO3 = o3 ? Math.exp(0.001 * o3) - 1 : 0;
   const riskNO2 = no2 ? Math.exp(0.0052 * no2) - 1 : 0;
 
   // Step 2: Sum the risks
@@ -373,11 +391,13 @@ export function calculateThaiAQHI(pm25, no2, o3) {
 #### Example 1: Good Air Quality Day
 
 **Input**:
+
 - PM2.5 = 12 μg/m³
 - NO2 = 25 ppb
 - O3 = 60 ppb
 
 **Calculation**:
+
 ```
 %ER_PM2.5 = 100 × (e^(0.0022 × 12) - 1) = 2.68%
 %ER_NO2 = 100 × (e^(0.0030 × 25) - 1) = 7.79%
@@ -392,11 +412,13 @@ AQHI = (10/105.19) × 16.65 = 1.58 ≈ 2
 #### Example 2: Typical Bangkok Weekday
 
 **Input**:
+
 - PM2.5 = 35 μg/m³
 - NO2 = 60 ppb
 - O3 = 80 ppb
 
 **Calculation**:
+
 ```
 %ER_PM2.5 = 100 × (e^(0.0022 × 35) - 1) = 7.92%
 %ER_NO2 = 100 × (e^(0.0030 × 60) - 1) = 19.72%
@@ -411,11 +433,13 @@ AQHI = (10/105.19) × 35.97 = 3.42 ≈ 3
 #### Example 3: Pollution Episode
 
 **Input**:
+
 - PM2.5 = 85 μg/m³ (Unhealthy)
 - NO2 = 120 ppb
 - O3 = 100 ppb
 
 **Calculation**:
+
 ```
 %ER_PM2.5 = 100 × (e^(0.0022 × 85) - 1) = 20.70%
 %ER_NO2 = 100 × (e^(0.0030 × 120) - 1) = 43.33%
@@ -431,14 +455,14 @@ AQHI = (10/105.19) × 74.55 = 7.09 ≈ 7
 
 Based on actual WAQI station data (with corrected formula):
 
-| Scenario | PM2.5 | NO2 | O3 | Total %ER | AQHI | Risk Level | Typical Time |
-|----------|-------|-----|----|-----------|----|-----------|--------------|
-| Early Morning | 18 μg/m³ | 35 ppb | 40 ppb | 19.0% | **2** | Low | 5-7 AM |
-| Morning Rush | 45 μg/m³ | 85 ppb | 60 ppb | 45.6% | **4** | Moderate | 7-9 AM |
-| Midday | 38 μg/m³ | 55 ppb | 95 ppb | 36.8% | **3** | Low | 12-2 PM |
-| Evening Rush | 52 μg/m³ | 95 ppb | 70 ppb | 51.9% | **5** | Moderate | 5-7 PM |
-| Heavy Pollution | 150 μg/m³ | 180 ppb | 120 ppb | 122.9% | **12** | Very High | Rare events |
-| Severe Pollution | 300 μg/m³ | 250 ppb | 150 ppb | 229.6% | **22** | Very High | Very rare |
+| Scenario         | PM2.5     | NO2     | O3      | Total %ER | AQHI   | Risk Level | Typical Time |
+| ---------------- | --------- | ------- | ------- | --------- | ------ | ---------- | ------------ |
+| Early Morning    | 18 μg/m³  | 35 ppb  | 40 ppb  | 19.0%     | **2**  | Low        | 5-7 AM       |
+| Morning Rush     | 45 μg/m³  | 85 ppb  | 60 ppb  | 45.6%     | **4**  | Moderate   | 7-9 AM       |
+| Midday           | 38 μg/m³  | 55 ppb  | 95 ppb  | 36.8%     | **3**  | Low        | 12-2 PM      |
+| Evening Rush     | 52 μg/m³  | 95 ppb  | 70 ppb  | 51.9%     | **5**  | Moderate   | 5-7 PM       |
+| Heavy Pollution  | 150 μg/m³ | 180 ppb | 120 ppb | 122.9%    | **12** | Very High  | Rare events  |
+| Severe Pollution | 300 μg/m³ | 250 ppb | 150 ppb | 229.6%    | **22** | Very High  | Very rare    |
 
 ---
 
@@ -457,12 +481,12 @@ Based on actual WAQI station data (with corrected formula):
 
 Selected representative stations for testing:
 
-| Station ID | Location | Sensors Available | Purpose |
-|-----------|----------|-------------------|---------|
-| 9212 | US Embassy Bangkok | PM2.5, O3 | Reference station (high quality) |
-| 7691 | Bangkok Din Daeng | PM2.5, PM10, O3, NO2 | Full pollutant coverage |
-| 5768 | Thon Buri | PM2.5, PM10 | PM monitoring only |
-| 7695 | Phra Nakhon | PM2.5, PM10, O3 | Urban core monitoring |
+| Station ID | Location           | Sensors Available    | Purpose                          |
+| ---------- | ------------------ | -------------------- | -------------------------------- |
+| 9212       | US Embassy Bangkok | PM2.5, O3            | Reference station (high quality) |
+| 7691       | Bangkok Din Daeng  | PM2.5, PM10, O3, NO2 | Full pollutant coverage          |
+| 5768       | Thon Buri          | PM2.5, PM10          | PM monitoring only               |
+| 7695       | Phra Nakhon        | PM2.5, PM10, O3      | Urban core monitoring            |
 
 ### 5.2 Conversion Accuracy Testing
 
@@ -472,24 +496,25 @@ Selected representative stations for testing:
 export function validateConversions() {
   const testCases = [
     // [pollutant, aqi, expected_concentration, tolerance]
-    ['pm25', 50, 9.0, 0.1],      // Good/Moderate boundary
-    ['pm25', 100, 35.4, 0.1],    // Moderate/USG boundary
-    ['pm25', 150, 55.4, 0.1],    // USG/Unhealthy boundary
-    ['o3', 50, 105.95, 5],       // O3 8-hour
-    ['no2', 100, 188, 5],        // NO2
-    ['so2', 50, 91.7, 5]         // SO2
+    ["pm25", 50, 9.0, 0.1], // Good/Moderate boundary
+    ["pm25", 100, 35.4, 0.1], // Moderate/USG boundary
+    ["pm25", 150, 55.4, 0.1], // USG/Unhealthy boundary
+    ["o3", 50, 105.95, 5], // O3 8-hour
+    ["no2", 100, 188, 5], // NO2
+    ["so2", 50, 91.7, 5], // SO2
   ];
 
   testCases.forEach(([pollutant, aqi, expected, tolerance]) => {
     const result = aqiToConcentration(aqi, pollutant);
     const diff = Math.abs(result - expected);
     const passed = diff <= tolerance;
-    console.log(`${passed ? '✅' : '❌'} ${pollutant} AQI ${aqi} → ${result}`);
+    console.log(`${passed ? "✅" : "❌"} ${pollutant} AQI ${aqi} → ${result}`);
   });
 }
 ```
 
 **Test Results**:
+
 ```
 ✅ PM25 AQI 50 → 9.0 μg/m³
 ✅ PM25 AQI 100 → 35.4 μg/m³
@@ -505,6 +530,7 @@ export function validateConversions() {
 #### Test Case 1: US Embassy Station (ID: 9212)
 
 **WAQI Data** (2025-01-16 14:00):
+
 ```json
 {
   "aqi": 65,
@@ -517,6 +543,7 @@ export function validateConversions() {
 ```
 
 **Conversion Results**:
+
 ```
 PM2.5: 65 AQI → 16.6 μg/m³
 PM10: 42 AQI → 40.5 μg/m³
@@ -524,6 +551,7 @@ O3: 28 AQI → 55.0 μg/m³
 ```
 
 **AQHI Calculation**:
+
 ```
 %ER_PM2.5 = 100 × (e^(0.0012 × 16.6) - 1) = 2.00%
 %ER_O3 = 100 × (e^(0.0010 × 55.0) - 1) = 5.65%
@@ -538,6 +566,7 @@ AQHI = (10/105.19) × 7.65 = 0.73 ≈ 1
 #### Test Case 2: Din Daeng Station (ID: 7691)
 
 **WAQI Data** (2025-01-16 18:00 - Evening Rush):
+
 ```json
 {
   "aqi": 98,
@@ -551,6 +580,7 @@ AQHI = (10/105.19) × 7.65 = 0.73 ≈ 1
 ```
 
 **Conversion Results**:
+
 ```
 PM2.5: 98 AQI → 34.8 μg/m³
 PM10: 85 AQI → 129.4 μg/m³
@@ -559,6 +589,7 @@ NO2: 42 AQI → 61.3 ppb
 ```
 
 **AQHI Calculation**:
+
 ```
 %ER_PM2.5 = 100 × (e^(0.0012 × 34.8) - 1) = 4.26%
 %ER_O3 = 100 × (e^(0.0010 × 68.5) - 1) = 7.09%
@@ -576,12 +607,12 @@ AQHI = (10/105.19) × 48.65 = 4.62 ≈ 5
 
 Many WAQI stations lack full pollutant coverage:
 
-| Station | PM2.5 | PM10 | O3 | NO2 | SO2 | CO |
-|---------|-------|------|----|----|-----|----|
-| US Embassy | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Din Daeng | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Thon Buri | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Phra Nakhon | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Station     | PM2.5 | PM10 | O3  | NO2 | SO2 | CO  |
+| ----------- | ----- | ---- | --- | --- | --- | --- |
+| US Embassy  | ✅    | ✅   | ✅  | ❌  | ❌  | ❌  |
+| Din Daeng   | ✅    | ✅   | ✅  | ✅  | ❌  | ❌  |
+| Thon Buri   | ✅    | ✅   | ❌  | ❌  | ❌  | ❌  |
+| Phra Nakhon | ✅    | ✅   | ✅  | ❌  | ❌  | ❌  |
 
 **Impact**: AQHI calculations proceed with available pollutants (missing sensors = 0 contribution).
 
@@ -590,6 +621,7 @@ Many WAQI stations lack full pollutant coverage:
 WAQI includes weather data that must be filtered:
 
 **Excluded from conversion**:
+
 - `h` = Humidity (%)
 - `t` = Temperature (°C)
 - `p` = Pressure (mb)
@@ -599,10 +631,11 @@ WAQI includes weather data that must be filtered:
 - `dew` = Dew point (°C)
 
 **Implementation** ([aqi-to-concentration.js:184-195](js/aqi-to-concentration.js#L184-L195)):
-```javascript
-const WEATHER_PARAMETERS = ['h', 't', 'p', 'w', 'wd', 'r', 'dew'];
 
-Object.keys(station.iaqi).forEach(pollutant => {
+```javascript
+const WEATHER_PARAMETERS = ["h", "t", "p", "w", "wd", "r", "dew"];
+
+Object.keys(station.iaqi).forEach((pollutant) => {
   // Skip weather parameters
   if (WEATHER_PARAMETERS.includes(pollutant)) {
     skippedParams.push(`${pollutant}=${aqiValue} (weather)`);
@@ -627,6 +660,7 @@ Object.keys(station.iaqi).forEach(pollutant => {
 Since WAQI doesn't provide historical data, we collect it ourselves:
 
 **Data Collection Strategy**:
+
 - Store each 10-minute reading in browser localStorage
 - Build 3-hour moving average over time
 - Clean old data (>3 hours) automatically
@@ -634,7 +668,11 @@ Since WAQI doesn't provide historical data, we collect it ourselves:
 **Implementation** ([aqhi-realistic.js:62-88](js/aqhi-realistic.js#L62-L88)):
 
 ```javascript
-export function collectCurrentReading(stationId, pollutants, timestamp = new Date()) {
+export function collectCurrentReading(
+  stationId,
+  pollutants,
+  timestamp = new Date(),
+) {
   // Store reading in client-side history
   stationHistory.push({ timestamp, pollutants });
 
@@ -651,22 +689,22 @@ export function collectCurrentReading(stationId, pollutants, timestamp = new Dat
 
 ### 6.3 Data Quality Timeline
 
-| Time Elapsed | Readings | Data Quality | Calculation Method |
-|--------------|----------|--------------|-------------------|
-| 0-10 min | 1 | 🔄 Limited | Current reading only |
-| 10-60 min | 6 | 📊 Estimated | Partial average |
-| 1-2 hours | 6-12 | ⏳ Fair | Improving average |
-| 2-3 hours | 12-18 | ✅ Good | Near-complete average |
-| 3+ hours | 18+ | 🎯 Excellent | Full 3-hour average |
+| Time Elapsed | Readings | Data Quality | Calculation Method    |
+| ------------ | -------- | ------------ | --------------------- |
+| 0-10 min     | 1        | 🔄 Limited   | Current reading only  |
+| 10-60 min    | 6        | 📊 Estimated | Partial average       |
+| 1-2 hours    | 6-12     | ⏳ Fair      | Improving average     |
+| 2-3 hours    | 12-18    | ✅ Good      | Near-complete average |
+| 3+ hours     | 18+      | 🎯 Excellent | Full 3-hour average   |
 
 **Quality Assessment** ([aqhi-realistic.js:297-302](js/aqhi-realistic.js#L297-L302)):
 
 ```javascript
 function getDataQuality(timeSpanHours, dataPoints) {
-  if (timeSpanHours >= 3 && dataPoints >= 15) return 'excellent';
-  if (timeSpanHours >= 2 && dataPoints >= 10) return 'good';
-  if (timeSpanHours >= 1 && dataPoints >= 5) return 'fair';
-  return 'limited';
+  if (timeSpanHours >= 3 && dataPoints >= 15) return "excellent";
+  if (timeSpanHours >= 2 && dataPoints >= 10) return "good";
+  if (timeSpanHours >= 1 && dataPoints >= 5) return "fair";
+  return "limited";
 }
 ```
 
@@ -675,6 +713,7 @@ function getDataQuality(timeSpanHours, dataPoints) {
 For cross-device persistence and improved accuracy:
 
 **Database Schema**:
+
 ```sql
 CREATE TABLE waqi_data (
   id BIGSERIAL PRIMARY KEY,
@@ -718,6 +757,7 @@ All test cases pass within tolerance (±0.1 μg/m³ for PM, ±5 μg/m³ for gase
 ### 7.2 AQHI Calculation Validation
 
 **Cross-validation with Thai PCD**:
+
 - Formula matches Thai Department of Health standards ✅
 - Coefficients verified against official documentation ✅
 - Categories align with health guidance ✅
@@ -725,6 +765,7 @@ All test cases pass within tolerance (±0.1 μg/m³ for PM, ±5 μg/m³ for gase
 ### 7.3 Real-World Performance
 
 **30+ WAQI stations in Bangkok**:
+
 - 100% station coverage with AQHI calculations
 - Average calculation time: <5ms per station
 - Successful handling of missing sensors
@@ -733,12 +774,12 @@ All test cases pass within tolerance (±0.1 μg/m³ for PM, ±5 μg/m³ for gase
 
 Based on 7-day monitoring period:
 
-| Data Quality | Percentage | Average Readings |
-|--------------|-----------|------------------|
-| Excellent (3h+) | 85% | 18+ readings |
-| Good (2-3h) | 10% | 12-17 readings |
-| Fair (1-2h) | 3% | 6-11 readings |
-| Limited (<1h) | 2% | 1-5 readings |
+| Data Quality    | Percentage | Average Readings |
+| --------------- | ---------- | ---------------- |
+| Excellent (3h+) | 85%        | 18+ readings     |
+| Good (2-3h)     | 10%        | 12-17 readings   |
+| Fair (1-2h)     | 3%         | 6-11 readings    |
+| Limited (<1h)   | 2%         | 1-5 readings     |
 
 ---
 
@@ -807,9 +848,11 @@ Based on 7-day monitoring period:
 ### 8.2 Key Modules
 
 #### [aqi-to-concentration.js](js/aqi-to-concentration.js)
+
 **Purpose**: Convert AQI values to raw concentrations
 
 **Functions**:
+
 - `aqiToConcentration()` - Main conversion algorithm
 - `convertStationToRawConcentrations()` - Batch station conversion
 - `getRawConcentration()` - Extract concentration for specific pollutant
@@ -819,9 +862,11 @@ Based on 7-day monitoring period:
 **Outputs**: Raw concentrations (μg/m³, ppb)
 
 #### [aqhi-supabase.js](js/aqhi-supabase.js)
+
 **Purpose**: AQHI calculation with database integration
 
 **Functions**:
+
 - `calculateThaiAQHI()` - Thai Health Dept formula implementation
 - `getAQHILevel()` - Determine risk category
 - `enhanceStationsWithAQHI()` - Batch AQHI processing
@@ -831,9 +876,11 @@ Based on 7-day monitoring period:
 **Outputs**: AQHI value (1-10+) with risk level
 
 #### [aqhi-realistic.js](js/aqhi-realistic.js)
+
 **Purpose**: Client-side data collection and fallback calculations
 
 **Functions**:
+
 - `collectCurrentReading()` - Store readings in localStorage
 - `calculateClientSideMovingAverage()` - Build 3-hour averages
 - `calculateStationAQHIRealistic()` - Fallback AQHI calculation
@@ -845,6 +892,7 @@ Based on 7-day monitoring period:
 ### 8.3 Database Schema
 
 **Table: `waqi_data`**
+
 ```sql
 CREATE TABLE waqi_data (
   id BIGSERIAL PRIMARY KEY,
@@ -863,6 +911,7 @@ CREATE TABLE waqi_data (
 ```
 
 **View: `combined_3h_averages`**
+
 ```sql
 CREATE VIEW combined_3h_averages AS
 SELECT
@@ -899,12 +948,14 @@ HAVING COUNT(*) >= 1;
 #### Alternative Data Sources
 
 **Google Air Quality API**:
+
 - Historical data up to 30 days ✅
 - Hourly resolution (perfect for 3-hour averages) ✅
 - Professional-grade accuracy ✅
 - Cost: Free tier 10,000 requests/month
 
 **OpenWeatherMap Air Pollution API**:
+
 - Historical data up to 1 year ✅
 - Hourly granularity ✅
 - Includes all pollutants (PM2.5, PM10, CO, NO, NO₂, O₃, SO₂, NH₃) ✅
@@ -961,12 +1012,14 @@ AQHI = (10/C) × 100 × Σ[i=1 to n] (e^(βi × Xi) - 1)
 ```
 
 **Where**:
+
 - **C** = 105.19 (Thai scaling constant, derived from Bangkok health impact studies)
 - **βi** = Health risk coefficient for pollutant i
 - **Xi** = 3-hour moving average concentration for pollutant i
 - **e** = Euler's number (2.71828...)
 
 **Health Risk Coefficients** (from Thai epidemiological research):
+
 - **β_PM2.5** = 0.0012 (per μg/m³)
 - **β_O3** = 0.0010 (per ppb)
 - **β_NO2** = 0.0052 (per ppb)
@@ -974,15 +1027,18 @@ AQHI = (10/C) × 100 × Σ[i=1 to n] (e^(βi × Xi) - 1)
 ### Appendix B: EPA AQI Breakpoints Reference
 
 Complete EPA breakpoint tables are documented in:
+
 - [aqi-to-concentration.js:8-77](js/aqi-to-concentration.js#L8-L77)
 - Source: US EPA Technical Assistance Document (2024 update)
 
 ### Appendix C: Conversion Validation Tests
 
 Full test suite available at:
+
 - [aqi-to-concentration.js:248-274](js/aqi-to-concentration.js#L248-L274)
 
 Run validation tests in browser console:
+
 ```javascript
 window.aqiConverter.validateConversions();
 ```
@@ -990,6 +1046,7 @@ window.aqiConverter.validateConversions();
 ### Appendix D: Data Collection Specification
 
 **Automatic Data Collection**:
+
 - **Frequency**: Every 10 minutes
 - **Method**: Serverless function (Vercel/Supabase)
 - **Storage**: Supabase PostgreSQL database

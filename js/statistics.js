@@ -1,12 +1,12 @@
-import { calculateStationStatistics, getAQIClass } from './utils.js';
-import { uiManager } from './ui.js';
-import { getAQHILevel, formatAQHI } from './aqhi-supabase.js';
-import { calculateAQHIStatistics } from './aqhi-supabase.js';
+import { calculateStationStatistics, getAQIClass } from "./utils.js";
+import { uiManager } from "./ui.js";
+import { getAQHILevel, formatAQHI } from "./aqhi-supabase.js";
+import { calculateAQHIStatistics } from "./aqhi-supabase.js";
 
 // Modern statistics calculation and display
 
 export function updateStatisticsPanel(stations) {
-  const isAQHI = uiManager.currentIndicator === 'AQHI';
+  const isAQHI = uiManager.currentIndicator === "AQHI";
 
   if (isAQHI) {
     updateStatisticsPanelAQHI(stations);
@@ -17,15 +17,15 @@ export function updateStatisticsPanel(stations) {
 
 function updateStatisticsPanelAQI(stations) {
   const stats = calculateStationStatistics(stations);
-  const statsContent = document.getElementById('stats-content');
+  const statsContent = document.getElementById("stats-content");
 
   if (!statsContent) {
-    console.error('Statistics content element not found');
+    console.error("Statistics content element not found");
     return;
   }
 
   if (!stats) {
-    uiManager.showError('stats-content', 'No valid air quality data available');
+    uiManager.showError("stats-content", "No valid air quality data available");
     return;
   }
 
@@ -56,20 +56,20 @@ function updateStatisticsPanelAQI(stations) {
   // Update category breakdown
   uiManager.updateCategoryBreakdown(stats.categories);
 
-  console.log('AQI statistics updated');
+  console.log("AQI statistics updated");
 }
 
 function updateStatisticsPanelAQHI(stations) {
   const stats = calculateAQHIStatistics(stations);
-  const statsContent = document.getElementById('stats-content');
+  const statsContent = document.getElementById("stats-content");
 
   if (!statsContent) {
-    console.error('Statistics content element not found');
+    console.error("Statistics content element not found");
     return;
   }
 
   if (!stats) {
-    uiManager.showError('stats-content', 'No valid AQHI data available');
+    uiManager.showError("stats-content", "No valid AQHI data available");
     return;
   }
 
@@ -80,31 +80,31 @@ function updateStatisticsPanelAQHI(stations) {
   // Map AQHI colors to AQI classes for consistency
   const getAQHIClass = (level) => {
     switch (level.key) {
-      case 'LOW':
-        return 'aqi-good';
-      case 'MODERATE':
-        return 'aqi-moderate';
-      case 'HIGH':
-        return 'aqi-unhealthy-sensitive';
-      case 'VERY_HIGH':
-        return 'aqi-unhealthy';
+      case "LOW":
+        return "aqi-good";
+      case "MODERATE":
+        return "aqi-moderate";
+      case "HIGH":
+        return "aqi-unhealthy-sensitive";
+      case "VERY_HIGH":
+        return "aqi-unhealthy";
       default:
-        return 'aqi-moderate';
+        return "aqi-moderate";
     }
   };
 
   // Check average data quality with realistic approach
-  let dataQualityInfo = '';
+  let dataQualityInfo = "";
   if (stations.length > 0 && stations[0].aqhi) {
     const qualityBreakdown = {
-      excellent: stations.filter((s) => s.aqhi?.dataQuality === 'excellent')
+      excellent: stations.filter((s) => s.aqhi?.dataQuality === "excellent")
         .length,
-      good: stations.filter((s) => s.aqhi?.dataQuality === 'good').length,
-      fair: stations.filter((s) => s.aqhi?.dataQuality === 'fair').length,
-      enhanced: stations.filter((s) => s.aqhi?.dataQuality === 'enhanced')
+      good: stations.filter((s) => s.aqhi?.dataQuality === "good").length,
+      fair: stations.filter((s) => s.aqhi?.dataQuality === "fair").length,
+      enhanced: stations.filter((s) => s.aqhi?.dataQuality === "enhanced")
         .length,
-      limited: stations.filter((s) => s.aqhi?.dataQuality === 'limited').length,
-      estimated: stations.filter((s) => s.aqhi?.dataQuality === 'estimated')
+      limited: stations.filter((s) => s.aqhi?.dataQuality === "limited").length,
+      estimated: stations.filter((s) => s.aqhi?.dataQuality === "estimated")
         .length,
     };
 
@@ -117,11 +117,11 @@ function updateStatisticsPanelAQHI(stations) {
       dataQualityInfo = `
                 <div class="info" style="margin-top: 12px; padding: 8px; background: var(--gray-100); border-radius: 6px; font-size: 0.875rem;">
                     <div style="font-weight: 500; margin-bottom: 4px;">📊 AQHI Data Quality:</div>
-                    ${qualityBreakdown.excellent > 0 ? `<div>🎯 ${qualityBreakdown.excellent} stations with full 3+ hour average</div>` : ''}
-                    ${qualityBreakdown.good > 0 ? `<div>✅ ${qualityBreakdown.good} stations with 2+ hour average</div>` : ''}
-                    ${qualityBreakdown.fair > 0 ? `<div>⏳ ${qualityBreakdown.fair} stations with 1+ hour average</div>` : ''}
-                    ${qualityBreakdown.limited > 0 ? `<div>🔄 ${qualityBreakdown.limited} stations building data</div>` : ''}
-                    ${qualityBreakdown.estimated > 0 ? `<div>📊 ${qualityBreakdown.estimated} stations using estimation</div>` : ''}
+                    ${qualityBreakdown.excellent > 0 ? `<div>🎯 ${qualityBreakdown.excellent} stations with full 3+ hour average</div>` : ""}
+                    ${qualityBreakdown.good > 0 ? `<div>✅ ${qualityBreakdown.good} stations with 2+ hour average</div>` : ""}
+                    ${qualityBreakdown.fair > 0 ? `<div>⏳ ${qualityBreakdown.fair} stations with 1+ hour average</div>` : ""}
+                    ${qualityBreakdown.limited > 0 ? `<div>🔄 ${qualityBreakdown.limited} stations building data</div>` : ""}
+                    ${qualityBreakdown.estimated > 0 ? `<div>📊 ${qualityBreakdown.estimated} stations using estimation</div>` : ""}
                 </div>
             `;
     }
@@ -155,7 +155,7 @@ function updateStatisticsPanelAQHI(stations) {
                 ⚠️ ${stats.stationsWithPartialData} stations missing pollutant sensors (NO₂, O₃, or SO₂)
             </div>
         `
-            : ''
+            : ""
         }
     `;
 
@@ -164,27 +164,26 @@ function updateStatisticsPanelAQHI(stations) {
   // Update category breakdown for AQHI
   updateAQHICategoryBreakdown(stats.categoryCounts);
 
-  console.log('AQHI statistics updated');
+  console.log("AQHI statistics updated");
 }
-
 
 function updateAQHICategoryBreakdown(categoryCounts) {
   const categoryData = [
-    { name: 'Low (1-3)', count: categoryCounts.LOW, color: '#00e400' },
+    { name: "Low (1-3)", count: categoryCounts.LOW, color: "#00e400" },
     {
-      name: 'Moderate (4-6)',
+      name: "Moderate (4-6)",
       count: categoryCounts.MODERATE,
-      color: '#ffff00',
+      color: "#ffff00",
     },
-    { name: 'High (7-10)', count: categoryCounts.HIGH, color: '#ff7e00' },
+    { name: "High (7-10)", count: categoryCounts.HIGH, color: "#ff7e00" },
     {
-      name: 'Very High (10+)',
+      name: "Very High (10+)",
       count: categoryCounts.VERY_HIGH,
-      color: '#ff0000',
+      color: "#ff0000",
     },
   ].filter((cat) => cat.count > 0);
 
-  const categoryStatsElement = document.getElementById('category-stats');
+  const categoryStatsElement = document.getElementById("category-stats");
   if (categoryStatsElement) {
     if (categoryData.length === 0) {
       categoryStatsElement.innerHTML =
@@ -202,37 +201,37 @@ function updateAQHICategoryBreakdown(categoryCounts) {
             </div>
         `,
       )
-      .join('');
+      .join("");
   }
 
-  console.log('Modern statistics updated');
+  console.log("Modern statistics updated");
 }
 
-export function createStatCard(label, value, cssClass = '', description = '') {
+export function createStatCard(label, value, cssClass = "", description = "") {
   return `
         <div class="stat-card ${cssClass}">
             <div class="stat-value">${value}</div>
             <div class="stat-label">${label}</div>
-            ${description ? `<div class="stat-description">${description}</div>` : ''}
+            ${description ? `<div class="stat-description">${description}</div>` : ""}
         </div>
     `;
 }
 
 export function getAQISummary(stations) {
   const stats = calculateStationStatistics(stations);
-  if (!stats) return 'No data available';
+  if (!stats) return "No data available";
 
   const { avgAQI, totalStations } = stats;
   let summary = `Average AQI: ${avgAQI} across ${totalStations} stations. `;
 
   if (avgAQI <= 50) {
-    summary += 'Air quality is generally good across Bangkok.';
+    summary += "Air quality is generally good across Bangkok.";
   } else if (avgAQI <= 100) {
-    summary += 'Air quality is moderate across Bangkok.';
+    summary += "Air quality is moderate across Bangkok.";
   } else if (avgAQI <= 150) {
-    summary += 'Air quality may be unhealthy for sensitive groups.';
+    summary += "Air quality may be unhealthy for sensitive groups.";
   } else {
-    summary += 'Air quality is concerning across Bangkok.';
+    summary += "Air quality is concerning across Bangkok.";
   }
 
   return summary;
@@ -244,7 +243,7 @@ export function generateStatsReport(stations) {
 
   const report = {
     timestamp: new Date().toISOString(),
-    location: 'Bangkok, Thailand',
+    location: "Bangkok, Thailand",
     summary: getAQISummary(stations),
     statistics: {
       totalStations: stats.totalStations,
@@ -261,7 +260,7 @@ export function generateStatsReport(stations) {
       hazardous: stats.categories.hazardous,
     },
     stations: stats.validStations.map((station) => ({
-      name: station.station?.name || 'Unknown',
+      name: station.station?.name || "Unknown",
       aqi: parseInt(station.aqi),
       lat: station.lat,
       lon: station.lon,
@@ -291,16 +290,16 @@ export function calculateTrends(currentStats, previousStats) {
 
 export function identifyHotspots(stations, threshold = 100) {
   const validStations = stations.filter(
-    (station) => station.aqi !== '-' && !isNaN(parseInt(station.aqi)),
+    (station) => station.aqi !== "-" && !isNaN(parseInt(station.aqi)),
   );
 
   return validStations
     .filter((station) => parseInt(station.aqi) > threshold)
     .sort((a, b) => parseInt(b.aqi) - parseInt(a.aqi))
     .map((station) => ({
-      name: station.station?.name || 'Unknown Station',
+      name: station.station?.name || "Unknown Station",
       aqi: parseInt(station.aqi),
       coordinates: [station.lat, station.lon],
-      severity: parseInt(station.aqi) > 200 ? 'high' : 'medium',
+      severity: parseInt(station.aqi) > 200 ? "high" : "medium",
     }));
 }

@@ -3,6 +3,7 @@
 ## Overview
 
 The correct architecture uses **server-side data collection** via cron jobs, NOT client-side API calls. This ensures:
+
 - ✅ Reliable 3-hour averages
 - ✅ No user-triggered API costs
 - ✅ Consistent data collection
@@ -60,6 +61,7 @@ The correct architecture uses **server-side data collection** via cron jobs, NOT
 ## Why This is Better
 
 ### ❌ Client-Side Approach (Wrong)
+
 ```
 User clicks station → Google API call → Data shown
 Problems:
@@ -70,6 +72,7 @@ Problems:
 ```
 
 ### ✅ Server-Side Approach (Correct)
+
 ```
 Cron job runs every 10 min → Collects all data → Stores in DB → All users read from DB
 Benefits:
@@ -99,16 +102,17 @@ await storeHistoricalData(detailedStations);
 
 ```javascript
 // Step 1: Load recent WAQI stations from Supabase
-const stations = await supabase.from('stations').select('*');
-const recentReadings = await supabase.from('air_quality_readings')
-  .select('station_uid, o3, no2')
-  .gte('timestamp', '2 hours ago');
+const stations = await supabase.from("stations").select("*");
+const recentReadings = await supabase
+  .from("air_quality_readings")
+  .select("station_uid, o3, no2")
+  .gte("timestamp", "2 hours ago");
 
 // Step 2: Find stations missing O3/NO2
-const stationsNeedingSupplements = stations.filter(station => {
+const stationsNeedingSupplements = stations.filter((station) => {
   // Check if station has recent O3/NO2 readings
-  const hasCompleteData = recentReadings.some(r =>
-    r.station_uid === station.uid && r.o3 && r.no2
+  const hasCompleteData = recentReadings.some(
+    (r) => r.station_uid === station.uid && r.o3 && r.no2,
   );
   return !hasCompleteData;
 });
@@ -135,17 +139,18 @@ for (const station of stationsNeedingSupplements) {
     timestamp: new Date(),
     o3: googleData.o3,
     no2: googleData.no2,
-    data_source: 'GOOGLE_SUPPLEMENT'
+    data_source: "GOOGLE_SUPPLEMENT",
   });
 }
 
 // Step 6: Store in Supabase
-await supabase.from('air_quality_readings').insert(supplementReadings);
+await supabase.from("air_quality_readings").insert(supplementReadings);
 ```
 
 ### Cron Job Execution
 
 **WAQI Collection (Every 20 minutes)**:
+
 ```
 10:00 AM → 188 WAQI stations → Store PM2.5, PM10, SO2, CO
 10:20 AM → 188 WAQI stations → Store PM2.5, PM10, SO2, CO
@@ -154,6 +159,7 @@ await supabase.from('air_quality_readings').insert(supplementReadings);
 ```
 
 **Google Supplements (Every 60 minutes)**:
+
 ```
 10:00 AM → Check 188 stations → 180 need O3/NO2 → Fetch 8 grid points → Store supplements
 11:00 AM → Check 188 stations → 180 need O3/NO2 → Fetch 8 grid points → Store supplements
@@ -162,16 +168,19 @@ await supabase.from('air_quality_readings').insert(supplementReadings);
 ```
 
 **Result**:
+
 - WAQI: 3 readings per hour (fast-changing pollutants)
 - Google: 1 reading per hour (slow-changing gaseous pollutants)
 
 ## API Cost Calculation (Dual Cron Setup)
 
 ### WAQI Collection (Every 20 minutes)
+
 - WAQI API calls: 188 stations × 72 times/day = **Free** ✅
 - WAQI has unlimited free tier
 
 ### Google Collection (Every 60 minutes)
+
 - Collections per day: 24
 - Grid points per collection: 8 (avg, with 180/188 stations needing supplements)
 - Google API calls per day: 24 × 8 = **192 calls/day**
@@ -182,15 +191,18 @@ await supabase.from('air_quality_readings').insert(supplementReadings);
 ### Why This Works
 
 **Separate Frequencies**:
+
 - Fast pollutants (PM2.5, PM10): Every 20 min (3 readings/hour)
 - Slow pollutants (O3, NO2): Every 60 min (1 reading/hour)
 
 **Cost Comparison**:
+
 - **Old approach** (combined, 20 min): 8,640-19,440 calls/month ⚠️
 - **New approach** (separate, 20+60 min): **5,760 calls/month** ✅
 - **Savings**: 33-70% reduction
 
 **Data Quality**:
+
 - 3-hour PM2.5 average: 9 readings (excellent)
 - 3-hour O3/NO2 average: 3 readings (good, sufficient for slow-changing gases)
 
@@ -232,6 +244,7 @@ async calculateAQHI() {
 ### air_quality_readings Table
 
 **WAQI readings** (every 20 minutes):
+
 ```sql
 INSERT INTO air_quality_readings (
   station_uid,
@@ -247,6 +260,7 @@ INSERT INTO air_quality_readings (
 ```
 
 **Google supplement readings** (every 60 minutes):
+
 ```sql
 INSERT INTO air_quality_readings (
   station_uid,
@@ -285,17 +299,18 @@ In `vercel.json`:
   "crons": [
     {
       "path": "/api/collect-data",
-      "schedule": "*/20 * * * *"  // Every 20 minutes (WAQI)
+      "schedule": "*/20 * * * *" // Every 20 minutes (WAQI)
     },
     {
       "path": "/api/collect-google-supplements",
-      "schedule": "0 * * * *"  // Every 60 minutes (Google)
+      "schedule": "0 * * * *" // Every 60 minutes (Google)
     }
   ]
 }
 ```
 
 Or use external cron service (cron-job.org):
+
 ```
 Job 1: */20 * * * * → https://your-app.vercel.app/api/collect-data
 Job 2: 0 * * * *   → https://your-app.vercel.app/api/collect-google-supplements
@@ -304,6 +319,7 @@ Job 2: 0 * * * *   → https://your-app.vercel.app/api/collect-google-supplement
 ### Add Google API Key
 
 In Vercel environment variables:
+
 ```
 GOOGLE_AIR_QUALITY_API_KEY=YOUR_GOOGLE_AIR_QUALITY_API_KEY_HERE
 ```
@@ -378,6 +394,7 @@ npm run dev
 ```
 
 Client should show:
+
 ```console
 📊 Loaded 188 stations (includes Google O3/NO2 supplements from server)
 ```
@@ -387,15 +404,18 @@ No Google API calls from client!
 ## Cost Summary
 
 ### Current Setup (10-min intervals)
+
 - Collections/day: 144
 - Google calls/month: **17,280** ❌ Exceeds 10K
 
 ### Recommended Setup (20-min intervals)
+
 - Collections/day: 72
 - Google calls/month: **8,640** ✅ Under 10K
 - Readings per 3 hours: 9 (excellent quality)
 
 ### Conservative Setup (30-min intervals)
+
 - Collections/day: 48
 - Google calls/month: **5,760** ✅ Well under 10K
 - Readings per 3 hours: 6 (good quality)
@@ -413,6 +433,7 @@ No Google API calls from client!
 ## Summary
 
 The correct architecture:
+
 1. **Server collects** data every 20 minutes via cron
 2. **Google supplements** missing O3/NO2 (3-5 API calls)
 3. **Stores in Supabase** with 3-hour averages

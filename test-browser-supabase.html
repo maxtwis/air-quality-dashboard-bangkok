@@ -1,151 +1,196 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Test Supabase Connection</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: #fff; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .log { background: #2a2a2a; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; }
-        .success { color: #4ade80; }
-        .error { color: #ef4444; }
-        .warning { color: #fbbf24; }
-        button { background: #3b82f6; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
-        button:hover { background: #2563eb; }
-        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
-        .status.loading { background: #374151; }
-        .status.success { background: #065f46; }
-        .status.error { background: #7f1d1d; }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .log {
+        background: #2a2a2a;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        font-family: monospace;
+      }
+      .success {
+        color: #4ade80;
+      }
+      .error {
+        color: #ef4444;
+      }
+      .warning {
+        color: #fbbf24;
+      }
+      button {
+        background: #3b82f6;
+        color: white;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background: #2563eb;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+      }
+      .status.loading {
+        background: #374151;
+      }
+      .status.success {
+        background: #065f46;
+      }
+      .status.error {
+        background: #7f1d1d;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>🔥 Supabase Connection Test</h1>
-        <div id="status" class="status loading">Initializing...</div>
+      <h1>🔥 Supabase Connection Test</h1>
+      <div id="status" class="status loading">Initializing...</div>
 
-        <div class="buttons">
-            <button onclick="testConnection()">Test Connection</button>
-            <button onclick="testStorageService()">Test Storage Service</button>
-            <button onclick="testAQHIService()">Test AQHI Service</button>
-            <button onclick="clearLogs()">Clear Logs</button>
-        </div>
+      <div class="buttons">
+        <button onclick="testConnection()">Test Connection</button>
+        <button onclick="testStorageService()">Test Storage Service</button>
+        <button onclick="testAQHIService()">Test AQHI Service</button>
+        <button onclick="clearLogs()">Clear Logs</button>
+      </div>
 
-        <div id="logs"></div>
+      <div id="logs"></div>
     </div>
 
     <script type="module">
-        import { AirQualityDB } from './lib/supabase.js';
-        import { airQualityStorage } from './js/storage.js';
-        import { supabaseAQHI } from './js/aqhi-supabase.js';
+      import { AirQualityDB } from "./lib/supabase.js";
+      import { airQualityStorage } from "./js/storage.js";
+      import { supabaseAQHI } from "./js/aqhi-supabase.js";
 
-        let logCount = 0;
+      let logCount = 0;
 
-        function log(message, type = 'info') {
-            logCount++;
-            const logElement = document.createElement('div');
-            logElement.className = `log ${type}`;
-            logElement.innerHTML = `${logCount}. ${message}`;
-            document.getElementById('logs').appendChild(logElement);
-            console.log(message);
+      function log(message, type = "info") {
+        logCount++;
+        const logElement = document.createElement("div");
+        logElement.className = `log ${type}`;
+        logElement.innerHTML = `${logCount}. ${message}`;
+        document.getElementById("logs").appendChild(logElement);
+        console.log(message);
+      }
+
+      function setStatus(message, type = "loading") {
+        const status = document.getElementById("status");
+        status.textContent = message;
+        status.className = `status ${type}`;
+      }
+
+      // Make functions available globally
+      window.testConnection = async function () {
+        try {
+          setStatus("Testing database connection...", "loading");
+          log("🔄 Testing Supabase connection...");
+
+          const result = await AirQualityDB.testConnection();
+          if (result) {
+            log("✅ Database connection successful!", "success");
+            setStatus("✅ Connected to Supabase", "success");
+
+            // Get stats
+            const stats = await AirQualityDB.getDBStats();
+            log(`📊 Database stats: ${JSON.stringify(stats)}`, "success");
+          } else {
+            log("❌ Database connection failed", "error");
+            setStatus("❌ Connection failed", "error");
+          }
+        } catch (error) {
+          log(`❌ Connection test failed: ${error.message}`, "error");
+          setStatus("❌ Connection error", "error");
         }
+      };
 
-        function setStatus(message, type = 'loading') {
-            const status = document.getElementById('status');
-            status.textContent = message;
-            status.className = `status ${type}`;
+      window.testStorageService = async function () {
+        try {
+          setStatus("Testing storage service...", "loading");
+          log("🔄 Testing storage service initialization...");
+
+          const isEnabled = airQualityStorage.isStorageEnabled();
+          log(
+            `📦 Storage service enabled: ${isEnabled}`,
+            isEnabled ? "success" : "warning",
+          );
+
+          if (isEnabled) {
+            const stats = await airQualityStorage.getStats();
+            log(`📊 Storage stats: ${JSON.stringify(stats)}`, "success");
+            setStatus("✅ Storage service working", "success");
+          } else {
+            setStatus("⚠️ Storage service disabled", "warning");
+          }
+        } catch (error) {
+          log(`❌ Storage test failed: ${error.message}`, "error");
+          setStatus("❌ Storage error", "error");
         }
+      };
 
-        // Make functions available globally
-        window.testConnection = async function() {
-            try {
-                setStatus('Testing database connection...', 'loading');
-                log('🔄 Testing Supabase connection...');
+      window.testAQHIService = async function () {
+        try {
+          setStatus("Testing AQHI service...", "loading");
+          log("🔄 Testing AQHI service...");
 
-                const result = await AirQualityDB.testConnection();
-                if (result) {
-                    log('✅ Database connection successful!', 'success');
-                    setStatus('✅ Connected to Supabase', 'success');
+          // Create a test station
+          const testStation = {
+            uid: "test-123",
+            aqi: 75,
+            lat: 13.7563,
+            lon: 100.5018,
+            station: { name: "Test Station" },
+            iaqi: {
+              pm25: { v: 75 },
+              pm10: { v: 85 },
+              o3: { v: 65 },
+              no2: { v: 45 },
+            },
+          };
 
-                    // Get stats
-                    const stats = await AirQualityDB.getDBStats();
-                    log(`📊 Database stats: ${JSON.stringify(stats)}`, 'success');
-                } else {
-                    log('❌ Database connection failed', 'error');
-                    setStatus('❌ Connection failed', 'error');
-                }
-            } catch (error) {
-                log(`❌ Connection test failed: ${error.message}`, 'error');
-                setStatus('❌ Connection error', 'error');
-            }
-        };
+          const aqhiResult = await supabaseAQHI.calculateAQHI(testStation);
+          log(`🧮 AQHI calculation: ${JSON.stringify(aqhiResult)}`, "success");
 
-        window.testStorageService = async function() {
-            try {
-                setStatus('Testing storage service...', 'loading');
-                log('🔄 Testing storage service initialization...');
+          const cacheStats = supabaseAQHI.getCacheStats();
+          log(`📊 AQHI cache stats: ${JSON.stringify(cacheStats)}`, "success");
 
-                const isEnabled = airQualityStorage.isStorageEnabled();
-                log(`📦 Storage service enabled: ${isEnabled}`, isEnabled ? 'success' : 'warning');
+          setStatus("✅ AQHI service working", "success");
+        } catch (error) {
+          log(`❌ AQHI test failed: ${error.message}`, "error");
+          setStatus("❌ AQHI error", "error");
+        }
+      };
 
-                if (isEnabled) {
-                    const stats = await airQualityStorage.getStats();
-                    log(`📊 Storage stats: ${JSON.stringify(stats)}`, 'success');
-                    setStatus('✅ Storage service working', 'success');
-                } else {
-                    setStatus('⚠️ Storage service disabled', 'warning');
-                }
-            } catch (error) {
-                log(`❌ Storage test failed: ${error.message}`, 'error');
-                setStatus('❌ Storage error', 'error');
-            }
-        };
+      window.clearLogs = function () {
+        document.getElementById("logs").innerHTML = "";
+        logCount = 0;
+        setStatus("Ready for testing", "loading");
+      };
 
-        window.testAQHIService = async function() {
-            try {
-                setStatus('Testing AQHI service...', 'loading');
-                log('🔄 Testing AQHI service...');
-
-                // Create a test station
-                const testStation = {
-                    uid: 'test-123',
-                    aqi: 75,
-                    lat: 13.7563,
-                    lon: 100.5018,
-                    station: { name: 'Test Station' },
-                    iaqi: {
-                        pm25: { v: 75 },
-                        pm10: { v: 85 },
-                        o3: { v: 65 },
-                        no2: { v: 45 }
-                    }
-                };
-
-                const aqhiResult = await supabaseAQHI.calculateAQHI(testStation);
-                log(`🧮 AQHI calculation: ${JSON.stringify(aqhiResult)}`, 'success');
-
-                const cacheStats = supabaseAQHI.getCacheStats();
-                log(`📊 AQHI cache stats: ${JSON.stringify(cacheStats)}`, 'success');
-
-                setStatus('✅ AQHI service working', 'success');
-            } catch (error) {
-                log(`❌ AQHI test failed: ${error.message}`, 'error');
-                setStatus('❌ AQHI error', 'error');
-            }
-        };
-
-        window.clearLogs = function() {
-            document.getElementById('logs').innerHTML = '';
-            logCount = 0;
-            setStatus('Ready for testing', 'loading');
-        };
-
-        // Initialize on load
-        window.addEventListener('load', async () => {
-            log('🚀 Supabase test page loaded');
-            log('🔧 Available services: AirQualityDB, airQualityStorage, supabaseAQHI');
-            setStatus('Ready for testing', 'loading');
-        });
+      // Initialize on load
+      window.addEventListener("load", async () => {
+        log("🚀 Supabase test page loaded");
+        log(
+          "🔧 Available services: AirQualityDB, airQualityStorage, supabaseAQHI",
+        );
+        setStatus("Ready for testing", "loading");
+      });
     </script>
-</body>
+  </body>
 </html>

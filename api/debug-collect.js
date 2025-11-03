@@ -4,16 +4,18 @@ export default async function handler(req, res) {
 
   function debugLog(message, data = null) {
     const logEntry = `${new Date().toISOString()} - ${message}`;
-    logs.push(data ? `${logEntry}: ${JSON.stringify(data, null, 2)}` : logEntry);
-    console.log(logEntry, data || '');
+    logs.push(
+      data ? `${logEntry}: ${JSON.stringify(data, null, 2)}` : logEntry,
+    );
+    console.log(logEntry, data || "");
   }
 
   try {
     debugLog("🚀 Debug data collection started");
     debugLog("Request method", req.method);
     debugLog("Headers", {
-      'user-agent': req.headers['user-agent'],
-      'origin': req.headers['origin']
+      "user-agent": req.headers["user-agent"],
+      origin: req.headers["origin"],
     });
 
     // 1. Check environment variables
@@ -23,13 +25,14 @@ export default async function handler(req, res) {
       SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
       SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
       AQICN_API_TOKEN: !!process.env.AQICN_API_TOKEN,
-      OPENWEATHER_API_KEY: !!process.env.OPENWEATHER_API_KEY
+      OPENWEATHER_API_KEY: !!process.env.OPENWEATHER_API_KEY,
     };
     debugLog("Environment variables present", envCheck);
 
     // 2. Test WAQI API
     debugLog("🌍 Testing WAQI API connection");
-    const apiToken = process.env.AQICN_API_TOKEN || "354eb1b871693ef55f777c69e44e81bcaf215d40";
+    const apiToken =
+      process.env.AQICN_API_TOKEN || "354eb1b871693ef55f777c69e44e81bcaf215d40";
     const apiUrl = `https://api.waqi.info/v2/map/bounds/?latlng=13.5,100.3,14.0,100.9&token=${apiToken}`;
 
     const waqiResponse = await fetch(apiUrl);
@@ -45,7 +48,9 @@ export default async function handler(req, res) {
     // 3. Test module imports
     debugLog("📦 Testing module imports");
     try {
-      const { convertStationDataForSupabase } = await import('../lib/aqi-converter-node.js');
+      const { convertStationDataForSupabase } = await import(
+        "../lib/aqi-converter-node.js"
+      );
       debugLog("✅ AQI converter imported successfully");
 
       // Test conversion with sample data
@@ -70,15 +75,15 @@ export default async function handler(req, res) {
 
       const supabase = createClient(
         process.env.SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY
+        process.env.SUPABASE_SERVICE_ROLE_KEY,
       );
 
       debugLog("✅ Supabase client created");
 
       // Test database connection
       const { data: testData, error: testError } = await supabase
-        .from('stations')
-        .select('count')
+        .from("stations")
+        .select("count")
         .limit(1);
 
       if (testError) {
@@ -91,16 +96,16 @@ export default async function handler(req, res) {
       // Try to insert a test station
       const testStation = {
         station_uid: `debug-test-${Date.now()}`,
-        name: 'Debug Test Station',
+        name: "Debug Test Station",
         latitude: 13.7563,
         longitude: 100.5018,
-        city: 'Bangkok',
-        country: 'Thailand',
-        is_active: true
+        city: "Bangkok",
+        country: "Thailand",
+        is_active: true,
       };
 
       const { data: insertData, error: insertError } = await supabase
-        .from('stations')
+        .from("stations")
         .insert([testStation]);
 
       if (insertError) {
@@ -110,12 +115,11 @@ export default async function handler(req, res) {
 
         // Clean up test data
         await supabase
-          .from('stations')
+          .from("stations")
           .delete()
-          .eq('station_uid', testStation.station_uid);
+          .eq("station_uid", testStation.station_uid);
         debugLog("🧹 Test data cleaned up");
       }
-
     } catch (supabaseError) {
       debugLog("❌ Supabase test failed", supabaseError.message);
     }
@@ -125,8 +129,9 @@ export default async function handler(req, res) {
       timestamp: new Date().toISOString(),
       waqiWorking: waqiData.status === "ok",
       stationsFound: waqiData.data?.length || 0,
-      environmentOK: envCheck.SUPABASE_URL && envCheck.SUPABASE_SERVICE_ROLE_KEY,
-      nextSteps: []
+      environmentOK:
+        envCheck.SUPABASE_URL && envCheck.SUPABASE_SERVICE_ROLE_KEY,
+      nextSteps: [],
     };
 
     if (!summary.waqiWorking) {
@@ -145,9 +150,8 @@ export default async function handler(req, res) {
       success: true,
       summary,
       logs: logs,
-      detailedLogs: logs.join('\n')
+      detailedLogs: logs.join("\n"),
     });
-
   } catch (error) {
     debugLog("💥 Fatal error", error.message);
 
@@ -155,7 +159,7 @@ export default async function handler(req, res) {
       success: false,
       error: error.message,
       logs: logs,
-      detailedLogs: logs.join('\n')
+      detailedLogs: logs.join("\n"),
     });
   }
 }

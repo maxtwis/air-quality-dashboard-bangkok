@@ -39,39 +39,39 @@ Where:
 
 #### PM2.5 (Updated February 2024)
 
-| AQI Category | AQI Range | PM2.5 Range (μg/m³) | Updated |
-|--------------|-----------|-------------------|---------|
-| Good | 0-50 | 0.0 - 9.0 | ✅ 2024 |
-| Moderate | 51-100 | 9.1 - 35.4 | ✅ 2024 |
-| Unhealthy for Sensitive Groups | 101-150 | 35.5 - 55.4 | ✅ 2024 |
-| Unhealthy | 151-200 | 55.5 - 125.4 | Same |
-| Very Unhealthy | 201-300 | 125.5 - 225.4 | Same |
-| Hazardous | 301-500 | 225.5 - 325.4 | Same |
+| AQI Category                   | AQI Range | PM2.5 Range (μg/m³) | Updated |
+| ------------------------------ | --------- | ------------------- | ------- |
+| Good                           | 0-50      | 0.0 - 9.0           | ✅ 2024 |
+| Moderate                       | 51-100    | 9.1 - 35.4          | ✅ 2024 |
+| Unhealthy for Sensitive Groups | 101-150   | 35.5 - 55.4         | ✅ 2024 |
+| Unhealthy                      | 151-200   | 55.5 - 125.4        | Same    |
+| Very Unhealthy                 | 201-300   | 125.5 - 225.4       | Same    |
+| Hazardous                      | 301-500   | 225.5 - 325.4       | Same    |
 
 **Reference**: EPA-454/B-24-001, Table 3
 
 #### O3 (Ozone) - 8-hour average
 
-| AQI Category | AQI Range | O3 Range (ppm) |
-|--------------|-----------|---------------|
-| Good | 0-50 | 0.000 - 0.054 |
-| Moderate | 51-100 | 0.055 - 0.070 |
-| Unhealthy for Sensitive Groups | 101-150 | 0.071 - 0.085 |
-| Unhealthy | 151-200 | 0.086 - 0.105 |
-| Very Unhealthy | 201-300 | 0.106 - 0.200 |
+| AQI Category                   | AQI Range | O3 Range (ppm) |
+| ------------------------------ | --------- | -------------- |
+| Good                           | 0-50      | 0.000 - 0.054  |
+| Moderate                       | 51-100    | 0.055 - 0.070  |
+| Unhealthy for Sensitive Groups | 101-150   | 0.071 - 0.085  |
+| Unhealthy                      | 151-200   | 0.086 - 0.105  |
+| Very Unhealthy                 | 201-300   | 0.106 - 0.200  |
 
 **Reference**: EPA-454/B-24-001, Table 4
 
 #### NO2 (Nitrogen Dioxide) - 1-hour average
 
-| AQI Category | AQI Range | NO2 Range (ppb) |
-|--------------|-----------|----------------|
-| Good | 0-50 | 0 - 53 |
-| Moderate | 51-100 | 54 - 100 |
-| Unhealthy for Sensitive Groups | 101-150 | 101 - 360 |
-| Unhealthy | 151-200 | 361 - 649 |
-| Very Unhealthy | 201-300 | 650 - 1249 |
-| Hazardous | 301-500 | 1250 - 2049 |
+| AQI Category                   | AQI Range | NO2 Range (ppb) |
+| ------------------------------ | --------- | --------------- |
+| Good                           | 0-50      | 0 - 53          |
+| Moderate                       | 51-100    | 54 - 100        |
+| Unhealthy for Sensitive Groups | 101-150   | 101 - 360       |
+| Unhealthy                      | 151-200   | 361 - 649       |
+| Very Unhealthy                 | 201-300   | 650 - 1249      |
+| Hazardous                      | 301-500   | 1250 - 2049     |
 
 **Reference**: EPA-454/B-24-001, Table 6
 
@@ -85,23 +85,25 @@ Where:
 **URL**: https://www.epa.gov/air-emissions-factors-and-quantification/ap-42-compilation-air-emissions-factors
 
 **Formula** (at 25°C, 1 atm):
+
 ```
 Concentration (μg/m³) = Concentration (ppb) × Molecular Weight (g/mol) × 24.45 / 24450
 ```
 
 Simplified:
+
 ```
 Concentration (μg/m³) = Concentration (ppb) × (Molecular Weight / 1000)
 ```
 
 ### Conversion Factors Used
 
-| Pollutant | Molecular Weight (g/mol) | Conversion Factor | Calculation |
-|-----------|-------------------------|------------------|-------------|
-| O3 (Ozone) | 48 | 1 ppm = 1962 μg/m³ | 48 × 24.45 / 0.0244 ≈ 1962 |
-| NO2 (Nitrogen Dioxide) | 46 | 1 ppb = 1.88 μg/m³ | 46 / 24.45 ≈ 1.88 |
-| SO2 (Sulfur Dioxide) | 64 | 1 ppb = 2.62 μg/m³ | 64 / 24.45 ≈ 2.62 |
-| CO (Carbon Monoxide) | 28 | 1 ppm = 1.15 mg/m³ | 28 × 24.45 / 24.45 ≈ 1.15 |
+| Pollutant              | Molecular Weight (g/mol) | Conversion Factor  | Calculation                |
+| ---------------------- | ------------------------ | ------------------ | -------------------------- |
+| O3 (Ozone)             | 48                       | 1 ppm = 1962 μg/m³ | 48 × 24.45 / 0.0244 ≈ 1962 |
+| NO2 (Nitrogen Dioxide) | 46                       | 1 ppb = 1.88 μg/m³ | 46 / 24.45 ≈ 1.88          |
+| SO2 (Sulfur Dioxide)   | 64                       | 1 ppb = 2.62 μg/m³ | 64 / 24.45 ≈ 2.62          |
+| CO (Carbon Monoxide)   | 28                       | 1 ppm = 1.15 mg/m³ | 28 × 24.45 / 24.45 ≈ 1.15  |
 
 **Standard Conditions**: 25°C (298.15 K), 1 atmosphere (101.325 kPa)
 
@@ -143,12 +145,12 @@ Where:
 
 **Source**: Thai Ministry of Public Health epidemiological research
 
-| Pollutant | Coefficient (β) | Unit | Health Endpoint |
-|-----------|----------------|------|-----------------|
-| PM2.5 | 0.0022 | per μg/m³ | Cardiovascular & respiratory mortality |
-| PM10 | 0.0009 | per μg/m³ | Respiratory effects from coarse particles |
-| O3 | 0.0010 | per ppb | Respiratory symptoms & mortality |
-| NO2 | 0.0030 | per ppb | Respiratory inflammation |
+| Pollutant | Coefficient (β) | Unit      | Health Endpoint                           |
+| --------- | --------------- | --------- | ----------------------------------------- |
+| PM2.5     | 0.0022          | per μg/m³ | Cardiovascular & respiratory mortality    |
+| PM10      | 0.0009          | per μg/m³ | Respiratory effects from coarse particles |
+| O3        | 0.0010          | per ppb   | Respiratory symptoms & mortality          |
+| NO2       | 0.0030          | per ppb   | Respiratory inflammation                  |
 
 **Scaling Constant**: C = 105.19 (Maximum MWEC for PM2.5 AQHI/OPD)
 
@@ -257,21 +259,21 @@ Where:
 
 ### Code References
 
-| File | Reference Source | Lines |
-|------|-----------------|-------|
-| `js/aqi-to-concentration.js` | EPA-454/B-24-001 | 8-77 |
-| `js/aqhi-supabase.js` | Thai Health Dept | 5-13 |
-| `js/aqhi-realistic.js` | Thai Health Dept | 15-23 |
+| File                         | Reference Source | Lines   |
+| ---------------------------- | ---------------- | ------- |
+| `js/aqi-to-concentration.js` | EPA-454/B-24-001 | 8-77    |
+| `js/aqhi-supabase.js`        | Thai Health Dept | 5-13    |
+| `js/aqhi-realistic.js`       | Thai Health Dept | 15-23   |
 | `lib/thai-aqhi-converter.js` | Thai Health Dept | 151-159 |
 
 ### Documentation Files
 
-| File | Purpose |
-|------|---------|
-| `AQHI-Implementation-Report.md` | Complete technical documentation |
-| `DATA-FLOW-SUMMARY.md` | Data flow and conversion processes |
-| `FORMULA-CORRECTION-SUMMARY.md` | Bug fixes and formula corrections |
-| `SUPABASE_SETUP.md` | Database setup and schema |
+| File                            | Purpose                            |
+| ------------------------------- | ---------------------------------- |
+| `AQHI-Implementation-Report.md` | Complete technical documentation   |
+| `DATA-FLOW-SUMMARY.md`          | Data flow and conversion processes |
+| `FORMULA-CORRECTION-SUMMARY.md` | Bug fixes and formula corrections  |
+| `SUPABASE_SETUP.md`             | Database setup and schema          |
 
 ---
 
@@ -298,16 +300,18 @@ Our implementation includes automated validation against EPA standards:
 **Test File**: `js/aqi-to-concentration.js` (lines 292-331)
 
 **Test Cases**:
+
 ```javascript
-['pm25', 50, 9.0, 0.1],      // EPA boundary value
-['pm25', 100, 35.4, 0.1],    // EPA boundary value
-['pm25', 150, 55.4, 0.1],    // EPA boundary value
-['o3', 50, 105.95, 5],       // 0.054 ppm × 1962
-['no2', 100, 188, 5],        // 100 ppb × 1.88
-['so2', 50, 91.7, 5]         // 35 ppb × 2.62
+(["pm25", 50, 9.0, 0.1], // EPA boundary value
+  ["pm25", 100, 35.4, 0.1], // EPA boundary value
+  ["pm25", 150, 55.4, 0.1], // EPA boundary value
+  ["o3", 50, 105.95, 5], // 0.054 ppm × 1962
+  ["no2", 100, 188, 5], // 100 ppb × 1.88
+  ["so2", 50, 91.7, 5]); // 35 ppb × 2.62
 ```
 
 **Run validation**:
+
 ```javascript
 window.aqiConverter.validateConversions();
 ```

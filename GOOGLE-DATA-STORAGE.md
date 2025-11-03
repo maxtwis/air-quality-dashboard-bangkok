@@ -7,11 +7,13 @@ Google Air Quality API data is now automatically stored in Supabase to enable 3-
 ## Why Store Google Data?
 
 ### AQHI Requires Historical Data
+
 - AQHI calculation uses 3-hour moving averages of PM2.5, NO₂, and O₃
 - Single-point readings don't provide accurate health risk assessment
 - Historical data builds over time for improved accuracy
 
 ### Benefits
+
 - **Accurate AQHI**: Based on 3-hour trends, not single readings
 - **Data Quality Indicators**: Shows confidence level based on data points
 - **Cross-Device Sync**: Data persists across browsers and devices
@@ -36,6 +38,7 @@ Valid values: `'WAQI'` or `'GOOGLE'`
 ### Updated Views
 
 **`current_3h_averages_by_source`**:
+
 - Calculates 3-hour averages separately for each data source
 - Includes automatic AQHI calculation
 - Groups by `station_uid` and `data_source`
@@ -78,13 +81,13 @@ Display updated with AQHI values
 
 ### 3. Data Quality Levels
 
-| Reading Count | Quality | Icon | Description |
-|---------------|---------|------|-------------|
-| 15+ | Excellent | 🎯 | 15+ readings in 3 hours |
-| 10-14 | Good | ✅ | 10+ readings in 3 hours |
-| 5-9 | Fair | ⏳ | 5+ readings in 3 hours |
-| 1-4 | Limited | 🔄 | Building data |
-| 0 | No data | ❌ | Using current reading |
+| Reading Count | Quality   | Icon | Description             |
+| ------------- | --------- | ---- | ----------------------- |
+| 15+           | Excellent | 🎯   | 15+ readings in 3 hours |
+| 10-14         | Good      | ✅   | 10+ readings in 3 hours |
+| 5-9           | Fair      | ⏳   | 5+ readings in 3 hours  |
+| 1-4           | Limited   | 🔄   | Building data           |
+| 0             | No data   | ❌   | Using current reading   |
 
 ## Files Created/Modified
 
@@ -125,6 +128,7 @@ supabase/add-data-source-column.sql
 ```
 
 This adds:
+
 - `data_source` columns
 - Updated views
 - Check constraints
@@ -146,6 +150,7 @@ npm run dev
 ```
 
 Then:
+
 1. Click "Google" data source toggle
 2. Wait for data to load (9 API calls)
 3. Check console for: "✅ Stored X Google readings in database"
@@ -158,6 +163,7 @@ Then:
 ### Storage Trigger
 
 Google data is stored automatically when:
+
 - User switches to Google data source (first time)
 - User clicks manual refresh button (while on Google source)
 - Data is fetched successfully (9 grid points)
@@ -165,6 +171,7 @@ Google data is stored automatically when:
 ### What Gets Stored
 
 **Stations Table**:
+
 ```javascript
 {
   station_uid: 'google-13.75-100.6',
@@ -179,6 +186,7 @@ Google data is stored automatically when:
 ```
 
 **Readings Table**:
+
 ```javascript
 {
   station_uid: 'google-13.75-100.6',
@@ -198,6 +206,7 @@ Google data is stored automatically when:
 ### Storage Frequency
 
 Since Google uses on-demand refresh only:
+
 - **Initial load**: 9 calls, 9 readings stored
 - **Each manual refresh**: 9 calls, 9 readings stored
 - **Example**: 5 refreshes/day = 45 readings/day
@@ -245,6 +254,7 @@ const aqhi = calculateThaiAQHI(pm25, no2, o3);
 ### No Additional Costs!
 
 Storing data in Supabase does **NOT** increase Google API costs:
+
 - Storage happens after data is fetched
 - No extra API calls needed
 - Uses existing 9-call fetch
@@ -252,6 +262,7 @@ Storing data in Supabase does **NOT** increase Google API costs:
 ### Benefits for Free Tier
 
 With on-demand refresh (no auto-refresh):
+
 - **Storage**: ~270-1,350 readings/month
 - **Retrieval**: Free (Supabase queries)
 - **AQHI calculations**: Done in database (free)
@@ -308,6 +319,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
 
 **Symptom**: Error message in console
 **Possible causes**:
+
 1. Database migration not run → Run `add-data-source-column.sql`
 2. Network error → Check internet connection
 3. Invalid API key → Verify Supabase credentials
@@ -322,6 +334,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_key
 
 **Symptom**: All AQHI calculations use current readings
 **Check**:
+
 ```sql
 SELECT COUNT(*) FROM air_quality_readings
 WHERE data_source = 'GOOGLE'
@@ -335,6 +348,7 @@ AND timestamp >= NOW() - INTERVAL '3 hours';
 ### 1. Initial Data Collection
 
 For best AQHI accuracy on first day:
+
 1. Switch to Google source
 2. Refresh manually every 20-30 minutes
 3. After 3 hours: Full 3-hour averages available
@@ -359,6 +373,7 @@ For best AQHI accuracy on first day:
 ### Concurrent Data Sources
 
 WAQI and Google data are stored separately:
+
 - Separate `station_uid` formats
 - Filtered by `data_source` column
 - Independent 3-hour average calculations
@@ -381,6 +396,7 @@ This ensures no collisions between sources.
 ## Future Enhancements
 
 Possible improvements:
+
 1. **Background sync**: Store data even when not viewing
 2. **Longer retention**: Keep 30+ days for trend analysis
 3. **Export data**: Download historical Google data as CSV

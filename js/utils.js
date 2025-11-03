@@ -1,4 +1,4 @@
-import { AQI_LEVELS } from './config.js';
+import { AQI_LEVELS } from "./config.js";
 
 // Utility functions for AQI calculations and formatting
 
@@ -24,12 +24,12 @@ export function getAQIDescription(aqi) {
 }
 
 export function getAQIClass(aqi) {
-  if (aqi <= 50) return 'aqi-good';
-  if (aqi <= 100) return 'aqi-moderate';
-  if (aqi <= 150) return 'aqi-unhealthy-sensitive';
-  if (aqi <= 200) return 'aqi-unhealthy';
-  if (aqi <= 300) return 'aqi-very-unhealthy';
-  return 'aqi-hazardous';
+  if (aqi <= 50) return "aqi-good";
+  if (aqi <= 100) return "aqi-moderate";
+  if (aqi <= 150) return "aqi-unhealthy-sensitive";
+  if (aqi <= 200) return "aqi-unhealthy";
+  if (aqi <= 300) return "aqi-very-unhealthy";
+  return "aqi-hazardous";
 }
 
 export function formatBounds(bounds) {
@@ -41,13 +41,13 @@ export function isValidStation(station) {
     station &&
     station.lat &&
     station.lon &&
-    station.aqi !== '-' &&
+    station.aqi !== "-" &&
     !isNaN(parseInt(station.aqi))
   );
 }
 
 export function formatDateTime(dateString) {
-  if (!dateString) return 'Unknown';
+  if (!dateString) return "Unknown";
   return new Date(dateString).toLocaleString();
 }
 
@@ -62,7 +62,7 @@ export function showError(elementId, message) {
   }
 }
 
-export function showLoading(elementId, message = 'Loading...') {
+export function showLoading(elementId, message = "Loading...") {
   const element = document.getElementById(elementId);
   if (element) {
     element.innerHTML = `

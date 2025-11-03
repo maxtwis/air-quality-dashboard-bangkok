@@ -7,11 +7,13 @@ Successfully optimized Google Air Quality API integration to **99% cost reductio
 ## Final Configuration
 
 ### Grid Density: 3×3 (9 points)
+
 - Reduced from 5×5 (25 points)
 - 64% fewer calls per fetch
 - Still provides excellent Bangkok coverage
 
 ### Refresh Strategy: On-Demand Only
+
 - **WAQI**: Auto-refresh every 10 minutes (free tier)
 - **Google**: Manual refresh only (user clicks refresh button)
 - No automatic Google API calls
@@ -20,6 +22,7 @@ Successfully optimized Google Air Quality API integration to **99% cost reductio
 ## Cost Evolution
 
 ### Phase 1: Original Configuration
+
 ```
 Grid: 5×5 = 25 points
 Refresh: 10 minutes (automatic)
@@ -30,6 +33,7 @@ Status: ❌ Far exceeds 10K free tier
 ```
 
 ### Phase 2: First Optimization
+
 ```
 Grid: 3×3 = 9 points
 Refresh: 1 hour (automatic)
@@ -40,6 +44,7 @@ Status: ⚠️ Close to 10K free tier
 ```
 
 ### Phase 3: Final Optimization (Current)
+
 ```
 Grid: 3×3 = 9 points
 Refresh: On-demand only (manual)
@@ -51,10 +56,10 @@ Status: ✅ Well within 10K free tier!
 
 ## Savings Breakdown
 
-| Metric | Original | Final | Savings |
-|--------|----------|-------|---------|
-| Per hour | 150 calls | 0-9 calls | 94-100% |
-| Per day | 3,600 calls | 9-45 calls | 98.8-99.8% |
+| Metric    | Original      | Final           | Savings    |
+| --------- | ------------- | --------------- | ---------- |
+| Per hour  | 150 calls     | 0-9 calls       | 94-100%    |
+| Per day   | 3,600 calls   | 9-45 calls      | 98.8-99.8% |
 | Per month | 108,000 calls | 270-1,350 calls | 98.8-99.8% |
 
 **Average savings: 99% reduction!**
@@ -64,6 +69,7 @@ Status: ✅ Well within 10K free tier!
 ### Changes Made
 
 **1. App Logic** ([js/app.js:282-306](js/app.js#L282-L306))
+
 ```javascript
 setupAutoRefresh() {
   // Google API: No auto-refresh to minimize costs (on-demand only)
@@ -81,6 +87,7 @@ setupAutoRefresh() {
 ```
 
 **2. UI Notice** ([index.html:72-75](index.html#L72-L75))
+
 ```html
 <div class="refresh-notice" id="refresh-notice" style="display: none;">
   <span class="notice-icon">💰</span>
@@ -89,26 +96,30 @@ setupAutoRefresh() {
 ```
 
 **3. Notice Styling** ([css/styles.css:121-143](css/styles.css#L121-L143))
+
 - Yellow gradient background
 - Prominent but friendly warning
 - Shows only when Google source selected
 
 **4. Notice Toggle** ([js/ui.js:43-47](js/ui.js#L43-L47))
+
 ```javascript
 // Show/hide refresh notice for Google source
-const refreshNotice = document.getElementById('refresh-notice');
+const refreshNotice = document.getElementById("refresh-notice");
 if (refreshNotice) {
-  refreshNotice.style.display = dataSource === 'GOOGLE' ? 'flex' : 'none';
+  refreshNotice.style.display = dataSource === "GOOGLE" ? "flex" : "none";
 }
 ```
 
 **5. Grid Reduction** ([js/google-api.js:59-80](js/google-api.js#L59-L80))
+
 - Changed loop from `i < 5` to `i < 3`
 - Results in 3×3 = 9 points
 
 ## User Experience
 
 ### Switching to Google
+
 1. User clicks "Google" toggle
 2. Data loads immediately (first fetch)
 3. Yellow notice appears: "Google: Manual refresh only (cost saving)"
@@ -116,6 +127,7 @@ if (refreshNotice) {
 5. User can manually refresh anytime with 🔄 button
 
 ### Switching to WAQI
+
 1. User clicks "WAQI" toggle
 2. Data loads immediately
 3. Auto-refresh resumes (every 10 minutes)
@@ -123,6 +135,7 @@ if (refreshNotice) {
 5. Seamless automatic updates
 
 ### Manual Refresh
+
 - Works for both data sources
 - Click 🔄 button anytime
 - Fetches fresh data instantly
@@ -147,6 +160,7 @@ Total area: ~600 km² (entire Bangkok metropolitan)
 ```
 
 ### Coverage Quality
+
 ✅ **North**: Don Mueang, Chatuchak, Lat Phrao
 ✅ **Central**: Sukhumvit, Silom, Sathorn
 ✅ **South**: Bang Kapi, Phra Khanong, On Nut
@@ -161,13 +175,13 @@ All major districts covered with good spatial distribution.
 
 **Realistic usage scenarios**:
 
-| Scenario | Fetches/Day | Calls/Day | Calls/Month | % of 10K |
-|----------|-------------|-----------|-------------|----------|
-| Light user | 1 | 9 | 270 | 2.7% |
-| Moderate user | 3 | 27 | 810 | 8.1% |
-| Heavy user | 5 | 45 | 1,350 | 13.5% |
-| Very heavy | 10 | 90 | 2,700 | 27% |
-| Extreme | 20 | 180 | 5,400 | 54% |
+| Scenario      | Fetches/Day | Calls/Day | Calls/Month | % of 10K |
+| ------------- | ----------- | --------- | ----------- | -------- |
+| Light user    | 1           | 9         | 270         | 2.7%     |
+| Moderate user | 3           | 27        | 810         | 8.1%     |
+| Heavy user    | 5           | 45        | 1,350       | 13.5%    |
+| Very heavy    | 10          | 90        | 2,700       | 27%      |
+| Extreme       | 20          | 180       | 5,400       | 54%      |
 
 **Conclusion**: Even extreme usage (20 manual refreshes/day) stays within free tier!
 
@@ -205,6 +219,7 @@ Status: ✅ Within limits
 ### Alerts (Optional)
 
 Set up billing alerts in Google Cloud:
+
 - Alert at 50% (5,000 calls) - Warning
 - Alert at 80% (8,000 calls) - Caution
 - Alert at 95% (9,500 calls) - Critical
@@ -212,6 +227,7 @@ Set up billing alerts in Google Cloud:
 ## Further Optimization (If Needed)
 
 ### Option 1: Reduce to 2×2 Grid
+
 ```
 Points: 4 (corners only)
 Calls per fetch: 4
@@ -220,15 +236,17 @@ Coverage: Basic but functional
 ```
 
 ### Option 2: User Prompt Before Fetch
+
 ```javascript
-if (dataSource === 'GOOGLE' && !confirmed) {
-  if (!confirm('Fetch Google data? (Uses 9 API calls)')) {
+if (dataSource === "GOOGLE" && !confirmed) {
+  if (!confirm("Fetch Google data? (Uses 9 API calls)")) {
     return;
   }
 }
 ```
 
 ### Option 3: Cache Google Data
+
 ```javascript
 const GOOGLE_CACHE_DURATION = 3600000; // 1 hour
 if (cachedData && Date.now() - cachedTime < GOOGLE_CACHE_DURATION) {
@@ -241,6 +259,7 @@ if (cachedData && Date.now() - cachedTime < GOOGLE_CACHE_DURATION) {
 ## Files Modified
 
 ### Code Changes
+
 - ✅ [js/app.js](js/app.js) - Disabled auto-refresh for Google
 - ✅ [js/google-api.js](js/google-api.js) - 3×3 grid
 - ✅ [js/ui.js](js/ui.js) - Notice toggle logic
@@ -248,6 +267,7 @@ if (cachedData && Date.now() - cachedTime < GOOGLE_CACHE_DURATION) {
 - ✅ [css/styles.css](css/styles.css) - Notice styling
 
 ### Documentation Updates
+
 - ✅ [GOOGLE-AIR-QUALITY-SETUP.md](GOOGLE-AIR-QUALITY-SETUP.md)
 - ✅ [GOOGLE-API-SETUP-SUMMARY.md](GOOGLE-API-SETUP-SUMMARY.md)
 - ✅ [README.md](README.md)
@@ -271,6 +291,7 @@ Run `npm run dev` and verify:
 **Final optimization complete!** 🎉
 
 ### Key Achievements
+
 ✅ 99% cost reduction (from 108K to ~300-1,350 calls/month)
 ✅ Well within 10K free tier
 ✅ No automatic Google API calls
@@ -280,6 +301,7 @@ Run `npm run dev` and verify:
 ✅ WAQI unaffected (auto-refresh continues)
 
 ### Cost Status
+
 - **Monthly usage**: ~270-1,350 calls (light to heavy)
 - **Free tier**: 10,000 calls/month
 - **Buffer**: 86.5%-97.3% remaining

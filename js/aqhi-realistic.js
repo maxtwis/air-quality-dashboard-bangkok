@@ -5,20 +5,20 @@ import {
   saveHistoricalData,
   loadHistoricalData,
   initializeDataStore,
-} from './dataStore.js';
+} from "./dataStore.js";
 import {
   convertStationToRawConcentrations,
-  getConcentrationForAQHI
-} from './aqi-to-concentration.js';
+  getConcentrationForAQHI,
+} from "./aqi-to-concentration.js";
 
 // Thai AQHI Parameters (Based on OPD/Morbidity from Thai Health Department)
 const AQHI_PARAMS = {
-  C: 105.19,  // Scaling factor (Maximum MWEC for PM2.5 AQHI/OPD)
+  C: 105.19, // Scaling factor (Maximum MWEC for PM2.5 AQHI/OPD)
   beta: {
-    pm25: 0.0022,  // Beta coefficient for PM2.5 (µg/m³)
-    pm10: 0.0009,  // Beta coefficient for PM10 (µg/m³)
-    o3: 0.0010,    // Beta coefficient for O3 (ppb)
-    no2: 0.0030,   // Beta coefficient for NO2 (ppb)
+    pm25: 0.0022, // Beta coefficient for PM2.5 (µg/m³)
+    pm10: 0.0009, // Beta coefficient for PM10 (µg/m³)
+    o3: 0.001, // Beta coefficient for O3 (ppb)
+    no2: 0.003, // Beta coefficient for NO2 (ppb)
   },
 };
 
@@ -27,32 +27,32 @@ export const AQHI_LEVELS = {
   LOW: {
     min: 0,
     max: 3.9,
-    color: '#10b981',
-    label: 'Low',
-    description: 'Ideal air quality for outdoor activities',
+    color: "#10b981",
+    label: "Low",
+    description: "Ideal air quality for outdoor activities",
   },
   MODERATE: {
     min: 4,
     max: 6.9,
-    color: '#f59e0b',
-    label: 'Moderate',
+    color: "#f59e0b",
+    label: "Moderate",
     description:
-      'No need to modify outdoor activities unless experiencing symptoms',
+      "No need to modify outdoor activities unless experiencing symptoms",
   },
   HIGH: {
     min: 7,
     max: 10.9,
-    color: '#ef4444',
-    label: 'High',
+    color: "#ef4444",
+    label: "High",
     description:
-      'Consider reducing or rescheduling strenuous outdoor activities',
+      "Consider reducing or rescheduling strenuous outdoor activities",
   },
   VERY_HIGH: {
     min: 11,
     max: Infinity,
-    color: '#7f1d1d',
-    label: 'Very High',
-    description: 'Reduce or reschedule strenuous outdoor activities',
+    color: "#7f1d1d",
+    label: "Very High",
+    description: "Reduce or reschedule strenuous outdoor activities",
   },
 };
 
@@ -166,18 +166,18 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
   // - OpenWeatherMap Air Pollution API
   // - BreezoMeter API
 
-  const { apiType = 'openweather', hours = 3 } = options;
+  const { apiType = "openweather", hours = 3 } = options;
 
   try {
     switch (apiType) {
-      case 'openweather':
+      case "openweather":
         // return await fetchOpenWeatherHistorical(location, hours);
-        console.log('OpenWeatherMap API integration not implemented yet');
+        console.log("OpenWeatherMap API integration not implemented yet");
         return null;
 
-      case 'google':
+      case "google":
         // return await fetchGoogleAirQuality(location, hours);
-        console.log('Google Air Quality API integration not implemented yet');
+        console.log("Google Air Quality API integration not implemented yet");
         return null;
 
       default:
@@ -199,12 +199,18 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
  * @returns {number} AQHI value (0-10+)
  */
 export function calculateRealisticAQHI(pm25, no2, o3, pm10 = null) {
-  console.log(`🧮 Calculating AQHI with RAW concentrations: PM2.5=${pm25}μg/m³, PM10=${pm10}μg/m³, NO2=${no2}ppb, O3=${o3}ppb`);
+  console.log(
+    `🧮 Calculating AQHI with RAW concentrations: PM2.5=${pm25}μg/m³, PM10=${pm10}μg/m³, NO2=${no2}ppb, O3=${o3}ppb`,
+  );
 
   // Calculate Percentage Excess Risk (%ER) for each pollutant
   // Formula: %ER_i = 100 * (exp(beta_i * x_i) - 1)
-  const perErPM25 = pm25 ? 100 * (Math.exp(AQHI_PARAMS.beta.pm25 * pm25) - 1) : 0;
-  const perErPM10 = pm10 ? 100 * (Math.exp(AQHI_PARAMS.beta.pm10 * pm10) - 1) : 0;
+  const perErPM25 = pm25
+    ? 100 * (Math.exp(AQHI_PARAMS.beta.pm25 * pm25) - 1)
+    : 0;
+  const perErPM10 = pm10
+    ? 100 * (Math.exp(AQHI_PARAMS.beta.pm10 * pm10) - 1)
+    : 0;
   const perErO3 = o3 ? 100 * (Math.exp(AQHI_PARAMS.beta.o3 * o3) - 1) : 0;
   const perErNO2 = no2 ? 100 * (Math.exp(AQHI_PARAMS.beta.no2 * no2) - 1) : 0;
 
@@ -214,7 +220,9 @@ export function calculateRealisticAQHI(pm25, no2, o3, pm10 = null) {
   // Calculate AQHI: AQHI = (10 / C) * Total %ER
   const aqhi = (10 / AQHI_PARAMS.C) * totalPerER;
 
-  console.log(`📊 AQHI %ER: PM2.5=${perErPM25.toFixed(4)}%, PM10=${perErPM10.toFixed(4)}%, NO2=${perErNO2.toFixed(4)}%, O3=${perErO3.toFixed(4)}%, Total=${totalPerER.toFixed(4)}% → AQHI=${Math.round(aqhi)}`);
+  console.log(
+    `📊 AQHI %ER: PM2.5=${perErPM25.toFixed(4)}%, PM10=${perErPM10.toFixed(4)}%, NO2=${perErNO2.toFixed(4)}%, O3=${perErO3.toFixed(4)}%, Total=${totalPerER.toFixed(4)}% → AQHI=${Math.round(aqhi)}`,
+  );
 
   return Math.max(1, Math.round(aqhi));
 }
@@ -228,7 +236,7 @@ export function getAQHILevel(aqhi) {
       return { ...level, key };
     }
   }
-  return { ...AQHI_LEVELS.VERY_HIGH, key: 'VERY_HIGH' };
+  return { ...AQHI_LEVELS.VERY_HIGH, key: "VERY_HIGH" };
 }
 
 /**
@@ -236,20 +244,24 @@ export function getAQHILevel(aqhi) {
  * FIXED: Now properly converts AQI values to raw concentrations before calculation
  */
 export function calculateStationAQHIRealistic(station) {
-  const stationId = station.uid || station.station?.name || 'unknown';
+  const stationId = station.uid || station.station?.name || "unknown";
 
   // CRITICAL FIX: Convert AQI values to concentrations in AQHI-required units
-  console.log(`🔄 Converting station ${stationId} AQI values to AQHI-required units...`);
+  console.log(
+    `🔄 Converting station ${stationId} AQI values to AQHI-required units...`,
+  );
   const stationWithConcentrations = convertStationToRawConcentrations(station);
 
   // Extract concentrations in AQHI-required units: PM2.5 in μg/m³, O3 and NO2 in ppb
   const currentConcentrations = {
-    pm25: getConcentrationForAQHI(stationWithConcentrations, 'pm25') || 0,
-    no2: getConcentrationForAQHI(stationWithConcentrations, 'no2') || 0,
-    o3: getConcentrationForAQHI(stationWithConcentrations, 'o3') || 0,
+    pm25: getConcentrationForAQHI(stationWithConcentrations, "pm25") || 0,
+    no2: getConcentrationForAQHI(stationWithConcentrations, "no2") || 0,
+    o3: getConcentrationForAQHI(stationWithConcentrations, "o3") || 0,
   };
 
-  console.log(`📊 AQHI-ready concentrations for ${stationId}: PM2.5=${currentConcentrations.pm25}μg/m³, NO2=${currentConcentrations.no2}ppb, O3=${currentConcentrations.o3}ppb`);
+  console.log(
+    `📊 AQHI-ready concentrations for ${stationId}: PM2.5=${currentConcentrations.pm25}μg/m³, NO2=${currentConcentrations.no2}ppb, O3=${currentConcentrations.o3}ppb`,
+  );
 
   // Store current reading for building our own moving average (now with raw concentrations)
   const dataPoints = collectCurrentReading(stationId, currentConcentrations);
@@ -258,19 +270,19 @@ export function calculateStationAQHIRealistic(station) {
   const movingAverageData = calculateClientSideMovingAverage(stationId);
 
   let pollutantsForCalculation = currentConcentrations;
-  let calculationMethod = 'current';
-  let dataQuality = 'limited';
+  let calculationMethod = "current";
+  let dataQuality = "limited";
 
   if (movingAverageData && movingAverageData.timeSpanHours >= 1) {
     // Use our collected moving average if we have at least 1 hour of data
     pollutantsForCalculation = movingAverageData;
-    calculationMethod = 'client-average';
+    calculationMethod = "client-average";
     dataQuality = movingAverageData.quality;
   } else if (dataPoints === 1) {
     // For first reading, try estimation
     pollutantsForCalculation = estimateMovingAverage(currentPollutants);
-    calculationMethod = 'estimated';
-    dataQuality = 'estimated';
+    calculationMethod = "estimated";
+    dataQuality = "estimated";
   }
 
   const aqhi = calculateRealisticAQHI(
@@ -301,10 +313,10 @@ export function calculateStationAQHIRealistic(station) {
  * Get data quality assessment
  */
 function getDataQuality(timeSpanHours, dataPoints) {
-  if (timeSpanHours >= 3 && dataPoints >= 15) return 'excellent';
-  if (timeSpanHours >= 2 && dataPoints >= 10) return 'good';
-  if (timeSpanHours >= 1 && dataPoints >= 5) return 'fair';
-  return 'limited';
+  if (timeSpanHours >= 3 && dataPoints >= 15) return "excellent";
+  if (timeSpanHours >= 2 && dataPoints >= 10) return "good";
+  if (timeSpanHours >= 1 && dataPoints >= 5) return "fair";
+  return "limited";
 }
 
 /**
@@ -312,20 +324,20 @@ function getDataQuality(timeSpanHours, dataPoints) {
  */
 function getCalculationNote(method, quality, dataPoints) {
   switch (method) {
-    case 'current':
-      return 'Using current reading (collecting data for moving average)';
-    case 'estimated':
-      return 'Using estimated 3-hour average based on current conditions';
-    case 'client-average':
-      if (quality === 'excellent')
+    case "current":
+      return "Using current reading (collecting data for moving average)";
+    case "estimated":
+      return "Using estimated 3-hour average based on current conditions";
+    case "client-average":
+      if (quality === "excellent")
         return `Full 3-hour moving average (${dataPoints} readings)`;
-      if (quality === 'good')
+      if (quality === "good")
         return `2+ hour moving average (${dataPoints} readings)`;
-      if (quality === 'fair')
+      if (quality === "fair")
         return `1+ hour moving average (${dataPoints} readings)`;
       return `Partial average (${dataPoints} readings)`;
     default:
-      return 'Calculation method unknown';
+      return "Calculation method unknown";
   }
 }
 
@@ -334,7 +346,7 @@ function getCalculationNote(method, quality, dataPoints) {
  */
 export function formatAQHI(aqhi) {
   if (aqhi === null || aqhi === undefined || isNaN(aqhi)) {
-    return 'N/A';
+    return "N/A";
   }
   const rounded = Math.round(aqhi);
   if (rounded > 10) return `${rounded}+`;
@@ -345,10 +357,10 @@ export function formatAQHI(aqhi) {
  * Initialize the realistic AQHI system
  */
 export function initializeRealisticAQHI() {
-  console.log('🌍 Initializing Realistic AQHI System');
-  console.log('📊 Building 3-hour moving averages from 10-minute intervals');
+  console.log("🌍 Initializing Realistic AQHI System");
+  console.log("📊 Building 3-hour moving averages from 10-minute intervals");
   console.log(
-    '⚠️ Note: True 3-hour averages will be available after 3 hours of operation',
+    "⚠️ Note: True 3-hour averages will be available after 3 hours of operation",
   );
 
   // Clean old data on startup
@@ -393,7 +405,7 @@ export function calculateAQHIStatistics(stations) {
   let stationsWithData = 0;
 
   stations.forEach((station) => {
-    if (station.aqhi && typeof station.aqhi.value === 'number') {
+    if (station.aqhi && typeof station.aqhi.value === "number") {
       aqhiValues.push(station.aqhi.value);
       categoryCounts[station.aqhi.level.key]++;
       stationsWithData++;

@@ -1,7 +1,7 @@
 // Google Air Quality Data Storage to Supabase
 // Stores Google API data for 3-hour AQHI calculations
 
-import { supabase } from '../lib/supabase.js';
+import { supabase } from "../lib/supabase.js";
 
 /**
  * Store Google Air Quality data in Supabase
@@ -10,12 +10,14 @@ import { supabase } from '../lib/supabase.js';
  */
 export async function storeGoogleDataInSupabase(googleStations) {
   if (!supabase) {
-    console.warn('⚠️ Supabase not configured, skipping Google data storage');
-    return { stored: false, reason: 'Supabase not configured' };
+    console.warn("⚠️ Supabase not configured, skipping Google data storage");
+    return { stored: false, reason: "Supabase not configured" };
   }
 
   try {
-    console.log(`🔄 Storing ${googleStations.length} Google stations in Supabase...`);
+    console.log(
+      `🔄 Storing ${googleStations.length} Google stations in Supabase...`,
+    );
 
     const timestamp = new Date().toISOString();
     const stationsToStore = [];
@@ -25,12 +27,12 @@ export async function storeGoogleDataInSupabase(googleStations) {
       // Extract station metadata
       const station = {
         station_uid: googleStation.uid,
-        name: googleStation.station?.name || 'Unknown',
+        name: googleStation.station?.name || "Unknown",
         latitude: googleStation.lat,
         longitude: googleStation.lon,
-        city: 'Bangkok',
-        country: 'Thailand',
-        data_source: 'GOOGLE',
+        city: "Bangkok",
+        country: "Thailand",
+        data_source: "GOOGLE",
         is_active: true,
       };
 
@@ -49,7 +51,7 @@ export async function storeGoogleDataInSupabase(googleStations) {
         station_uid: station.station_uid,
         timestamp: timestamp,
         aqi: googleStation.aqi || null,
-        data_source: 'GOOGLE',
+        data_source: "GOOGLE",
 
         // Pollutant concentrations (already in correct units from Google)
         pm25: concentrations.pm25,
@@ -70,14 +72,14 @@ export async function storeGoogleDataInSupabase(googleStations) {
     let stationsResult = null;
     if (stationsToStore.length > 0) {
       const { data, error } = await supabase
-        .from('stations')
+        .from("stations")
         .upsert(stationsToStore, {
-          onConflict: 'station_uid',
+          onConflict: "station_uid",
           ignoreDuplicates: false,
         });
 
       if (error) {
-        console.error('❌ Error storing Google stations:', error);
+        console.error("❌ Error storing Google stations:", error);
         throw error;
       }
 
@@ -89,11 +91,11 @@ export async function storeGoogleDataInSupabase(googleStations) {
     let readingsResult = null;
     if (readings.length > 0) {
       const { data, error } = await supabase
-        .from('air_quality_readings')
+        .from("air_quality_readings")
         .insert(readings);
 
       if (error) {
-        console.error('❌ Error storing Google readings:', error);
+        console.error("❌ Error storing Google readings:", error);
         throw error;
       }
 
@@ -108,11 +110,10 @@ export async function storeGoogleDataInSupabase(googleStations) {
       readings: readingsResult?.stored || 0,
     };
 
-    console.log('✅ Google data storage complete:', result);
+    console.log("✅ Google data storage complete:", result);
     return result;
-
   } catch (error) {
-    console.error('❌ Error storing Google data in Supabase:', error);
+    console.error("❌ Error storing Google data in Supabase:", error);
     return {
       stored: false,
       error: error.message,
@@ -138,18 +139,18 @@ function extractGoogleConcentrations(googleStation) {
 
   // Google data is in iaqi object (formatted like WAQI)
   if (!googleStation.iaqi) {
-    console.warn('⚠️ No iaqi data in Google station:', googleStation.uid);
+    console.warn("⚠️ No iaqi data in Google station:", googleStation.uid);
     return concentrations;
   }
 
   // Extract values from iaqi
   for (const [pollutant, key] of [
-    ['pm25', 'pm25'],
-    ['pm10', 'pm10'],
-    ['o3', 'o3'],
-    ['no2', 'no2'],
-    ['so2', 'so2'],
-    ['co', 'co'],
+    ["pm25", "pm25"],
+    ["pm10", "pm10"],
+    ["o3", "o3"],
+    ["no2", "no2"],
+    ["so2", "so2"],
+    ["co", "co"],
   ]) {
     if (googleStation.iaqi[key]?.v !== undefined) {
       concentrations[pollutant] = parseFloat(googleStation.iaqi[key].v);
@@ -166,16 +167,16 @@ function extractGoogleConcentrations(googleStation) {
  */
 export async function getGoogle3HourAverages(stationUids) {
   if (!supabase) {
-    console.warn('⚠️ Supabase not configured');
+    console.warn("⚠️ Supabase not configured");
     return {};
   }
 
   try {
     const { data, error } = await supabase
-      .from('current_3h_averages_by_source')
-      .select('*')
-      .eq('data_source', 'GOOGLE')
-      .in('station_uid', stationUids);
+      .from("current_3h_averages_by_source")
+      .select("*")
+      .eq("data_source", "GOOGLE")
+      .in("station_uid", stationUids);
 
     if (error) throw error;
 
@@ -196,11 +197,12 @@ export async function getGoogle3HourAverages(stationUids) {
       };
     }
 
-    console.log(`✅ Retrieved 3-hour averages for ${Object.keys(averagesMap).length} Google stations`);
+    console.log(
+      `✅ Retrieved 3-hour averages for ${Object.keys(averagesMap).length} Google stations`,
+    );
     return averagesMap;
-
   } catch (error) {
-    console.error('❌ Error getting Google 3-hour averages:', error);
+    console.error("❌ Error getting Google 3-hour averages:", error);
     return {};
   }
 }
@@ -211,7 +213,7 @@ export async function getGoogle3HourAverages(stationUids) {
  */
 export async function cleanupOldGoogleData() {
   if (!supabase) {
-    return { cleaned: false, reason: 'Supabase not configured' };
+    return { cleaned: false, reason: "Supabase not configured" };
   }
 
   try {
@@ -219,18 +221,17 @@ export async function cleanupOldGoogleData() {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const { data, error } = await supabase
-      .from('air_quality_readings')
+      .from("air_quality_readings")
       .delete()
-      .eq('data_source', 'GOOGLE')
-      .lt('timestamp', sevenDaysAgo.toISOString());
+      .eq("data_source", "GOOGLE")
+      .lt("timestamp", sevenDaysAgo.toISOString());
 
     if (error) throw error;
 
     console.log(`✅ Cleaned up old Google data (older than 7 days)`);
     return { cleaned: true, deletedCount: data?.length || 0 };
-
   } catch (error) {
-    console.error('❌ Error cleaning up old Google data:', error);
+    console.error("❌ Error cleaning up old Google data:", error);
     return { cleaned: false, error: error.message };
   }
 }

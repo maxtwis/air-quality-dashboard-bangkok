@@ -88,18 +88,23 @@ Both paths now use the **same formula** for Thai AQHI calculation.
 1. **Trigger**: Vercel cron job calls `api/collect-data.js`
 
 2. **Fetch from WAQI**:
+
    ```javascript
    // api/collect-data.js:59
    const response = await fetch(
-     `https://api.waqi.info/v2/map/bounds/?latlng=13.5,100.3,14.0,100.9&token=${apiToken}`
+     `https://api.waqi.info/v2/map/bounds/?latlng=13.5,100.3,14.0,100.9&token=${apiToken}`,
    );
    ```
+
    Returns: AQI values for all stations in Bangkok
 
 3. **Convert to Thai AQHI Units**:
+
    ```javascript
    // api/collect-data.js:192
-   const { convertStationDataForThaiAQHI } = await import('../lib/thai-aqhi-converter.js');
+   const { convertStationDataForThaiAQHI } = await import(
+     "../lib/thai-aqhi-converter.js"
+   );
    const convertedConcentrations = convertStationDataForThaiAQHI(stationData);
    ```
 
@@ -109,14 +114,15 @@ Both paths now use the **same formula** for Thai AQHI calculation.
    - NO2: `AQI → ppb` (EPA formula, already in correct unit)
 
 4. **Store in Supabase**:
+
    ```javascript
    // api/collect-data.js:239-244
    const reading = {
      station_uid: parseInt(station.station_uid),
      timestamp: timestamp,
-     pm25: convertedConcentrations.pm25 || null,  // μg/m³
-     o3: convertedConcentrations.o3 || null,      // ppb
-     no2: convertedConcentrations.no2 || null,    // ppb
+     pm25: convertedConcentrations.pm25 || null, // μg/m³
+     o3: convertedConcentrations.o3 || null, // ppb
+     no2: convertedConcentrations.no2 || null, // ppb
    };
    ```
 
@@ -136,6 +142,7 @@ Both paths now use the **same formula** for Thai AQHI calculation.
    ```
 
 **Result**: Data stored in Supabase is **already in Thai AQHI-required units**:
+
 - ✅ PM2.5 in μg/m³
 - ✅ O3 in ppb
 - ✅ NO2 in ppb
@@ -149,15 +156,18 @@ Both paths now use the **same formula** for Thai AQHI calculation.
 ### Step-by-Step Process
 
 1. **Fetch from WAQI** (browser):
+
    ```javascript
    // js/api.js
    const response = await fetch(
-     `https://api.waqi.info/v2/map/bounds/?latlng=13.5,100.3,14.0,100.9&token=${token}`
+     `https://api.waqi.info/v2/map/bounds/?latlng=13.5,100.3,14.0,100.9&token=${token}`,
    );
    ```
+
    Returns: AQI values for all stations
 
 2. **Convert AQI to μg/m³** (for all pollutants):
+
    ```javascript
    // js/aqi-to-concentration.js:173
    export function convertStationToRawConcentrations(station) {
@@ -172,23 +182,24 @@ Both paths now use the **same formula** for Thai AQHI calculation.
    - NO2: μg/m³ (NOT ppb yet!)
 
 3. **Convert to AQHI-Required Units**:
+
    ```javascript
    // js/aqi-to-concentration.js:254
    export function getConcentrationForAQHI(stationData, pollutant) {
      // PM2.5: Keep as μg/m³ ✅
-     if (pollutant === 'pm25') {
+     if (pollutant === "pm25") {
        return concInUgM3;
      }
 
      // O3: Convert μg/m³ → ppb
-     if (pollutant === 'o3') {
+     if (pollutant === "o3") {
        const ppm = concInUgM3 / 1962;
        const ppb = ppm * 1000;
        return ppb;
      }
 
      // NO2: Convert μg/m³ → ppb
-     if (pollutant === 'no2') {
+     if (pollutant === "no2") {
        const ppb = concInUgM3 / 1.88;
        return ppb;
      }
@@ -196,6 +207,7 @@ Both paths now use the **same formula** for Thai AQHI calculation.
    ```
 
 4. **Calculate AQHI**:
+
    ```javascript
    // js/aqhi-supabase.js:49
    export function calculateThaiAQHI(pm25, no2, o3) {
@@ -204,7 +216,7 @@ Both paths now use the **same formula** for Thai AQHI calculation.
      // o3 is in ppb
 
      const perErPM25 = pm25 ? 100 * (Math.exp(0.0012 * pm25) - 1) : 0;
-     const perErO3 = o3 ? 100 * (Math.exp(0.0010 * o3) - 1) : 0;
+     const perErO3 = o3 ? 100 * (Math.exp(0.001 * o3) - 1) : 0;
      const perErNO2 = no2 ? 100 * (Math.exp(0.0052 * no2) - 1) : 0;
 
      const totalPerER = perErPM25 + perErO3 + perErNO2;
@@ -237,11 +249,11 @@ Coefficients (β):
 
 ### Required Units
 
-| Pollutant | Required Unit | Why |
-|-----------|---------------|-----|
-| PM2.5 | μg/m³ | Beta coefficient calibrated for μg/m³ |
-| O3 | ppb | Beta coefficient calibrated for ppb |
-| NO2 | ppb | Beta coefficient calibrated for ppb |
+| Pollutant | Required Unit | Why                                   |
+| --------- | ------------- | ------------------------------------- |
+| PM2.5     | μg/m³         | Beta coefficient calibrated for μg/m³ |
+| O3        | ppb           | Beta coefficient calibrated for ppb   |
+| NO2       | ppb           | Beta coefficient calibrated for ppb   |
 
 **Critical**: Using wrong units will produce incorrect AQHI values!
 
@@ -250,6 +262,7 @@ Coefficients (β):
 ## Example Calculation
 
 ### Input (from WAQI):
+
 - PM2.5 AQI = 98
 - NO2 AQI = 42
 - O3 AQI = 35
@@ -257,16 +270,19 @@ Coefficients (β):
 ### Step 1: Convert AQI to concentrations
 
 **PM2.5**:
+
 ```
 AQI 98 → 34.8 μg/m³ (using EPA breakpoints)
 ```
 
 **NO2**:
+
 ```
 AQI 42 → 44.5 ppb (using EPA breakpoints)
 ```
 
 **O3**:
+
 ```
 AQI 35 → 0.0378 ppm → 37.8 ppb (using EPA breakpoints)
 ```
@@ -295,24 +311,24 @@ AQHI = (10 / 105.19) × 34.19 = 3.25 ≈ 3
 ### EPA Breakpoints to Concentrations
 
 | Pollutant | EPA Native Unit | Conversion to Thai AQHI Unit |
-|-----------|----------------|------------------------------|
-| PM2.5 | μg/m³ | No conversion needed ✓ |
-| PM10 | μg/m³ | No conversion needed ✓ |
-| O3 | ppm | Multiply by 1000 → ppb |
-| NO2 | ppb | No conversion needed ✓ |
-| SO2 | ppb | No conversion needed ✓ |
-| CO | ppm | Multiply by 1000 → ppb |
+| --------- | --------------- | ---------------------------- |
+| PM2.5     | μg/m³           | No conversion needed ✓       |
+| PM10      | μg/m³           | No conversion needed ✓       |
+| O3        | ppm             | Multiply by 1000 → ppb       |
+| NO2       | ppb             | No conversion needed ✓       |
+| SO2       | ppb             | No conversion needed ✓       |
+| CO        | ppm             | Multiply by 1000 → ppb       |
 
 ### Molecular Weight Conversions
 
 At 25°C, 1 atm:
 
-| Gas | Conversion Factor |
-|-----|------------------|
-| O3 | 1 ppm = 1962 μg/m³ |
+| Gas | Conversion Factor  |
+| --- | ------------------ |
+| O3  | 1 ppm = 1962 μg/m³ |
 | NO2 | 1 ppb = 1.88 μg/m³ |
 | SO2 | 1 ppb = 2.62 μg/m³ |
-| CO | 1 ppm = 1.15 mg/m³ |
+| CO  | 1 ppm = 1.15 mg/m³ |
 
 ---
 
@@ -345,15 +361,18 @@ HAVING COUNT(*) >= 1;
 ## Key Files
 
 ### Server-Side
+
 - **api/collect-data.js** - Cron job entry point
 - **lib/thai-aqhi-converter.js** - AQI → Thai AQHI units conversion
 
 ### Client-Side
+
 - **js/aqi-to-concentration.js** - AQI → μg/m³, then μg/m³ → ppb for O3/NO2
 - **js/aqhi-supabase.js** - Main AQHI calculation with Supabase
 - **js/aqhi-realistic.js** - Fallback AQHI calculation with localStorage
 
 ### Database
+
 - **supabase-schema.sql** - Database schema with views
 - **Table**: `waqi_data` - Stores pollutant concentrations in Thai AQHI units
 - **View**: `combined_3h_averages` - Pre-calculated 3-hour moving averages
@@ -365,18 +384,20 @@ HAVING COUNT(*) >= 1;
 ### Both Paths Use Same Formula ✅
 
 **Server-side** (lib/thai-aqhi-converter.js:162-170):
+
 ```javascript
 const perErPM25 = pm25 ? 100 * (Math.exp(0.0012 * pm25) - 1) : 0;
-const perErO3 = o3 ? 100 * (Math.exp(0.0010 * o3) - 1) : 0;
+const perErO3 = o3 ? 100 * (Math.exp(0.001 * o3) - 1) : 0;
 const perErNO2 = no2 ? 100 * (Math.exp(0.0052 * no2) - 1) : 0;
 const totalPerER = perErPM25 + perErO3 + perErNO2;
 const aqhi = (10 / 105.19) * totalPerER;
 ```
 
 **Client-side** (js/aqhi-supabase.js:54-62):
+
 ```javascript
 const perErPM25 = pm25 ? 100 * (Math.exp(0.0012 * pm25) - 1) : 0;
-const perErO3 = o3 ? 100 * (Math.exp(0.0010 * o3) - 1) : 0;
+const perErO3 = o3 ? 100 * (Math.exp(0.001 * o3) - 1) : 0;
 const perErNO2 = no2 ? 100 * (Math.exp(0.0052 * no2) - 1) : 0;
 const totalPerER = perErPM25 + perErO3 + perErNO2;
 const aqhi = (10 / 105.19) * totalPerER;
@@ -387,11 +408,13 @@ const aqhi = (10 / 105.19) * totalPerER;
 ### Both Paths Use Correct Units ✅
 
 **Server-side storage**:
+
 - PM2.5: μg/m³ ✅
 - O3: ppb ✅
 - NO2: ppb ✅
 
 **Client-side calculation**:
+
 - PM2.5: μg/m³ (via `getConcentrationForAQHI`) ✅
 - O3: ppb (via `getConcentrationForAQHI`) ✅
 - NO2: ppb (via `getConcentrationForAQHI`) ✅

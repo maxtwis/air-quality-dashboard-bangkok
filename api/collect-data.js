@@ -189,8 +189,12 @@ async function storeHistoricalDataSupabase(stations) {
   }
 
   // CRITICAL FIX: Import Thai AQHI converter for server-side use (ES modules)
-  const { convertStationDataForThaiAQHI } = await import('../lib/thai-aqhi-converter.js');
-  console.log('🇹🇭 [BASIC] Converting AQI values to Thai AQHI units for Supabase storage...');
+  const { convertStationDataForThaiAQHI } = await import(
+    "../lib/thai-aqhi-converter.js"
+  );
+  console.log(
+    "🇹🇭 [BASIC] Converting AQI values to Thai AQHI units for Supabase storage...",
+  );
 
   // Process each station
   for (const stationData of stations) {
@@ -225,7 +229,10 @@ async function storeHistoricalDataSupabase(stations) {
       // Station location info (required by waqi_data schema)
       lat: stationData.lat,
       lon: stationData.lon,
-      station_name: stationData.station_name || stationData.station?.name || "Unknown Station",
+      station_name:
+        stationData.station_name ||
+        stationData.station?.name ||
+        "Unknown Station",
       city: "Bangkok",
 
       aqi:

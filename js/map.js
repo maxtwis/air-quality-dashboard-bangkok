@@ -1,4 +1,4 @@
-import { CONFIG } from './config.js';
+import { CONFIG } from "./config.js";
 
 // Map initialization and management
 
@@ -6,14 +6,14 @@ let map = null;
 
 export function initializeMap() {
   // Initialize Leaflet map
-  map = L.map('map').setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
+  map = L.map("map").setView(CONFIG.MAP_CENTER, CONFIG.MAP_ZOOM);
 
   // Add tile layer
   L.tileLayer(CONFIG.TILE_LAYER.url, {
     attribution: CONFIG.TILE_LAYER.attribution,
   }).addTo(map);
 
-  console.log('Map initialized');
+  console.log("Map initialized");
   return map;
 }
 
@@ -45,11 +45,11 @@ export function fitMapToBounds(bounds) {
 export function addMapClickHandler(callback) {
   if (!map) return;
 
-  map.on('click', callback);
+  map.on("click", callback);
 }
 
 export function removeMapClickHandler(callback) {
   if (!map) return;
 
-  map.off('click', callback);
+  map.off("click", callback);
 }

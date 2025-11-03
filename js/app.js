@@ -1,15 +1,15 @@
-import { CONFIG } from './config.js';
+import { CONFIG } from "./config.js";
+import { fetchAirQualityData, enhanceStationsWithAQHI } from "./api.js";
+import { fetchGoogleAirQualityData } from "./google-api.js";
+import { enhanceGoogleStationsWithAQHI } from "./aqhi-google.js";
 import {
-  fetchAirQualityData,
-  enhanceStationsWithAQHI,
-} from './api.js';
-import { fetchGoogleAirQualityData } from './google-api.js';
-import { enhanceGoogleStationsWithAQHI } from './aqhi-google.js';
-import { enhanceWAQIWithGooglePollutants, getHybridDataStatistics } from './hybrid-data.js';
-import { initializeMap, clearMarkers } from './map.js';
-import { addMarkersToMap } from './markers.js';
-import { updateStatisticsPanel } from './statistics.js';
-import { uiManager } from './ui.js';
+  enhanceWAQIWithGooglePollutants,
+  getHybridDataStatistics,
+} from "./hybrid-data.js";
+import { initializeMap, clearMarkers } from "./map.js";
+import { addMarkersToMap } from "./markers.js";
+import { updateStatisticsPanel } from "./statistics.js";
+import { uiManager } from "./ui.js";
 
 // Modern Air Quality Dashboard Application
 
@@ -23,16 +23,16 @@ class ModernAirQualityDashboard {
     this.isInitialized = false;
     this.aqhiCalculated = false;
     this.isCalculatingAQHI = false;
-    this.currentDataSource = 'WAQI'; // 'WAQI', 'GOOGLE', or 'HYBRID'
+    this.currentDataSource = "WAQI"; // 'WAQI', 'GOOGLE', or 'HYBRID'
     this.useHybridMode = true; // Default to hybrid mode for best data quality
   }
 
   async initialize() {
     try {
-      console.log('🚀 Initializing Modern Air Quality Dashboard...');
+      console.log("🚀 Initializing Modern Air Quality Dashboard...");
 
       // Show loading state
-      uiManager.showLoading('stats-content', 'Initializing dashboard...');
+      uiManager.showLoading("stats-content", "Initializing dashboard...");
 
       // Initialize map
       this.map = initializeMap();
@@ -46,11 +46,11 @@ class ModernAirQualityDashboard {
       // Mark as initialized
       this.isInitialized = true;
 
-      console.log('✅ Modern dashboard initialized successfully');
+      console.log("✅ Modern dashboard initialized successfully");
     } catch (error) {
-      console.error('❌ Failed to initialize dashboard:', error);
+      console.error("❌ Failed to initialize dashboard:", error);
       uiManager.showError(
-        'stats-content',
+        "stats-content",
         `Failed to initialize: ${error.message}`,
       );
     }
@@ -58,18 +58,20 @@ class ModernAirQualityDashboard {
 
   async loadData() {
     try {
-      uiManager.showLoading('stats-content', 'Loading air quality data...');
+      uiManager.showLoading("stats-content", "Loading air quality data...");
 
       // All data comes from WAQI API
       // Google supplements are already added server-side in api/collect-data.js
       // Client just reads from the API proxy (which reads fresh WAQI data)
       const stations = await fetchAirQualityData(false);
-      console.log(`📊 Loaded ${stations.length} stations (includes Google O3/NO2 supplements from server)`);
+      console.log(
+        `📊 Loaded ${stations.length} stations (includes Google O3/NO2 supplements from server)`,
+      );
 
       if (stations.length === 0) {
         uiManager.showError(
-          'stats-content',
-          'No air quality stations found in Bangkok area',
+          "stats-content",
+          "No air quality stations found in Bangkok area",
         );
         return;
       }
@@ -79,9 +81,9 @@ class ModernAirQualityDashboard {
       this.aqhiCalculated = false;
       this.updateDisplay();
     } catch (error) {
-      console.error('❌ Error loading data:', error);
+      console.error("❌ Error loading data:", error);
       uiManager.showError(
-        'stats-content',
+        "stats-content",
         `Error loading data: ${error.message}`,
       );
       throw error;
@@ -112,13 +114,13 @@ class ModernAirQualityDashboard {
         `✨ Display updated with ${currentStations.length} stations (${uiManager.currentIndicator} mode)`,
       );
     } catch (error) {
-      console.error('❌ Error updating display:', error);
-      uiManager.showError('stats-content', 'Error updating display');
+      console.error("❌ Error updating display:", error);
+      uiManager.showError("stats-content", "Error updating display");
     }
   }
 
   getCurrentStations() {
-    if (uiManager.currentIndicator === 'AQHI' && this.aqhiCalculated) {
+    if (uiManager.currentIndicator === "AQHI" && this.aqhiCalculated) {
       return this.stationsWithAQHI;
     } else {
       return this.stations;
@@ -127,12 +129,12 @@ class ModernAirQualityDashboard {
 
   async refreshData() {
     if (!this.isInitialized) {
-      console.log('⏳ Dashboard not initialized, skipping refresh');
+      console.log("⏳ Dashboard not initialized, skipping refresh");
       return;
     }
 
     try {
-      console.log('🔄 Refreshing data...');
+      console.log("🔄 Refreshing data...");
 
       // Always refresh basic AQI data
       const updatedStations = await fetchAirQualityData(false);
@@ -149,54 +151,59 @@ class ModernAirQualityDashboard {
 
       this.updateDisplay();
 
-      console.log('✅ Data refreshed successfully');
+      console.log("✅ Data refreshed successfully");
     } catch (error) {
-      console.error('❌ Error during data refresh:', error);
+      console.error("❌ Error during data refresh:", error);
       // Don't show error UI for auto-refresh failures to avoid disrupting user experience
     }
   }
 
   async calculateAQHI() {
     if (this.isCalculatingAQHI) {
-      console.log('⏳ AQHI calculation already in progress');
+      console.log("⏳ AQHI calculation already in progress");
       return;
     }
 
     try {
       this.isCalculatingAQHI = true;
       uiManager.showLoading(
-        'stats-content',
-        'Calculating AQHI using 3-hour averages...',
+        "stats-content",
+        "Calculating AQHI using 3-hour averages...",
       );
 
-      console.log('🔄 Calculating AQHI for existing stations...');
+      console.log("🔄 Calculating AQHI for existing stations...");
 
       // Use appropriate AQHI calculation based on data source
-      if (this.currentDataSource === 'GOOGLE') {
-        this.stationsWithAQHI = await enhanceGoogleStationsWithAQHI(this.stations);
-        console.log(`✅ Google AQHI calculated for ${this.stationsWithAQHI.length} stations`);
+      if (this.currentDataSource === "GOOGLE") {
+        this.stationsWithAQHI = await enhanceGoogleStationsWithAQHI(
+          this.stations,
+        );
+        console.log(
+          `✅ Google AQHI calculated for ${this.stationsWithAQHI.length} stations`,
+        );
       } else {
         this.stationsWithAQHI = await enhanceStationsWithAQHI(this.stations);
-        console.log(`✅ WAQI AQHI calculated for ${this.stationsWithAQHI.length} stations`);
+        console.log(
+          `✅ WAQI AQHI calculated for ${this.stationsWithAQHI.length} stations`,
+        );
       }
 
       this.aqhiCalculated = true;
 
       // Update display if currently showing AQHI
-      if (uiManager.currentIndicator === 'AQHI') {
+      if (uiManager.currentIndicator === "AQHI") {
         this.updateDisplay();
       }
     } catch (error) {
-      console.error('❌ Error calculating AQHI:', error);
+      console.error("❌ Error calculating AQHI:", error);
       uiManager.showError(
-        'stats-content',
+        "stats-content",
         `Error calculating AQHI: ${error.message}`,
       );
     } finally {
       this.isCalculatingAQHI = false;
     }
   }
-
 
   animateDataChanges(oldStations, newStations) {
     // Compare old vs new data and animate significant changes
@@ -213,7 +220,7 @@ class ModernAirQualityDashboard {
 
   calculateAverage(stations) {
     const valid = stations.filter(
-      (s) => s.aqi !== '-' && !isNaN(parseInt(s.aqi)),
+      (s) => s.aqi !== "-" && !isNaN(parseInt(s.aqi)),
     );
     if (valid.length === 0) return 0;
     return Math.round(
@@ -229,9 +236,11 @@ class ModernAirQualityDashboard {
 
     // Google API: No auto-refresh to minimize costs (on-demand only)
     // WAQI: Auto-refresh every 10 minutes (free tier)
-    if (this.currentDataSource === 'GOOGLE') {
-      console.log('💰 Google API: Auto-refresh disabled (on-demand only to minimize costs)');
-      console.log('ℹ️  Use the refresh button to manually update Google data');
+    if (this.currentDataSource === "GOOGLE") {
+      console.log(
+        "💰 Google API: Auto-refresh disabled (on-demand only to minimize costs)",
+      );
+      console.log("ℹ️  Use the refresh button to manually update Google data");
       return; // No auto-refresh for Google
     }
 
@@ -249,14 +258,14 @@ class ModernAirQualityDashboard {
 
   // Public API methods
   async forceRefresh() {
-    console.log('🔄 Force refresh requested');
+    console.log("🔄 Force refresh requested");
     await this.refreshData();
   }
 
   async switchToIndicator(indicator) {
     console.log(`🔄 Switching to ${indicator} indicator`);
 
-    if (indicator === 'AQHI' && !this.aqhiCalculated) {
+    if (indicator === "AQHI" && !this.aqhiCalculated) {
       // Calculate AQHI on-demand when user switches to AQHI tab
       await this.calculateAQHI();
     }
@@ -269,7 +278,7 @@ class ModernAirQualityDashboard {
     console.log(`🔄 Switching to ${dataSource} data source`);
 
     if (this.currentDataSource === dataSource) {
-      console.log('ℹ️ Already using this data source');
+      console.log("ℹ️ Already using this data source");
       return;
     }
 
@@ -303,17 +312,17 @@ class ModernAirQualityDashboard {
   // Analytics methods
   getStationsByCategory() {
     return this.stations.reduce((acc, station) => {
-      if (station.aqi === '-' || isNaN(parseInt(station.aqi))) return acc;
+      if (station.aqi === "-" || isNaN(parseInt(station.aqi))) return acc;
 
       const aqi = parseInt(station.aqi);
       let category;
 
-      if (aqi <= 50) category = 'good';
-      else if (aqi <= 100) category = 'moderate';
-      else if (aqi <= 150) category = 'unhealthy-sensitive';
-      else if (aqi <= 200) category = 'unhealthy';
-      else if (aqi <= 300) category = 'very-unhealthy';
-      else category = 'hazardous';
+      if (aqi <= 50) category = "good";
+      else if (aqi <= 100) category = "moderate";
+      else if (aqi <= 150) category = "unhealthy-sensitive";
+      else if (aqi <= 200) category = "unhealthy";
+      else if (aqi <= 300) category = "very-unhealthy";
+      else category = "hazardous";
 
       if (!acc[category]) acc[category] = [];
       acc[category].push(station);
@@ -324,11 +333,11 @@ class ModernAirQualityDashboard {
 
   getWorstStations(limit = 5) {
     return this.stations
-      .filter((s) => s.aqi !== '-' && !isNaN(parseInt(s.aqi)))
+      .filter((s) => s.aqi !== "-" && !isNaN(parseInt(s.aqi)))
       .sort((a, b) => parseInt(b.aqi) - parseInt(a.aqi))
       .slice(0, limit)
       .map((station) => ({
-        name: station.station?.name || 'Unknown',
+        name: station.station?.name || "Unknown",
         aqi: parseInt(station.aqi),
         coordinates: [station.lat, station.lon],
       }));
@@ -336,11 +345,11 @@ class ModernAirQualityDashboard {
 
   getBestStations(limit = 5) {
     return this.stations
-      .filter((s) => s.aqi !== '-' && !isNaN(parseInt(s.aqi)))
+      .filter((s) => s.aqi !== "-" && !isNaN(parseInt(s.aqi)))
       .sort((a, b) => parseInt(a.aqi) - parseInt(b.aqi))
       .slice(0, limit)
       .map((station) => ({
-        name: station.station?.name || 'Unknown',
+        name: station.station?.name || "Unknown",
         aqi: parseInt(station.aqi),
         coordinates: [station.lat, station.lon],
       }));
@@ -354,7 +363,7 @@ class ModernAirQualityDashboard {
 
     clearMarkers();
 
-    console.log('🧹 Dashboard cleaned up');
+    console.log("🧹 Dashboard cleaned up");
   }
 }
 
@@ -362,9 +371,9 @@ class ModernAirQualityDashboard {
 let dashboard = null;
 
 // Initialize dashboard when DOM is loaded
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener("DOMContentLoaded", async () => {
   try {
-    console.log('🌟 Starting Modern Air Quality Dashboard...');
+    console.log("🌟 Starting Modern Air Quality Dashboard...");
 
     dashboard = new ModernAirQualityDashboard();
     await dashboard.initialize();
@@ -378,26 +387,26 @@ document.addEventListener('DOMContentLoaded', async () => {
       dashboard.switchDataSource(dataSource);
     window.uiManager = uiManager;
 
-    console.log('🎉 Dashboard ready!');
+    console.log("🎉 Dashboard ready!");
   } catch (error) {
-    console.error('💥 Failed to start dashboard:', error);
+    console.error("💥 Failed to start dashboard:", error);
   }
 });
 
 // Handle page unload
-window.addEventListener('beforeunload', () => {
+window.addEventListener("beforeunload", () => {
   if (dashboard) {
     dashboard.destroy();
   }
 });
 
 // Handle visibility change (pause/resume when tab is hidden/visible)
-document.addEventListener('visibilitychange', () => {
+document.addEventListener("visibilitychange", () => {
   if (dashboard) {
     if (document.hidden) {
-      console.log('⏸️ Dashboard paused (tab hidden)');
+      console.log("⏸️ Dashboard paused (tab hidden)");
     } else {
-      console.log('▶️ Dashboard resumed (tab visible)');
+      console.log("▶️ Dashboard resumed (tab visible)");
       // Optionally refresh data when user returns to tab
       setTimeout(() => dashboard.refreshData(), 1000);
     }

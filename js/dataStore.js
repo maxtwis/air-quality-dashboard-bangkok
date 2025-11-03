@@ -1,6 +1,6 @@
 // Data persistence module for storing historical pollutant data
 
-const STORAGE_KEY = 'aqhi_historical_data';
+const STORAGE_KEY = "aqhi_historical_data";
 const MAX_AGE_HOURS = 3;
 
 /**
@@ -21,7 +21,7 @@ export function saveHistoricalData(data) {
       }),
     );
   } catch (error) {
-    console.error('Error saving historical data:', error);
+    console.error("Error saving historical data:", error);
   }
 }
 
@@ -58,7 +58,7 @@ export function loadHistoricalData() {
 
     return map;
   } catch (error) {
-    console.error('Error loading historical data:', error);
+    console.error("Error loading historical data:", error);
     return new Map();
   }
 }
@@ -97,8 +97,8 @@ export function getDataQuality(stationId) {
 
   if (stationData.length === 0) {
     return {
-      status: 'no-data',
-      message: 'No historical data available',
+      status: "no-data",
+      message: "No historical data available",
       percentage: 0,
     };
   }
@@ -110,20 +110,20 @@ export function getDataQuality(stationId) {
   if (timeSpanMinutes >= 180) {
     // Full 3 hours
     return {
-      status: 'complete',
-      message: 'Full 3-hour data available',
+      status: "complete",
+      message: "Full 3-hour data available",
       percentage: 100,
     };
   } else if (timeSpanMinutes >= 60) {
     // At least 1 hour
     return {
-      status: 'partial',
+      status: "partial",
       message: `${Math.round(timeSpanMinutes)} minutes of data`,
       percentage: Math.round((timeSpanMinutes / 180) * 100),
     };
   } else {
     return {
-      status: 'insufficient',
+      status: "insufficient",
       message: `Only ${Math.round(timeSpanMinutes)} minutes of data`,
       percentage: Math.round((timeSpanMinutes / 180) * 100),
     };
@@ -144,7 +144,7 @@ export function initializeDataStore() {
   }, 60000);
 
   // Save on page unload
-  window.addEventListener('beforeunload', () => {
+  window.addEventListener("beforeunload", () => {
     const data = loadHistoricalData();
     saveHistoricalData(data);
   });

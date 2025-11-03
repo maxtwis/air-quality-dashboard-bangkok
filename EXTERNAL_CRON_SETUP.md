@@ -40,6 +40,7 @@ I removed the incompatible cron configuration from `vercel.json`. Your deploymen
 1. **Deploy**: Push your changes to trigger Vercel deployment (should work now!)
 
 2. **Manual Test**:
+
    ```bash
    curl -X POST https://your-app.vercel.app/api/debug-collect
    ```
@@ -51,6 +52,7 @@ I removed the incompatible cron configuration from `vercel.json`. Your deploymen
 ## 📊 **Expected Results**
 
 After setup, every 10 minutes:
+
 - ✅ External cron triggers your Vercel function
 - ✅ Function fetches WAQI data
 - ✅ Converts AQI to concentrations
@@ -61,6 +63,7 @@ After setup, every 10 minutes:
 ## 🔧 **Troubleshooting**
 
 If data still doesn't flow:
+
 1. Check `https://your-app.vercel.app/api/debug-collect` for detailed logs
 2. Check Vercel function logs in dashboard
 3. Check Supabase API logs for errors

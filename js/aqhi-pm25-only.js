@@ -1,7 +1,7 @@
 // PM2.5-only AQHI calculation using Supabase data
 // This module tests the hypothesis of what happens when NO2 and O3 are set to 0
-import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
-import { getAQHILevel, calculateThaiAQHI } from './aqhi-supabase.js';
+import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js";
+import { getAQHILevel, calculateThaiAQHI } from "./aqhi-supabase.js";
 
 class PM25OnlySupabaseAQHI {
   constructor() {
@@ -15,10 +15,10 @@ class PM25OnlySupabaseAQHI {
     try {
       // Use the same credentials as configured in lib/supabase.js
       const supabaseUrl =
-        window.SUPABASE_URL || 'https://xqvjrovzhupdfwvdikpo.supabase.co';
+        window.SUPABASE_URL || "https://xqvjrovzhupdfwvdikpo.supabase.co";
       const supabaseAnonKey =
         window.SUPABASE_ANON_KEY ||
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxdmpyb3Z6aHVwZGZ3dmRpa3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NTQyMjMsImV4cCI6MjA3MzUzMDIyM30.rzJ8-LnZh2dITbh7HcIXJ32BQ1MN-F-O5hCmO0jzIDo';
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxdmpyb3Z6aHVwZGZ3dmRpa3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NTQyMjMsImV4cCI6MjA3MzUzMDIyM30.rzJ8-LnZh2dITbh7HcIXJ32BQ1MN-F-O5hCmO0jzIDo";
 
       this.supabase = createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
@@ -27,10 +27,10 @@ class PM25OnlySupabaseAQHI {
         },
       });
 
-      console.log('✅ PM2.5-only AQHI calculator initialized');
+      console.log("✅ PM2.5-only AQHI calculator initialized");
     } catch (error) {
       console.warn(
-        '⚠️ PM2.5-only AQHI calculator failed to initialize:',
+        "⚠️ PM2.5-only AQHI calculator failed to initialize:",
         error,
       );
       this.supabase = null;
@@ -47,17 +47,17 @@ class PM25OnlySupabaseAQHI {
 
     try {
       const { data, error } = await this.supabase
-        .from('waqi_data')
-        .select('station_uid, pm25, timestamp')
-        .in('station_uid', stationIds)
+        .from("waqi_data")
+        .select("station_uid, pm25, timestamp")
+        .in("station_uid", stationIds)
         .gte(
-          'timestamp',
+          "timestamp",
           new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
         )
-        .order('timestamp', { ascending: false });
+        .order("timestamp", { ascending: false });
 
       if (error) {
-        console.error('Error fetching PM2.5-only batch 3h averages:', error);
+        console.error("Error fetching PM2.5-only batch 3h averages:", error);
         return {};
       }
 
@@ -83,7 +83,7 @@ class PM25OnlySupabaseAQHI {
 
         if (validReadings.length > 0) {
           stationAverages[stationId] = {
-            pm25: this.calculateAverage(validReadings, 'pm25'),
+            pm25: this.calculateAverage(validReadings, "pm25"),
             // Force NO2 and O3 to 0 for hypothesis testing
             no2: 0,
             o3: 0,
@@ -97,7 +97,7 @@ class PM25OnlySupabaseAQHI {
       );
       return stationAverages;
     } catch (error) {
-      console.error('Error in PM2.5-only getBatch3HourAverages:', error);
+      console.error("Error in PM2.5-only getBatch3HourAverages:", error);
       return {};
     }
   }
@@ -153,7 +153,7 @@ class PM25OnlySupabaseAQHI {
         this.cache.set(cacheKey, {
           value: aqhiValue,
           timestamp: Date.now(),
-          source: 'stored_3h_avg_pm25_only',
+          source: "stored_3h_avg_pm25_only",
           readingCount: averages.readingCount,
         });
 
@@ -181,7 +181,7 @@ class PM25OnlySupabaseAQHI {
     this.cache.set(cacheKey, {
       value: fallbackAQHI,
       timestamp: Date.now(),
-      source: 'fallback_pm25_only',
+      source: "fallback_pm25_only",
       readingCount: 0,
     });
 
@@ -209,13 +209,16 @@ class PM25OnlySupabaseAQHI {
     try {
       // Use combined_3h_averages view (WAQI+Google merged)
       const { data: aqicnData, error: aqicnError } = await this.supabase
-        .from('combined_3h_averages')
-        .select('avg_pm25, reading_count')
-        .eq('station_uid', stationId)
+        .from("combined_3h_averages")
+        .select("avg_pm25, reading_count")
+        .eq("station_uid", stationId)
         .single();
 
-      if (aqicnError && aqicnError.code !== 'PGRST116') {
-        console.warn(`Error fetching AQICN 3h averages for PM2.5 AQHI ${stationId}:`, aqicnError.message);
+      if (aqicnError && aqicnError.code !== "PGRST116") {
+        console.warn(
+          `Error fetching AQICN 3h averages for PM2.5 AQHI ${stationId}:`,
+          aqicnError.message,
+        );
       }
 
       // Use AQICN data only
@@ -223,13 +226,13 @@ class PM25OnlySupabaseAQHI {
         return {
           pm25: aqicnData?.avg_pm25,
           readingCount: aqicnData?.reading_count || 1,
-          source: 'aqicn-3h-average'
+          source: "aqicn-3h-average",
         };
       }
 
       return null;
     } catch (error) {
-      console.error('Error in get3HourPM25Averages:', error);
+      console.error("Error in get3HourPM25Averages:", error);
       return null;
     }
   }
@@ -268,7 +271,7 @@ class PM25OnlySupabaseAQHI {
             this.cache.set(`pm25_aqhi_${stationId}`, {
               value: aqhiValue,
               timestamp: Date.now(),
-              source: 'batch_stored_3h_avg_pm25_only',
+              source: "batch_stored_3h_avg_pm25_only",
               readingCount: averages.readingCount,
             });
           }
@@ -281,7 +284,7 @@ class PM25OnlySupabaseAQHI {
             this.cache.set(`pm25_aqhi_${stationId}`, {
               value: aqhiValue,
               timestamp: Date.now(),
-              source: 'fallback_pm25_only',
+              source: "fallback_pm25_only",
               readingCount: 0,
             });
           }
@@ -294,21 +297,21 @@ class PM25OnlySupabaseAQHI {
           level: aqhiLevel,
           // Add data quality information for PM2.5 AQHI
           calculationMethod:
-            averages && averages.pm25 ? 'stored_3h_avg' : 'current',
+            averages && averages.pm25 ? "stored_3h_avg" : "current",
           readingCount: averages ? averages.readingCount : 0,
           timeSpanHours: averages
             ? Math.min(3, averages.readingCount * 0.17)
             : 0, // Estimate hours based on readings
           dataQuality:
             averages && averages.readingCount >= 15
-              ? 'excellent'
+              ? "excellent"
               : averages && averages.readingCount >= 10
-                ? 'good'
+                ? "good"
                 : averages && averages.readingCount >= 5
-                  ? 'fair'
+                  ? "fair"
                   : averages && averages.readingCount > 0
-                    ? 'limited'
-                    : 'estimated',
+                    ? "limited"
+                    : "estimated",
         };
 
         return {
@@ -337,7 +340,7 @@ class PM25OnlySupabaseAQHI {
     };
 
     for (const [key, value] of this.cache.entries()) {
-      if (value.source.includes('stored')) {
+      if (value.source.includes("stored")) {
         stats.storedCalculations++;
       } else {
         stats.fallbackCalculations++;

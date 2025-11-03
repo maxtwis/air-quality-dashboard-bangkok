@@ -3,6 +3,7 @@
 ## 🎯 Goal
 
 Create clean separate tables:
+
 1. **waqi_data** - PM2.5, PM10, SO2, CO (collected every 20 min)
 2. **google_supplements** - O3, NO2 (collected every 60 min)
 3. **combined_3h_averages** view - Joins both for AQHI calculations
@@ -16,6 +17,7 @@ Go to: https://supabase.com/dashboard → Your Project → SQL Editor
 ### Step 2: Check What Tables Exist
 
 Paste and run:
+
 ```sql
 SELECT table_name
 FROM information_schema.tables
@@ -31,6 +33,7 @@ You'll see what tables currently exist (stations, air_quality_readings, etc.)
 **⚠️ WARNING: This deletes all existing air quality data!**
 
 Paste and run:
+
 ```sql
 -- Drop all old tables and views
 DROP VIEW IF EXISTS current_3h_averages CASCADE;
@@ -55,6 +58,7 @@ Copy **entire contents** of `supabase/fresh-schema.sql` and paste into SQL Edito
 Click **Run**.
 
 You should see:
+
 ```
 ✅ Fresh schema created successfully!
    waqi_records: 0
@@ -91,28 +95,28 @@ WHERE table_schema = 'public';
 
 ### Table: waqi_data
 
-| Column | Type | Description |
-|--------|------|-------------|
-| station_uid | INTEGER | WAQI station ID |
-| timestamp | TIMESTAMPTZ | When collected |
-| lat, lon | DECIMAL | Station location |
-| station_name | TEXT | Station name |
-| aqi | INTEGER | Air Quality Index |
-| pm25, pm10 | DECIMAL | Primary pollutants |
-| so2, co | DECIMAL | Other pollutants |
-| o3, no2 | DECIMAL | Rare (usually NULL) |
+| Column       | Type        | Description         |
+| ------------ | ----------- | ------------------- |
+| station_uid  | INTEGER     | WAQI station ID     |
+| timestamp    | TIMESTAMPTZ | When collected      |
+| lat, lon     | DECIMAL     | Station location    |
+| station_name | TEXT        | Station name        |
+| aqi          | INTEGER     | Air Quality Index   |
+| pm25, pm10   | DECIMAL     | Primary pollutants  |
+| so2, co      | DECIMAL     | Other pollutants    |
+| o3, no2      | DECIMAL     | Rare (usually NULL) |
 
 **Populated by**: `api/collect-data` (every 20 minutes)
 
 ### Table: google_supplements
 
-| Column | Type | Description |
-|--------|------|-------------|
-| station_uid | INTEGER | WAQI station this supplements |
-| timestamp | TIMESTAMPTZ | When collected |
-| o3 | DECIMAL | Ozone from Google |
-| no2 | DECIMAL | Nitrogen Dioxide from Google |
-| grid_lat, grid_lon | DECIMAL | Source grid point |
+| Column             | Type        | Description                   |
+| ------------------ | ----------- | ----------------------------- |
+| station_uid        | INTEGER     | WAQI station this supplements |
+| timestamp          | TIMESTAMPTZ | When collected                |
+| o3                 | DECIMAL     | Ozone from Google             |
+| no2                | DECIMAL     | Nitrogen Dioxide from Google  |
+| grid_lat, grid_lon | DECIMAL     | Source grid point             |
 
 **Populated by**: `api/collect-google-supplements` (every 60 minutes)
 
@@ -123,6 +127,7 @@ SELECT * FROM combined_3h_averages WHERE station_uid = 12345;
 ```
 
 Returns:
+
 ```
 station_uid: 12345
 avg_pm25: 35.2     (from 9 WAQI readings)
@@ -151,6 +156,7 @@ When Google supplements are collected:
    - Station 12347 at (13.51, 100.62) → nearest is Grid Point 2
 
 3. **Store with station_uid**:
+
 ```sql
 INSERT INTO google_supplements VALUES
   (12345, NOW(), 45.6, 28.3, 13.5, 100.6),  -- Station 12345 gets Grid 2 data
@@ -159,6 +165,7 @@ INSERT INTO google_supplements VALUES
 ```
 
 4. **Join for AQHI**:
+
 ```sql
 SELECT w.avg_pm25, g.avg_o3, g.avg_no2
 FROM waqi_3h_averages w
@@ -173,18 +180,21 @@ WHERE w.station_uid = 12345;
 ### Test Data Flow
 
 **1. Wait for WAQI collection** (every 20 min):
+
 ```sql
 SELECT COUNT(*), MAX(timestamp) FROM waqi_data;
 -- Should show ~188 records after first collection
 ```
 
 **2. Wait for Google collection** (every 60 min, on the hour):
+
 ```sql
 SELECT COUNT(*), MAX(timestamp) FROM google_supplements;
 -- Should show ~180 records after first collection
 ```
 
 **3. Check combined view**:
+
 ```sql
 SELECT COUNT(*) FROM combined_3h_averages;
 -- After 3 hours, should show ~188 stations with complete data
@@ -205,6 +215,7 @@ ORDER BY station_count DESC;
 ```
 
 This shows:
+
 ```
 grid_lat | grid_lon | station_count | stations
 13.500   | 100.600  | 25            | {12345, 12367, 12389, ...}
@@ -244,11 +255,13 @@ ORDER BY aqhi DESC;
 ## 📈 Data Volume Expectations
 
 ### Daily
+
 - WAQI records: 188 stations × 72 collections = **13,536 records/day**
 - Google records: 180 stations × 24 collections = **4,320 records/day**
 - **Total**: ~18,000 records/day
 
 ### With 7-day Retention
+
 - Active records: ~125,000
 - Storage: ~30-50 MB
 - Well within Supabase free tier ✅
@@ -271,6 +284,7 @@ SELECT cleanup_old_data();
 ### Issue: No data in waqi_data
 
 **Check**: Is `api/collect-data` running?
+
 ```bash
 curl https://clean-air-bkk.vercel.app/api/collect-data
 ```
@@ -278,6 +292,7 @@ curl https://clean-air-bkk.vercel.app/api/collect-data
 ### Issue: No data in google_supplements
 
 **Check**: Is `api/collect-google-supplements` running?
+
 ```bash
 curl https://clean-air-bkk.vercel.app/api/collect-google-supplements
 ```
@@ -287,6 +302,7 @@ curl https://clean-air-bkk.vercel.app/api/collect-google-supplements
 ### Issue: combined_3h_averages is empty
 
 **Wait 3 hours** for enough data to build up:
+
 - WAQI needs 3+ readings (60 minutes)
 - Google needs 1+ readings (60 minutes)
 
@@ -305,6 +321,7 @@ curl https://clean-air-bkk.vercel.app/api/collect-google-supplements
 ## 🎉 Success!
 
 Your Bangkok Air Quality Dashboard now has:
+
 - ✅ Separate WAQI and Google tables
 - ✅ Grid-to-station matching for O3/NO2
 - ✅ Combined 3-hour averages for AQHI

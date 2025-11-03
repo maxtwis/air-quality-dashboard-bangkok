@@ -1,8 +1,8 @@
 // Hybrid Air Quality Data System
 // Combines WAQI (primary) with Google API (fills missing pollutants)
 
-import { fetchGoogleAirQualityPoint } from './google-api.js';
-import { storeGoogleDataInSupabase } from './google-data-storage.js';
+import { fetchGoogleAirQualityPoint } from "./google-api.js";
+import { storeGoogleDataInSupabase } from "./google-data-storage.js";
 
 /**
  * Enhance WAQI stations with missing pollutants from Google API
@@ -12,25 +12,33 @@ import { storeGoogleDataInSupabase } from './google-data-storage.js';
  * @returns {Promise<Array>} Enhanced stations with Google data for missing pollutants
  */
 export async function enhanceWAQIWithGooglePollutants(waqiStations) {
-  console.log(`🔄 Analyzing ${waqiStations.length} WAQI stations for missing pollutants...`);
+  console.log(
+    `🔄 Analyzing ${waqiStations.length} WAQI stations for missing pollutants...`,
+  );
 
   // Step 1: Identify which stations are missing O3 or NO2
   const stationsNeedingData = analyzeStationsForMissingPollutants(waqiStations);
 
   if (stationsNeedingData.length === 0) {
-    console.log('✅ All WAQI stations have complete O3 and NO2 data - no Google API needed!');
+    console.log(
+      "✅ All WAQI stations have complete O3 and NO2 data - no Google API needed!",
+    );
     return waqiStations;
   }
 
   console.log(`📊 Found ${stationsNeedingData.length} stations missing O3/NO2`);
-  console.log(`   Missing O3: ${stationsNeedingData.filter(s => s.missingPollutants.includes('o3')).length}`);
-  console.log(`   Missing NO2: ${stationsNeedingData.filter(s => s.missingPollutants.includes('no2')).length}`);
+  console.log(
+    `   Missing O3: ${stationsNeedingData.filter((s) => s.missingPollutants.includes("o3")).length}`,
+  );
+  console.log(
+    `   Missing NO2: ${stationsNeedingData.filter((s) => s.missingPollutants.includes("no2")).length}`,
+  );
 
   // Step 2: For each station needing data, fetch from nearest Google grid point
   const googleDataCache = {}; // Cache to avoid duplicate API calls
   const enhancedStations = await Promise.all(
     waqiStations.map(async (station) => {
-      const needsData = stationsNeedingData.find(s => s.uid === station.uid);
+      const needsData = stationsNeedingData.find((s) => s.uid === station.uid);
 
       if (!needsData) {
         // Station already has complete data
@@ -45,43 +53,64 @@ export async function enhanceWAQIWithGooglePollutants(waqiStations) {
       let googleData;
       if (googleDataCache[cacheKey]) {
         googleData = googleDataCache[cacheKey];
-        console.log(`   ♻️  Using cached Google data for station ${station.uid}`);
+        console.log(
+          `   ♻️  Using cached Google data for station ${station.uid}`,
+        );
       } else {
-        console.log(`   🌐 Fetching Google data for station ${station.uid} (${needsData.missingPollutants.join(', ')})`);
-        googleData = await fetchGoogleAirQualityPoint(nearestPoint.lat, nearestPoint.lng);
+        console.log(
+          `   🌐 Fetching Google data for station ${station.uid} (${needsData.missingPollutants.join(", ")})`,
+        );
+        googleData = await fetchGoogleAirQualityPoint(
+          nearestPoint.lat,
+          nearestPoint.lng,
+        );
         googleDataCache[cacheKey] = googleData;
       }
 
       if (!googleData) {
-        console.warn(`   ⚠️  Failed to get Google data for station ${station.uid}`);
+        console.warn(
+          `   ⚠️  Failed to get Google data for station ${station.uid}`,
+        );
         return station;
       }
 
       // Merge the missing pollutants
-      return mergeGooglePollutants(station, googleData, needsData.missingPollutants);
-    })
+      return mergeGooglePollutants(
+        station,
+        googleData,
+        needsData.missingPollutants,
+      );
+    }),
   );
 
   const uniqueApiCalls = Object.keys(googleDataCache).length;
-  console.log(`✅ Enhanced ${stationsNeedingData.length} stations using ${uniqueApiCalls} Google API calls`);
-  console.log(`   💰 Cost savings: ${stationsNeedingData.length - uniqueApiCalls} API calls saved by caching`);
+  console.log(
+    `✅ Enhanced ${stationsNeedingData.length} stations using ${uniqueApiCalls} Google API calls`,
+  );
+  console.log(
+    `   💰 Cost savings: ${stationsNeedingData.length - uniqueApiCalls} API calls saved by caching`,
+  );
 
   // Store the Google supplement data in Supabase
-  const googleSupplements = Object.entries(googleDataCache).map(([coords, data], index) => {
-    const [lat, lng] = coords.split(',');
-    return {
-      uid: `google-supplement-${lat}-${lng}`,
-      lat: parseFloat(lat),
-      lon: parseFloat(lng),
-      station: { name: `Google Supplement ${index + 1}` },
-      _rawData: data,
-      _source: 'google-supplement',
-      iaqi: extractPollutantsFromGoogle(data),
-    };
-  });
+  const googleSupplements = Object.entries(googleDataCache).map(
+    ([coords, data], index) => {
+      const [lat, lng] = coords.split(",");
+      return {
+        uid: `google-supplement-${lat}-${lng}`,
+        lat: parseFloat(lat),
+        lon: parseFloat(lng),
+        station: { name: `Google Supplement ${index + 1}` },
+        _rawData: data,
+        _source: "google-supplement",
+        iaqi: extractPollutantsFromGoogle(data),
+      };
+    },
+  );
 
   if (googleSupplements.length > 0) {
-    console.log(`💾 Storing ${googleSupplements.length} Google supplement points in Supabase...`);
+    console.log(
+      `💾 Storing ${googleSupplements.length} Google supplement points in Supabase...`,
+    );
     await storeGoogleDataInSupabase(googleSupplements);
   }
 
@@ -99,12 +128,12 @@ function analyzeStationsForMissingPollutants(waqiStations) {
 
     // Check for O3
     if (!station.iaqi?.o3?.v && station.iaqi?.o3?.v !== 0) {
-      missingPollutants.push('o3');
+      missingPollutants.push("o3");
     }
 
     // Check for NO2
     if (!station.iaqi?.no2?.v && station.iaqi?.no2?.v !== 0) {
-      missingPollutants.push('no2');
+      missingPollutants.push("no2");
     }
 
     if (missingPollutants.length > 0) {
@@ -112,7 +141,7 @@ function analyzeStationsForMissingPollutants(waqiStations) {
         uid: station.uid,
         lat: station.lat,
         lon: station.lon,
-        name: station.station?.name || 'Unknown',
+        name: station.station?.name || "Unknown",
         missingPollutants,
       });
     }
@@ -133,8 +162,8 @@ function findNearestGridPoint(stationLat, stationLon) {
   for (let i = 0; i < 3; i++) {
     for (let j = 0; j < 3; j++) {
       gridPoints.push({
-        lat: 13.5 + (i * latStep),
-        lng: 100.3 + (j * lngStep),
+        lat: 13.5 + i * latStep,
+        lng: 100.3 + j * lngStep,
       });
     }
   }
@@ -145,8 +174,7 @@ function findNearestGridPoint(stationLat, stationLon) {
 
   for (const point of gridPoints) {
     const distance = Math.sqrt(
-      Math.pow(stationLat - point.lat, 2) +
-      Math.pow(stationLon - point.lng, 2)
+      Math.pow(stationLat - point.lat, 2) + Math.pow(stationLon - point.lng, 2),
     );
 
     if (distance < minDistance) {
@@ -178,10 +206,12 @@ function mergeGooglePollutants(waqiStation, googleData, missingPollutants) {
     if (googlePollutants[pollutant]) {
       enhanced.iaqi[pollutant] = {
         v: googlePollutants[pollutant].v,
-        _source: 'google', // Mark as Google-sourced
-        _sourceType: 'supplement', // Indicate it's supplementary data
+        _source: "google", // Mark as Google-sourced
+        _sourceType: "supplement", // Indicate it's supplementary data
       };
-      console.log(`     ✓ Added ${pollutant.toUpperCase()} from Google: ${googlePollutants[pollutant].v}`);
+      console.log(
+        `     ✓ Added ${pollutant.toUpperCase()} from Google: ${googlePollutants[pollutant].v}`,
+      );
     }
   }
 
@@ -244,10 +274,10 @@ export function getHybridDataStatistics(enhancedStations) {
     if (station._hybridData) {
       stats.hybridStations++;
 
-      if (station._googleSupplemented?.includes('o3')) {
+      if (station._googleSupplemented?.includes("o3")) {
         stats.o3Supplemented++;
       }
-      if (station._googleSupplemented?.includes('no2')) {
+      if (station._googleSupplemented?.includes("no2")) {
         stats.no2Supplemented++;
       }
 
@@ -268,9 +298,12 @@ export function getHybridDataStatistics(enhancedStations) {
  * Check if a station has complete data for AQHI calculation
  */
 export function hasCompleteAQHIData(station) {
-  const hasO3 = station.iaqi?.o3?.v !== undefined && station.iaqi?.o3?.v !== null;
-  const hasNO2 = station.iaqi?.no2?.v !== undefined && station.iaqi?.no2?.v !== null;
-  const hasPM25 = station.iaqi?.pm25?.v !== undefined && station.iaqi?.pm25?.v !== null;
+  const hasO3 =
+    station.iaqi?.o3?.v !== undefined && station.iaqi?.o3?.v !== null;
+  const hasNO2 =
+    station.iaqi?.no2?.v !== undefined && station.iaqi?.no2?.v !== null;
+  const hasPM25 =
+    station.iaqi?.pm25?.v !== undefined && station.iaqi?.pm25?.v !== null;
 
   return hasO3 && hasNO2 && hasPM25;
 }
@@ -280,16 +313,18 @@ export function hasCompleteAQHIData(station) {
  */
 export function getStationDataSources(station) {
   const sources = {
-    pm25: station.iaqi?.pm25?._source || 'waqi',
-    pm10: station.iaqi?.pm10?._source || 'waqi',
-    o3: station.iaqi?.o3?._source || 'waqi',
-    no2: station.iaqi?.no2?._source || 'waqi',
-    so2: station.iaqi?.so2?._source || 'waqi',
-    co: station.iaqi?.co?._source || 'waqi',
+    pm25: station.iaqi?.pm25?._source || "waqi",
+    pm10: station.iaqi?.pm10?._source || "waqi",
+    o3: station.iaqi?.o3?._source || "waqi",
+    no2: station.iaqi?.no2?._source || "waqi",
+    so2: station.iaqi?.so2?._source || "waqi",
+    co: station.iaqi?.co?._source || "waqi",
   };
 
-  const googleCount = Object.values(sources).filter(s => s === 'google').length;
-  const waqiCount = Object.values(sources).filter(s => s === 'waqi').length;
+  const googleCount = Object.values(sources).filter(
+    (s) => s === "google",
+  ).length;
+  const waqiCount = Object.values(sources).filter((s) => s === "waqi").length;
 
   return {
     sources,

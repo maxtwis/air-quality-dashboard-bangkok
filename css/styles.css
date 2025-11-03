@@ -562,7 +562,7 @@ body {
   color: var(--gray-700);
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
 }
 
 .history-btn:hover {
@@ -705,7 +705,6 @@ body {
   .stats-section {
     padding: 20px 15px;
   }
-
 
   .map-controls {
     top: 10px;

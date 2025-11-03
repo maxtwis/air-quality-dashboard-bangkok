@@ -549,10 +549,6 @@ export class UIManager {
       let dataLabel = 'Current';
       if (isAQHI && averageData) {
         dataLabel = '3-Hour Average';
-      } else if (isAQHI) {
-        dataLabel = 'Current (converted)';
-      } else {
-        dataLabel = 'Current';
       }
 
       if (isAQHI && averageData) {

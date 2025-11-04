@@ -20,6 +20,12 @@
     "api/google-aqhi-batch.js": {
       "maxDuration": 30
     },
+    "api/google-collect-only.js": {
+      "maxDuration": 10
+    },
+    "api/google-calculate-aqhi.js": {
+      "maxDuration": 10
+    },
     "api/google-aqhi-health.js": {
       "maxDuration": 10
     },

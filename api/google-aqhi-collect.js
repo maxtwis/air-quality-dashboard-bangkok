@@ -205,19 +205,22 @@ export default async function handler(req, res) {
       });
     }
 
-    // Calculate 3-hour averages and AQHI
-    const aqhiResults = [];
-
-    for (const location of COMMUNITY_LOCATIONS) {
-      const { error: calcError } = await supabase.rpc('calculate_3h_averages_and_aqhi', {
-        target_location_id: location.id,
-        target_hour: hourTimestamp
-      });
-
-      if (!calcError) {
-        aqhiResults.push(location.id);
+    // Calculate 3-hour averages and AQHI (in parallel for speed)
+    console.log('🧮 Calculating AQHI for all locations...');
+    const aqhiPromises = COMMUNITY_LOCATIONS.map(async (location) => {
+      try {
+        const { error } = await supabase.rpc('calculate_3h_averages_and_aqhi', {
+          target_location_id: location.id,
+          target_hour: hourTimestamp
+        });
+        return error ? null : location.id;
+      } catch (error) {
+        console.error(`❌ AQHI calculation failed for location ${location.id}:`, error.message);
+        return null;
       }
-    }
+    });
+
+    const aqhiResults = (await Promise.all(aqhiPromises)).filter(id => id !== null);
 
     const duration = Date.now() - startTime;
 

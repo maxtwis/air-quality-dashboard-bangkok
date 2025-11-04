@@ -18,7 +18,8 @@
       "Bash(npm --version)",
       "Bash(test:*)",
       "Bash(rm:*)",
-      "Bash(time curl:*)"
+      "Bash(time curl:*)",
+      "Bash(git log:*)"
     ],
     "deny": [],
     "ask": []

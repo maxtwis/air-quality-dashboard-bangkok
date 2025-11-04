@@ -2,6 +2,7 @@ import { CONFIG } from "./config.js";
 import { fetchAirQualityData, enhanceStationsWithAQHI } from "./api.js";
 import { fetchGoogleAirQualityData } from "./google-api.js";
 import { enhanceGoogleStationsWithAQHI } from "./aqhi-google.js";
+import { fetchGoogleAQHIStations } from "./google-aqhi-api.js";
 import {
   enhanceWAQIWithGooglePollutants,
   getHybridDataStatistics,
@@ -168,25 +169,18 @@ class ModernAirQualityDashboard {
       this.isCalculatingAQHI = true;
       uiManager.showLoading(
         "stats-content",
-        "Calculating AQHI using 3-hour averages...",
+        "Loading AQHI data from Google community locations...",
       );
 
-      console.log("🔄 Calculating AQHI for existing stations...");
+      console.log("🔄 Fetching Google AQHI data from Supabase...");
 
-      // Use appropriate AQHI calculation based on data source
-      if (this.currentDataSource === "GOOGLE") {
-        this.stationsWithAQHI = await enhanceGoogleStationsWithAQHI(
-          this.stations,
-        );
-        console.log(
-          `✅ Google AQHI calculated for ${this.stationsWithAQHI.length} stations`,
-        );
-      } else {
-        this.stationsWithAQHI = await enhanceStationsWithAQHI(this.stations);
-        console.log(
-          `✅ WAQI AQHI calculated for ${this.stationsWithAQHI.length} stations`,
-        );
-      }
+      // Fetch Google AQHI data directly from Supabase (15 community locations)
+      // This data already has AQHI calculated by the database trigger
+      this.stationsWithAQHI = await fetchGoogleAQHIStations();
+
+      console.log(
+        `✅ Loaded ${this.stationsWithAQHI.length} Google AQHI community locations`,
+      );
 
       this.aqhiCalculated = true;
 

@@ -100,31 +100,32 @@ function extractPollutants(googleData) {
 export default async function handler(req, res) {
   const startTime = Date.now();
 
-  console.log(`[${new Date().toISOString()}] 🕐 Starting Google AQHI collection`);
+  try {
+    console.log(`[${new Date().toISOString()}] 🕐 Starting Google AQHI collection`);
 
-  // Allow GET and POST methods
-  if (!['GET', 'POST'].includes(req.method)) {
-    return res.status(405).json({
-      success: false,
-      error: 'Method not allowed',
-      allowedMethods: ['GET', 'POST']
-    });
-  }
+    // Allow GET and POST methods
+    if (!['GET', 'POST'].includes(req.method)) {
+      return res.status(405).json({
+        success: false,
+        error: 'Method not allowed',
+        allowedMethods: ['GET', 'POST']
+      });
+    }
 
-  // Verify API key from environment
-  if (!GOOGLE_API_KEY) {
-    console.error('❌ GOOGLE_AIR_QUALITY_API_KEY not configured');
-    return res.status(500).json({
-      success: false,
-      error: 'Google API key not configured',
-      timestamp: new Date().toISOString()
-    });
-  }
+    // Verify API key from environment
+    if (!GOOGLE_API_KEY) {
+      console.error('❌ GOOGLE_AIR_QUALITY_API_KEY not configured');
+      return res.status(500).json({
+        success: false,
+        error: 'Google API key not configured',
+        timestamp: new Date().toISOString()
+      });
+    }
 
-  // Round timestamp to current hour
-  const currentHour = new Date();
-  currentHour.setMinutes(0, 0, 0);
-  const hourTimestamp = currentHour.toISOString();
+    // Round timestamp to current hour
+    const currentHour = new Date();
+    currentHour.setMinutes(0, 0, 0);
+    const hourTimestamp = currentHour.toISOString();
 
   const results = [];
   let successCount = 0;
@@ -242,6 +243,18 @@ export default async function handler(req, res) {
       success: false,
       error: 'No data collected',
       locations_failed: failCount,
+      timestamp: new Date().toISOString()
+    });
+  }
+  } catch (error) {
+    const duration = Date.now() - startTime;
+    console.error('❌ Fatal error in Google AQHI collection:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal server error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      duration_ms: duration,
       timestamp: new Date().toISOString()
     });
   }

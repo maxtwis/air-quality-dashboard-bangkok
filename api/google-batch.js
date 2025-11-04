@@ -87,19 +87,32 @@ export default async function handler(req, res) {
     const results = (await Promise.all(promises)).filter(r => r);
 
     // Store - trigger will calculate AQHI automatically
+    let dbSuccess = false;
+    let dbError = null;
+
     if (results.length > 0) {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(
-        process.env.SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
-      );
+      try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          process.env.SUPABASE_URL,
+          process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+        );
 
-      const { error } = await supabase
-        .from('google_aqhi_hourly')
-        .upsert(results, { onConflict: 'location_id,hour_timestamp' });
+        const { error } = await supabase
+          .from('google_aqhi_hourly')
+          .upsert(results, { onConflict: 'location_id,hour_timestamp' });
 
-      if (error) {
-        return res.status(500).json({ error: error.message });
+        if (error) {
+          dbError = error.message;
+          console.error('❌ Database error:', error.message);
+        } else {
+          dbSuccess = true;
+          console.log('✅ Database storage successful');
+        }
+      } catch (error) {
+        dbError = error.message;
+        console.error('❌ Supabase module error:', error.message);
+        // Continue without database - like collect-data.js does
       }
 
       return res.json({
@@ -109,7 +122,9 @@ export default async function handler(req, res) {
         failed: locations.length - results.length,
         duration_ms: Date.now() - start,
         timestamp,
-        note: 'AQHI calculated by database trigger'
+        databaseWorking: dbSuccess,
+        dbError: dbError,
+        note: dbSuccess ? 'AQHI calculated by database trigger' : 'Data collected but database storage failed'
       });
     }
 

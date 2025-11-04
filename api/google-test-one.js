@@ -71,21 +71,31 @@ export default async function handler(req, res) {
     console.log('Storing in Supabase...');
 
     // Store in Supabase (use dynamic import like collect-data.js)
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
-    );
+    let dbSuccess = false;
+    let dbError = null;
 
-    const { error } = await supabase
-      .from('google_aqhi_hourly')
-      .upsert([result], { onConflict: 'location_id,hour_timestamp' });
+    try {
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+      );
 
-    if (error) {
-      return res.status(500).json({
-        error: 'Database error: ' + error.message,
-        duration_ms: Date.now() - start
-      });
+      const { error } = await supabase
+        .from('google_aqhi_hourly')
+        .upsert([result], { onConflict: 'location_id,hour_timestamp' });
+
+      if (error) {
+        dbError = error.message;
+        console.error('❌ Database error:', error.message);
+      } else {
+        dbSuccess = true;
+        console.log('✅ Database storage successful');
+      }
+    } catch (error) {
+      dbError = error.message;
+      console.error('❌ Supabase module error:', error.message);
+      // Continue without database - like collect-data.js does
     }
 
     const duration = Date.now() - start;
@@ -98,7 +108,9 @@ export default async function handler(req, res) {
       duration_ms: duration,
       timestamp,
       pollutants: p,
-      note: 'Trigger will calculate AQHI automatically'
+      databaseWorking: dbSuccess,
+      dbError: dbError,
+      note: dbSuccess ? 'Trigger will calculate AQHI automatically' : 'Data collected but database storage failed'
     });
 
   } catch (error) {

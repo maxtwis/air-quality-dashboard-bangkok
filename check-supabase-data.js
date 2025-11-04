@@ -10,12 +10,11 @@ const supabase = createClient(
 
 console.log('🔍 Checking Supabase google_aqhi_hourly table...\n');
 
-// Get latest data
+// Get ALL data to see complete history
 const { data, error } = await supabase
   .from('google_aqhi_hourly')
   .select('*')
-  .order('hour_timestamp', { ascending: false })
-  .limit(15);
+  .order('hour_timestamp', { ascending: false });
 
 if (error) {
   console.error('❌ Error:', error);

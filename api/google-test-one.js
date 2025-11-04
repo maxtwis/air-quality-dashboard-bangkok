@@ -5,8 +5,6 @@
  * Test if Vercel Fluid Compute works with 1 location
  */
 
-import { createClient } from '@supabase/supabase-js';
-
 const KEY = process.env.GOOGLE_AIR_QUALITY_API_KEY;
 
 export default async function handler(req, res) {
@@ -72,7 +70,8 @@ export default async function handler(req, res) {
 
     console.log('Storing in Supabase...');
 
-    // Store in Supabase
+    // Store in Supabase (use dynamic import like collect-data.js)
+    const { createClient } = await import('@supabase/supabase-js');
     const supabase = createClient(
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY

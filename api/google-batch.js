@@ -6,8 +6,6 @@
  * Call this 3 times from cron-job.org
  */
 
-import { createClient } from '@supabase/supabase-js';
-
 const KEY = process.env.GOOGLE_AIR_QUALITY_API_KEY;
 
 const ALL = [
@@ -90,6 +88,7 @@ export default async function handler(req, res) {
 
     // Store - trigger will calculate AQHI automatically
     if (results.length > 0) {
+      const { createClient } = await import('@supabase/supabase-js');
       const supabase = createClient(
         process.env.SUPABASE_URL,
         process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY

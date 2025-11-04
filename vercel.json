@@ -11,19 +11,7 @@
     "api/collect-data.js": {
       "maxDuration": 60
     },
-    "api/google-aqhi-collect.js": {
-      "maxDuration": 60
-    },
-    "api/google-aqhi-collect-fast.js": {
-      "maxDuration": 30
-    },
-    "api/google-aqhi-batch.js": {
-      "maxDuration": 30
-    },
     "api/google-collect-only.js": {
-      "maxDuration": 10
-    },
-    "api/google-calculate-aqhi.js": {
       "maxDuration": 10
     },
     "api/google-aqhi-health.js": {

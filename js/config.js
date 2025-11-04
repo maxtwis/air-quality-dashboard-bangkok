@@ -31,7 +31,7 @@ export const CONFIG = {
   API_BASE_URL: "https://api.waqi.info",
 
   // Default indicator type (AQI or AQHI)
-  DEFAULT_INDICATOR: "AQI",
+  DEFAULT_INDICATOR: "AQHI",
 
   TILE_LAYER: {
     url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",

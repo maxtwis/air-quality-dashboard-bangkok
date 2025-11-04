@@ -11,8 +11,11 @@
     "api/collect-data.js": {
       "maxDuration": 60
     },
-    "api/collect-google-supplements.js": {
+    "api/google-aqhi-collect.js": {
       "maxDuration": 60
+    },
+    "api/google-aqhi-health.js": {
+      "maxDuration": 10
     },
     "api/debug-collect.js": {
       "maxDuration": 30

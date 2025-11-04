@@ -130,37 +130,58 @@ export default async function handler(req, res) {
   let successCount = 0;
   let failCount = 0;
 
-  // Collect data for all 15 locations
-  for (const location of COMMUNITY_LOCATIONS) {
-    try {
-      const googleData = await fetchGoogleAirQuality(location.lat, location.lng);
-      const pollutants = extractPollutants(googleData);
+  // Optimized batch processing (like collect-data.js)
+  const batchSize = 5;
+  console.log(`🚀 Collecting data for ${COMMUNITY_LOCATIONS.length} locations in batches of ${batchSize}...`);
 
-      if (!pollutants) {
-        failCount++;
-        continue;
+  for (let i = 0; i < COMMUNITY_LOCATIONS.length; i += batchSize) {
+    const batch = COMMUNITY_LOCATIONS.slice(i, i + batchSize);
+    const batchNum = Math.floor(i / batchSize) + 1;
+    const totalBatches = Math.ceil(COMMUNITY_LOCATIONS.length / batchSize);
+
+    console.log(`📦 Processing batch ${batchNum}/${totalBatches} (${batch.length} locations)`);
+
+    // Process batch in parallel
+    const promises = batch.map(async (location) => {
+      try {
+        const googleData = await fetchGoogleAirQuality(location.lat, location.lng);
+        const pollutants = extractPollutants(googleData);
+
+        if (!pollutants) {
+          console.log(`⚠️ Location ${location.id}: No pollutant data`);
+          return null;
+        }
+
+        console.log(`✅ Location ${location.id}: Data collected`);
+        return {
+          location_id: location.id,
+          hour_timestamp: hourTimestamp,
+          pm25: pollutants.pm25 || null,
+          pm10: pollutants.pm10 || null,
+          o3: pollutants.o3 || null,
+          no2: pollutants.no2 || null,
+          so2: pollutants.so2 || null,
+          co: pollutants.co || null,
+          data_quality: 'EXCELLENT'
+        };
+      } catch (error) {
+        console.error(`❌ Location ${location.id} failed:`, error.message);
+        return null;
       }
+    });
 
-      results.push({
-        location_id: location.id,
-        hour_timestamp: hourTimestamp,
-        pm25: pollutants.pm25 || null,
-        pm10: pollutants.pm10 || null,
-        o3: pollutants.o3 || null,
-        no2: pollutants.no2 || null,
-        so2: pollutants.so2 || null,
-        co: pollutants.co || null,
-        data_quality: 'EXCELLENT'
-      });
+    const batchResults = await Promise.all(promises);
+    const validResults = batchResults.filter(result => result !== null);
 
-      successCount++;
+    results.push(...validResults);
+    successCount += validResults.length;
+    failCount += (batch.length - validResults.length);
 
-      // Rate limiting
+    console.log(`📊 Progress: ${i + batch.length}/${COMMUNITY_LOCATIONS.length} - Success: ${validResults.length}/${batch.length}`);
+
+    // Short delay between batches (like collect-data.js)
+    if (i + batchSize < COMMUNITY_LOCATIONS.length) {
       await new Promise(resolve => setTimeout(resolve, 200));
-
-    } catch (error) {
-      console.error(`❌ Location ${location.id} failed:`, error.message);
-      failCount++;
     }
   }
 

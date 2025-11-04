@@ -10,8 +10,8 @@ let supabase = null;
 
 function getSupabaseClient() {
   if (!supabase) {
-    const supabaseUrl = window.SUPABASE_URL || 'https://plrjbynejtbuawxijejf.supabase.co';
-    const supabaseAnonKey = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBscmpieW5lanRidWF3eGlqZWpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MTU1MjksImV4cCI6MjA3Mjk5MTUyOX0.BuoYEm1oloP6Fvt87fZagOqRAwPw8B5kf9cUh13uuQk';
+    const supabaseUrl = window.SUPABASE_URL || 'https://xqvjrovzhupdfwvdikpo.supabase.co';
+    const supabaseAnonKey = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxdmpyb3Z6aHVwZGZ3dmRpa3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NTQyMjMsImV4cCI6MjA3MzUzMDIyM30.rzJ8-LnZh2dITbh7HcIXJ32BQ1MN-F-O5hCmO0jzIDo';
 
     supabase = createClient(supabaseUrl, supabaseAnonKey);
     console.log('✅ Supabase client initialized for Google AQHI');

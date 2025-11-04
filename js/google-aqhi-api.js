@@ -3,7 +3,12 @@
  * For the 15 community monitoring locations
  */
 
-import { supabase } from './env.js';
+import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
+
+// Initialize Supabase client
+const supabaseUrl = window.SUPABASE_URL || 'https://plrjbynejtbuawxijejf.supabase.co';
+const supabaseAnonKey = window.SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 /**
  * Fetch the latest AQHI data for all 15 community locations

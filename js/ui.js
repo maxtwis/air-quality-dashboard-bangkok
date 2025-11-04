@@ -254,28 +254,24 @@ export class UIManager {
 
     const aqiLegendHTML = `
       <div class="legend-item">
+        <div class="legend-dot" style="background-color: ${AQI_LEVELS.VERY_GOOD.color};"></div>
+        <span>ดีมาก (0-25)</span>
+      </div>
+      <div class="legend-item">
         <div class="legend-dot" style="background-color: ${AQI_LEVELS.GOOD.color};"></div>
-        <span>ดี (0-50)</span>
+        <span>ดี (26-50)</span>
       </div>
       <div class="legend-item">
         <div class="legend-dot" style="background-color: ${AQI_LEVELS.MODERATE.color};"></div>
         <span>ปานกลาง (51-100)</span>
       </div>
       <div class="legend-item">
-        <div class="legend-dot" style="background-color: ${AQI_LEVELS.UNHEALTHY_SENSITIVE.color};"></div>
-        <span>ไม่ดีต่อกลุ่มเสี่ยง (101-150)</span>
-      </div>
-      <div class="legend-item">
         <div class="legend-dot" style="background-color: ${AQI_LEVELS.UNHEALTHY.color};"></div>
-        <span>ไม่ดี (151-200)</span>
+        <span>เริ่มมีผลกระทบต่อสุขภาพ (101-200)</span>
       </div>
       <div class="legend-item">
         <div class="legend-dot" style="background-color: ${AQI_LEVELS.VERY_UNHEALTHY.color};"></div>
-        <span>ไม่ดีมาก (201-300)</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-dot" style="background-color: ${AQI_LEVELS.HAZARDOUS.color};"></div>
-        <span>อันตราย (301+)</span>
+        <span>มีผลกระทบต่อสุขภาพ (201+)</span>
       </div>
     `;
 
@@ -320,10 +316,10 @@ export class UIManager {
 
   // Helper method to get AQHI CSS class
   getAQHIClass(aqhi) {
-    if (aqhi <= 3) return "aqi-good";
-    if (aqhi <= 6) return "aqi-moderate";
-    if (aqhi <= 10) return "aqi-unhealthy-sensitive";
-    return "aqi-hazardous";
+    if (aqhi < 4) return "aqhi-low";
+    if (aqhi < 7) return "aqhi-moderate";
+    if (aqhi < 10) return "aqhi-high";
+    return "aqhi-very-high";
   }
 
   // Enhanced station information panel with pollutant data
@@ -917,20 +913,15 @@ export class UIManager {
   // Update category breakdown
   updateCategoryBreakdown(categories) {
     const categoryData = [
+      { name: "Very Good", count: categories.veryGood, color: "#06b6d4" },
       { name: "Good", count: categories.good, color: "#10b981" },
       { name: "Moderate", count: categories.moderate, color: "#f59e0b" },
-      {
-        name: "Unhealthy for Sensitive",
-        count: categories.unhealthySensitive,
-        color: "#f97316",
-      },
-      { name: "Unhealthy", count: categories.unhealthy, color: "#ef4444" },
+      { name: "Unhealthy", count: categories.unhealthy, color: "#f97316" },
       {
         name: "Very Unhealthy",
         count: categories.veryUnhealthy,
-        color: "#8b5cf6",
+        color: "#ef4444",
       },
-      { name: "Hazardous", count: categories.hazardous, color: "#6b7280" },
     ].filter((cat) => cat.count > 0);
 
     const categoryStatsElement = document.getElementById("category-stats");

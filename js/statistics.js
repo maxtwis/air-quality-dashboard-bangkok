@@ -20,7 +20,6 @@ function updateStatisticsPanelAQI(stations) {
   const statsContent = document.getElementById("stats-content");
 
   if (!statsContent) {
-    console.error("Statistics content element not found");
     return;
   }
 
@@ -64,7 +63,6 @@ function updateStatisticsPanelAQHI(stations) {
   const statsContent = document.getElementById("stats-content");
 
   if (!statsContent) {
-    console.error("Statistics content element not found");
     return;
   }
 
@@ -252,12 +250,11 @@ export function generateStatsReport(stations) {
       lowestAQI: stats.minAQI,
     },
     breakdown: {
+      veryGood: stats.categories.veryGood,
       good: stats.categories.good,
       moderate: stats.categories.moderate,
-      unhealthyForSensitive: stats.categories.unhealthySensitive,
       unhealthy: stats.categories.unhealthy,
       veryUnhealthy: stats.categories.veryUnhealthy,
-      hazardous: stats.categories.hazardous,
     },
     stations: stats.validStations.map((station) => ({
       name: station.station?.name || "Unknown",

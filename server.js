@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
+import { collectGoogleAQHI, healthCheck } from "./api-google-aqhi.js";
 
 // Load environment variables
 dotenv.config({ path: ".env.local" });
@@ -229,6 +230,12 @@ app.get("/api/waqi-proxy", async (req, res) => {
     });
   }
 });
+
+// Google AQHI Collection Endpoint (for cron-job.org)
+app.get("/api/google-aqhi/collect", collectGoogleAQHI);
+
+// Google AQHI Health Check
+app.get("/api/google-aqhi/health", healthCheck);
 
 // Serve the main application
 app.get("/", (req, res) => {

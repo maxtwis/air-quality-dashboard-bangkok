@@ -611,44 +611,66 @@ body {
   font-size: 0.875rem;
 }
 
-/* AQI Colors */
+/* Thai AQI Colors (5 stages) */
+.aqi-very-good {
+  background-color: #06b6d4; /* cyan */
+}
 .aqi-good {
-  background-color: #10b981;
+  background-color: #10b981; /* green */
 }
 .aqi-moderate {
-  background-color: #f59e0b;
-}
-.aqi-unhealthy-sensitive {
-  background-color: #f97316;
+  background-color: #f59e0b; /* yellow */
 }
 .aqi-unhealthy {
-  background-color: #ef4444;
+  background-color: #f97316; /* orange */
 }
 .aqi-very-unhealthy {
-  background-color: #8b5cf6;
-}
-.aqi-hazardous {
-  background-color: #6b7280;
+  background-color: #ef4444; /* red */
 }
 
 /* Color variants for text */
+.text-aqi-very-good {
+  color: #06b6d4;
+}
 .text-aqi-good {
   color: #10b981;
 }
 .text-aqi-moderate {
   color: #f59e0b;
 }
-.text-aqi-unhealthy-sensitive {
+.text-aqi-unhealthy {
   color: #f97316;
 }
-.text-aqi-unhealthy {
+.text-aqi-very-unhealthy {
   color: #ef4444;
 }
-.text-aqi-very-unhealthy {
-  color: #8b5cf6;
+
+/* AQHI Colors (separate from AQI) */
+.aqhi-low {
+  background-color: #10b981; /* green - Low (0-3.9) */
 }
-.text-aqi-hazardous {
-  color: #6b7280;
+.aqhi-moderate {
+  background-color: #f59e0b; /* yellow - Moderate (4-6.9) */
+}
+.aqhi-high {
+  background-color: #ef4444; /* red - High (7-9.9) */
+}
+.aqhi-very-high {
+  background-color: #7f1d1d; /* dark red - Very High (10+) */
+}
+
+/* AQHI text colors */
+.text-aqhi-low {
+  color: #10b981;
+}
+.text-aqhi-moderate {
+  color: #f59e0b;
+}
+.text-aqhi-high {
+  color: #ef4444;
+}
+.text-aqhi-very-high {
+  color: #7f1d1d;
 }
 
 /* Custom marker styles */

@@ -317,12 +317,11 @@ class ModernAirQualityDashboard {
       const aqi = parseInt(station.aqi);
       let category;
 
-      if (aqi <= 50) category = "good";
+      if (aqi <= 25) category = "very-good";
+      else if (aqi <= 50) category = "good";
       else if (aqi <= 100) category = "moderate";
-      else if (aqi <= 150) category = "unhealthy-sensitive";
       else if (aqi <= 200) category = "unhealthy";
-      else if (aqi <= 300) category = "very-unhealthy";
-      else category = "hazardous";
+      else category = "very-unhealthy";
 
       if (!acc[category]) acc[category] = [];
       acc[category].push(station);

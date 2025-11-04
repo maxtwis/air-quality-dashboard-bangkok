@@ -8,7 +8,7 @@ export function getAQILevel(aqi) {
       return level;
     }
   }
-  return AQI_LEVELS.HAZARDOUS;
+  return AQI_LEVELS.VERY_UNHEALTHY;
 }
 
 export function getAQIColor(aqi) {
@@ -24,12 +24,11 @@ export function getAQIDescription(aqi) {
 }
 
 export function getAQIClass(aqi) {
+  if (aqi <= 25) return "aqi-very-good";
   if (aqi <= 50) return "aqi-good";
   if (aqi <= 100) return "aqi-moderate";
-  if (aqi <= 150) return "aqi-unhealthy-sensitive";
   if (aqi <= 200) return "aqi-unhealthy";
-  if (aqi <= 300) return "aqi-very-unhealthy";
-  return "aqi-hazardous";
+  return "aqi-very-unhealthy";
 }
 
 export function formatBounds(bounds) {
@@ -116,15 +115,13 @@ export function calculateStationStatistics(stations) {
   const maxAQI = Math.max(...aqiValues);
   const minAQI = Math.min(...aqiValues);
 
-  // Count by category
+  // Count by category (Thai AQI)
   const categories = {
-    good: aqiValues.filter((aqi) => aqi <= 50).length,
+    veryGood: aqiValues.filter((aqi) => aqi <= 25).length,
+    good: aqiValues.filter((aqi) => aqi > 25 && aqi <= 50).length,
     moderate: aqiValues.filter((aqi) => aqi > 50 && aqi <= 100).length,
-    unhealthySensitive: aqiValues.filter((aqi) => aqi > 100 && aqi <= 150)
-      .length,
-    unhealthy: aqiValues.filter((aqi) => aqi > 150 && aqi <= 200).length,
-    veryUnhealthy: aqiValues.filter((aqi) => aqi > 200 && aqi <= 300).length,
-    hazardous: aqiValues.filter((aqi) => aqi > 300).length,
+    unhealthy: aqiValues.filter((aqi) => aqi > 100 && aqi <= 200).length,
+    veryUnhealthy: aqiValues.filter((aqi) => aqi > 200).length,
   };
 
   return {

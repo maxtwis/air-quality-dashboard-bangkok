@@ -379,8 +379,9 @@ export class UIManager {
       stationInfo.style.display = "block";
     }
 
-    // Load historical chart
-    if (station.uid) {
+    // Load historical chart (skip for Google AQHI stations - no history yet)
+    const isGoogleStation = station.uid?.toString().startsWith('google-');
+    if (station.uid && !isGoogleStation) {
       renderStationHistoryChart(station.uid.toString(), 24);
     }
 
@@ -388,7 +389,19 @@ export class UIManager {
     this.showLoadingInStationInfo();
 
     try {
-      const detailsData = await fetchStationDetails(station.uid);
+      // Skip WAQI API call for Google AQHI stations - they already have all their data
+      let detailsData = null;
+      if (isGoogleStation) {
+        // Use the data already in the station object
+        detailsData = {
+          iaqi: station.iaqi || {},
+          aqi: station.aqi,
+          time: station.station?.time
+        };
+      } else {
+        // Fetch from WAQI API for regular stations
+        detailsData = await fetchStationDetails(station.uid);
+      }
       if (detailsData) {
         this.currentStationDetails = detailsData;
         this.enhancedStationData = station; // Store enhanced station data with AQHI

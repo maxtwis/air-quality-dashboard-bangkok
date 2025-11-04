@@ -157,6 +157,67 @@ export async function fetchGoogleAQHIStations() {
 }
 
 /**
+ * Fetch Google AQHI history for a specific location
+ * @param {number} locationId - Location ID (1-15)
+ * @param {number} hours - Number of hours of history (24 or 168)
+ * @returns {Promise<Array>} Array of historical AQHI data points
+ */
+export async function fetchGoogleAQHIHistory(locationId, hours = 24) {
+  try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('❌ Supabase client not available');
+      return [];
+    }
+
+    // Query google_aqhi_hourly for the specified location and time range
+    const hoursAgo = new Date();
+    hoursAgo.setHours(hoursAgo.getHours() - hours);
+
+    const { data, error } = await supabase
+      .from('google_aqhi_hourly')
+      .select('*')
+      .eq('location_id', locationId)
+      .gte('hour_timestamp', hoursAgo.toISOString())
+      .order('hour_timestamp', { ascending: true });
+
+    if (error) {
+      console.error('❌ Error fetching AQHI history:', error);
+      return [];
+    }
+
+    if (!data || data.length === 0) {
+      console.log(`⚠️  No history found for location ${locationId} (${hours}h)`);
+      return [];
+    }
+
+    // Transform to chart-compatible format
+    const history = data.map(row => ({
+      timestamp: row.hour_timestamp,
+      pm25: row.pm25,
+      pm10: row.pm10,
+      o3: row.o3,
+      no2: row.no2,
+      so2: row.so2,
+      co: row.co,
+      aqhi: row.aqhi,
+      // For chart display
+      pm25_3h_avg: row.pm25_3h_avg,
+      pm10_3h_avg: row.pm10_3h_avg,
+      o3_3h_avg: row.o3_3h_avg,
+      no2_3h_avg: row.no2_3h_avg
+    }));
+
+    console.log(`✅ Fetched ${history.length} AQHI history points for location ${locationId} (${hours}h)`);
+    return history;
+
+  } catch (error) {
+    console.error('❌ Error fetching Google AQHI history:', error);
+    return [];
+  }
+}
+
+/**
  * Get AQHI level information
  * @param {number} aqhi - AQHI value
  * @returns {Object} Level information

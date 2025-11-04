@@ -1,4 +1,5 @@
 import { AirQualityDB } from "../lib/supabase.js";
+import { fetchGoogleAQHIHistory } from "./google-aqhi-api.js";
 
 // Station History Chart Module
 // Displays historical pollutant data using Chart.js
@@ -98,7 +99,20 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
       '<div class="loading"><div class="loading-spinner"></div>กำลังโหลดข้อมูลย้อนหลัง...</div>';
 
     // Fetch historical data
-    const historyData = await AirQualityDB.getStationHistory(stationUid, hours);
+    let historyData;
+
+    // Check if this is a Google AQHI station (uid format: "google-1", "google-2", etc.)
+    const isGoogleStation = stationUid.toString().startsWith('google-');
+
+    if (isGoogleStation) {
+      // Extract location ID from uid (e.g., "google-8" -> 8)
+      const locationId = parseInt(stationUid.toString().replace('google-', ''));
+      console.log(`📊 Fetching Google AQHI history for location ${locationId}`);
+      historyData = await fetchGoogleAQHIHistory(locationId, hours);
+    } else {
+      // Fetch WAQI station history
+      historyData = await AirQualityDB.getStationHistory(stationUid, hours);
+    }
 
     console.log(
       `✅ Loaded ${historyData ? historyData.length : 0} data points for ${hours}h`,

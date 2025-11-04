@@ -379,9 +379,9 @@ export class UIManager {
       stationInfo.style.display = "block";
     }
 
-    // Load historical chart (skip for Google AQHI stations - no history yet)
+    // Load historical chart for all stations (both WAQI and Google AQHI)
     const isGoogleStation = station.uid?.toString().startsWith('google-');
-    if (station.uid && !isGoogleStation) {
+    if (station.uid) {
       renderStationHistoryChart(station.uid.toString(), 24);
     }
 

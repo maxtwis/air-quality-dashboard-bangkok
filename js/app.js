@@ -41,6 +41,12 @@ class ModernAirQualityDashboard {
       // Load initial data
       await this.loadData();
 
+      // If AQHI is the default indicator, load AQHI data automatically
+      if (uiManager.currentIndicator === "AQHI") {
+        console.log("🔄 Default indicator is AQHI - loading Google AQHI data...");
+        await this.calculateAQHI();
+      }
+
       // Set up auto-refresh
       this.setupAutoRefresh();
 

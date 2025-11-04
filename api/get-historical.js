@@ -1,30 +1,23 @@
 // API endpoint to get 3-hour moving averages from stored data
-export const config = {
-  runtime: "edge",
-};
-
-export default async function handler(request) {
+// Changed to serverless runtime for full Supabase support
+export default async function handler(req, res) {
+  // Support both GET and POST
+  if (!['GET', 'POST'].includes(req.method)) {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
   try {
-    const url = new URL(request.url);
-    const stationId = url.searchParams.get("station");
-    const hours = parseInt(url.searchParams.get("hours")) || 3;
+    const stationId = req.query.station;
+    const hours = parseInt(req.query.hours) || 3;
 
     // Calculate 3-hour moving averages from database
     const movingAverages = await getMovingAverages(stationId, hours);
 
-    return new Response(JSON.stringify(movingAverages), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "public, s-maxage=300", // Cache for 5 minutes
-      },
-    });
+    // Set cache headers
+    res.setHeader('Cache-Control', 'public, s-maxage=300'); // Cache for 5 minutes
+    return res.status(200).json(movingAverages);
   } catch (error) {
     console.error("Historical data error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return res.status(500).json({ error: error.message });
   }
 }
 

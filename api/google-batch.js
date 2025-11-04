@@ -87,32 +87,38 @@ export default async function handler(req, res) {
     const results = (await Promise.all(promises)).filter(r => r);
 
     // Store - trigger will calculate AQHI automatically
+    // Use Supabase REST API directly to avoid module loading issues in Vercel
     let dbSuccess = false;
     let dbError = null;
 
     if (results.length > 0) {
       try {
-        const { createClient } = await import('@supabase/supabase-js');
-        const supabase = createClient(
-          process.env.SUPABASE_URL,
-          process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
-        );
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-        const { error } = await supabase
-          .from('google_aqhi_hourly')
-          .upsert(results, { onConflict: 'location_id,hour_timestamp' });
+        const response = await fetch(`${supabaseUrl}/rest/v1/google_aqhi_hourly`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': supabaseKey,
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Prefer': 'resolution=merge-duplicates'
+          },
+          body: JSON.stringify(results)
+        });
 
-        if (error) {
-          dbError = error.message;
-          console.error('❌ Database error:', error.message);
+        if (!response.ok) {
+          const errorText = await response.text();
+          dbError = `HTTP ${response.status}: ${errorText}`;
+          console.error('❌ Database error:', dbError);
         } else {
           dbSuccess = true;
           console.log('✅ Database storage successful');
         }
       } catch (error) {
         dbError = error.message;
-        console.error('❌ Supabase module error:', error.message);
-        // Continue without database - like collect-data.js does
+        console.error('❌ Database storage error:', error.message);
+        // Continue without database
       }
 
       return res.json({

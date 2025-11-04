@@ -17,7 +17,8 @@
       "Bash(node:*)",
       "Bash(npm --version)",
       "Bash(test:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(time curl:*)"
     ],
     "deny": [],
     "ask": []

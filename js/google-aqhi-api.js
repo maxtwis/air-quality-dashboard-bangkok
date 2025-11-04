@@ -5,10 +5,19 @@
 
 import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
 
-// Initialize Supabase client
-const supabaseUrl = window.SUPABASE_URL || 'https://plrjbynejtbuawxijejf.supabase.co';
-const supabaseAnonKey = window.SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Initialize Supabase client lazily (only when needed)
+let supabase = null;
+
+function getSupabaseClient() {
+  if (!supabase) {
+    const supabaseUrl = window.SUPABASE_URL || 'https://plrjbynejtbuawxijejf.supabase.co';
+    const supabaseAnonKey = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBscmpieW5lanRidWF3eGlqZWpmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc0MTU1MjksImV4cCI6MjA3Mjk5MTUyOX0.BuoYEm1oloP6Fvt87fZagOqRAwPw8B5kf9cUh13uuQk';
+
+    supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log('✅ Supabase client initialized for Google AQHI');
+  }
+  return supabase;
+}
 
 /**
  * Fetch the latest AQHI data for all 15 community locations
@@ -17,6 +26,12 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export async function fetchGoogleAQHIStations() {
   try {
     console.log('🔄 Fetching Google AQHI data from Supabase...');
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.error('❌ Supabase client not available');
+      return [];
+    }
 
     // Get the latest data for each location
     // Group by location_id and get the most recent hour_timestamp

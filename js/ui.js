@@ -425,6 +425,7 @@ export class UIManager {
           isAQHI,
           averageData,
           null,
+          isGoogleStation, // Pass Google station flag
         );
       } else {
         // Fallback for AQI mode - use basic station data if detailed fetch fails
@@ -437,6 +438,7 @@ export class UIManager {
             false, // Not AQHI mode
             null, // No averageData
             null, // No openWeatherData
+            false, // Not a Google station
           );
         } else {
           this.showErrorInStationInfo("Could not load detailed data");
@@ -481,6 +483,7 @@ export class UIManager {
     isAQHI = false,
     averageData = null,
     openWeatherData = null,
+    isGoogleStation = false,
   ) {
     // Define indicator variables based on current mode
     const isPM25AQHI = this.currentIndicator === "PM25_AQHI";
@@ -550,8 +553,46 @@ export class UIManager {
             );
           }
         });
+      } else if (isGoogleStation) {
+        // Google stations - values are already in correct units (μg/m³ or ppb)
+        console.log(
+          `🔄 Google AQHI station: Using raw concentration values (already in μg/m³/ppb)`,
+        );
+
+        Object.entries(detailsData.iaqi).forEach(([key, data]) => {
+          if (POLLUTANTS[key]) {
+            // Values are already concentrations - just determine display unit
+            let unit = "μg/m³";
+            let displayValue = data.v;
+
+            if (key === "co") {
+              unit = "mg/m³";
+            } else if (key === "no2" || key === "o3") {
+              unit = "ppb";
+            }
+
+            pollutantData.push({
+              key,
+              config: {
+                ...POLLUTANTS[key],
+                unit: unit,
+              },
+              value: Math.round(displayValue * 10) / 10,
+              isConverted: false, // No conversion needed
+            });
+            console.log(
+              `   ✅ ${key.toUpperCase()}: ${Math.round(displayValue * 10) / 10} ${unit} (Google raw)`,
+            );
+          } else if (WEATHER_PARAMS[key]) {
+            weatherData.push({
+              key,
+              config: WEATHER_PARAMS[key],
+              value: data.v,
+            });
+          }
+        });
       } else {
-        // Standard processing for API data - CONVERT AQI TO CONCENTRATIONS
+        // WAQI stations - CONVERT AQI TO CONCENTRATIONS
         console.log(
           `🔄 Detail panel mode: ${isAQHI ? "AQHI" : "AQI"} - Converting AQI values to concentrations...`,
         );

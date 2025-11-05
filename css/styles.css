@@ -1214,14 +1214,15 @@ body {
 
   /* Station Info Panel - Mobile */
   .station-info {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
     width: 90%;
     max-width: 350px;
     max-height: 80vh;
     overflow-y: auto;
+    animation: fadeIn 0.3s ease !important;
   }
 
   /* Stats Grid - Mobile */

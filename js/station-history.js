@@ -155,8 +155,15 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
       const handleToggle = (e) => {
         e.stopPropagation(); // Prevent event from bubbling to document click handler
         e.preventDefault(); // Prevent default touch behavior on mobile
+
+        // Save current scroll position
+        const scrollY = window.scrollY || window.pageYOffset;
+
         const newHours = parseInt(btn.dataset.hours);
-        renderStationHistoryChart(stationUid, newHours);
+        renderStationHistoryChart(stationUid, newHours).then(() => {
+          // Restore scroll position after chart renders
+          window.scrollTo(0, scrollY);
+        });
       };
 
       btn.addEventListener("click", handleToggle);

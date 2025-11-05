@@ -97,6 +97,38 @@ body {
   font-family: "Noto Sans Thai Looped", sans-serif;
 }
 
+/* Language Switcher */
+.language-switcher {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  padding: 4px;
+}
+
+.lang-btn {
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-family: "Noto Sans Thai Looped", sans-serif;
+}
+
+.lang-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.lang-btn.active {
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+}
+
 .app-container {
   display: flex;
   min-height: calc(100vh - 70px);
@@ -1086,6 +1118,85 @@ body {
   .level-value {
     font-size: 1rem;
   }
+
+  /* AQHI Table with Columns - Mobile */
+  .aqhi-table-header {
+    display: none;
+  }
+
+  .level-item-with-columns {
+    padding: 12px;
+  }
+
+  .level-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .level-info {
+    align-items: flex-start;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--gray-200);
+  }
+
+  .level-info .level-value {
+    font-size: 1.5rem;
+  }
+
+  .level-info .level-label {
+    font-size: 0.875rem;
+  }
+
+  .recommendation-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .recommendation-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .mobile-only {
+    display: block;
+  }
+
+  .level-desc {
+    font-size: 0.875rem;
+    line-height: 1.6;
+    padding-left: 12px;
+    position: relative;
+  }
+
+  .level-desc::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--gray-500);
+    font-weight: bold;
+  }
+
+  /* Language Switcher - Mobile */
+  .language-switcher {
+    align-self: flex-end;
+    width: auto;
+  }
+}
+
+/* Hide mobile-only elements on desktop */
+@media (min-width: 769px) {
+  .mobile-only {
+    display: none;
+  }
+
+  .recommendation-item {
+    display: contents;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1287,4 +1398,22 @@ body {
   color: var(--gray-500);
   font-style: italic;
   text-align: center;
+}
+
+/* Footer */
+.footer {
+  background: #ffffff;
+  padding: 24px 32px;
+  margin-top: auto;
+}
+
+.footer-content {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+.footer-logo {
+  height: 60px;
+  width: auto;
 }

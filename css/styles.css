@@ -97,6 +97,13 @@ body {
   font-family: "Noto Sans Thai Looped", sans-serif;
 }
 
+/* Navbar Right Section */
+.navbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 /* Language Switcher */
 .language-switcher {
   display: flex;
@@ -127,6 +134,127 @@ body {
 .lang-btn.active {
   background: rgba(255, 255, 255, 0.25);
   color: white;
+}
+
+/* Mobile Menu Button - Hidden on Desktop */
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.mobile-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mobile-menu-btn i {
+  font-size: 28px;
+}
+
+/* Mobile Menu - Hidden by Default */
+.mobile-menu {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-menu.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mobile-menu-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+.mobile-menu-content {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 280px;
+  max-width: 85%;
+  height: 100%;
+  background: white;
+  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-menu.active .mobile-menu-content {
+  transform: translateX(0);
+}
+
+.mobile-menu-close {
+  align-self: flex-end;
+  background: transparent;
+  border: none;
+  color: var(--gray-600);
+  cursor: pointer;
+  padding: 16px;
+  font-size: 24px;
+}
+
+.mobile-menu-close:hover {
+  color: var(--gray-900);
+}
+
+.mobile-nav {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  gap: 4px;
+}
+
+.mobile-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: transparent;
+  border: none;
+  color: var(--gray-700);
+  cursor: pointer;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  font-family: "Noto Sans Thai Looped", sans-serif;
+  text-align: left;
+}
+
+.mobile-nav-item:hover {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+
+.mobile-nav-item.active {
+  background: var(--primary-color);
+  color: white;
+}
+
+.mobile-nav-item i {
+  font-size: 24px;
 }
 
 .app-container {
@@ -991,11 +1119,12 @@ body {
 @media (max-width: 768px) {
   /* Top Navigation Bar - Mobile */
   .top-navbar {
-    flex-direction: column;
+    flex-direction: row;
     height: auto;
-    padding: 16px;
+    padding: 12px 16px;
     gap: 12px;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: space-between;
   }
 
   .navbar-brand .app-title {
@@ -1006,20 +1135,24 @@ body {
     font-size: 0.7rem;
   }
 
-  .top-navbar .nav-tabs {
-    width: 100%;
-    overflow-x: auto;
-    justify-content: flex-start;
+  /* Hide desktop navigation on mobile */
+  .desktop-nav {
+    display: none !important;
   }
 
-  .top-navbar .nav-tab {
-    padding: 12px 16px;
-    font-size: 0.8rem;
-    flex-shrink: 0;
+  /* Show mobile menu button */
+  .mobile-menu-btn {
+    display: block;
   }
 
-  .top-navbar .nav-tab i.material-icons {
-    font-size: 18px;
+  /* Show mobile menu */
+  .mobile-menu {
+    display: block;
+  }
+
+  /* Hide language switcher on mobile navbar */
+  .navbar-right .language-switcher {
+    display: none;
   }
 
   /* App Container - Mobile */

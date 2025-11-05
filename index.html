@@ -32,7 +32,9 @@
       <div class="navbar-brand">
         <h1 class="app-title">Breathe Bangkok</h1>
       </div>
-      <nav class="nav-tabs">
+
+      <!-- Desktop Navigation -->
+      <nav class="nav-tabs desktop-nav">
         <button class="nav-tab active" data-page="map">
           <i class="material-icons">map</i>
           <span data-i18n="nav.map">แผนที่คุณภาพอากาศ</span>
@@ -46,11 +48,43 @@
           <span data-i18n="nav.health">คำแนะนำสุขภาพ</span>
         </button>
       </nav>
-      <div class="language-switcher">
-        <button class="lang-btn active" data-lang="th">ไทย</button>
-        <button class="lang-btn" data-lang="en">EN</button>
+
+      <div class="navbar-right">
+        <div class="language-switcher">
+          <button class="lang-btn active" data-lang="th">ไทย</button>
+          <button class="lang-btn" data-lang="en">EN</button>
+        </div>
+
+        <!-- Mobile Menu Button -->
+        <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Menu">
+          <i class="material-icons">menu</i>
+        </button>
       </div>
     </header>
+
+    <!-- Mobile Navigation Menu -->
+    <div class="mobile-menu" id="mobile-menu">
+      <div class="mobile-menu-content">
+        <button class="mobile-menu-close" id="mobile-menu-close">
+          <i class="material-icons">close</i>
+        </button>
+        <nav class="mobile-nav">
+          <button class="mobile-nav-item active" data-page="map">
+            <i class="material-icons">map</i>
+            <span data-i18n="nav.map">แผนที่คุณภาพอากาศ</span>
+          </button>
+          <button class="mobile-nav-item" data-page="about">
+            <i class="material-icons">info</i>
+            <span data-i18n="nav.about">เกี่ยวกับ AQHI</span>
+          </button>
+          <button class="mobile-nav-item" data-page="health">
+            <i class="material-icons">health_and_safety</i>
+            <span data-i18n="nav.health">คำแนะนำสุขภาพ</span>
+          </button>
+        </nav>
+      </div>
+      <div class="mobile-menu-overlay" id="mobile-menu-overlay"></div>
+    </div>
 
     <div class="app-container">
       <!-- Sidebar -->
@@ -355,6 +389,7 @@
     <!-- Application Modules -->
     <script type="module" src="js/translations.js"></script>
     <script type="module" src="js/language.js"></script>
+    <script type="module" src="js/mobile-menu.js"></script>
     <script type="module" src="js/config.js"></script>
     <script type="module" src="js/utils.js"></script>
     <script type="module" src="js/aqi-to-concentration.js"></script>

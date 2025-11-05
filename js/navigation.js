@@ -9,11 +9,20 @@ class NavigationManager {
   }
 
   init() {
-    // Set up nav tab click handlers
+    // Set up nav tab click handlers (desktop)
     const navTabs = document.querySelectorAll('.nav-tab');
     navTabs.forEach(tab => {
       tab.addEventListener('click', () => {
         const page = tab.dataset.page;
+        this.switchPage(page);
+      });
+    });
+
+    // Set up mobile nav click handlers
+    const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+    mobileNavItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const page = item.dataset.page;
         this.switchPage(page);
       });
     });
@@ -23,11 +32,19 @@ class NavigationManager {
   }
 
   switchPage(pageName) {
-    // Update active tab
+    // Update active tab (desktop)
     document.querySelectorAll('.nav-tab').forEach(tab => {
       tab.classList.remove('active');
       if (tab.dataset.page === pageName) {
         tab.classList.add('active');
+      }
+    });
+
+    // Update active tab (mobile)
+    document.querySelectorAll('.mobile-nav-item').forEach(item => {
+      item.classList.remove('active');
+      if (item.dataset.page === pageName) {
+        item.classList.add('active');
       }
     });
 
@@ -42,6 +59,9 @@ class NavigationManager {
     });
 
     this.currentPage = pageName;
+
+    // Dispatch custom event for other components
+    window.dispatchEvent(new CustomEvent('pageChanged', { detail: { page: pageName } }));
 
     // Show/hide appropriate containers
     const mapContainer = document.querySelector('.map-container');

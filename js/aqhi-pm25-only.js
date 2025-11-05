@@ -1,6 +1,6 @@
 // PM2.5-only AQHI calculation using Supabase data
 // This module tests the hypothesis of what happens when NO2 and O3 are set to 0
-import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js";
+import { supabase } from "../lib/supabase.js";
 import { getAQHILevel, calculateThaiAQHI } from "./aqhi-supabase.js";
 
 class PM25OnlySupabaseAQHI {
@@ -13,26 +13,9 @@ class PM25OnlySupabaseAQHI {
 
   initSupabase() {
     try {
-      // Use the same credentials as configured in lib/supabase.js
-      const supabaseUrl =
-        window.SUPABASE_URL || "https://xqvjrovzhupdfwvdikpo.supabase.co";
-      const supabaseAnonKey =
-        window.SUPABASE_ANON_KEY ||
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxdmpyb3Z6aHVwZGZ3dmRpa3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NTQyMjMsImV4cCI6MjA3MzUzMDIyM30.rzJ8-LnZh2dITbh7HcIXJ32BQ1MN-F-O5hCmO0jzIDo";
-
-      this.supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-      });
-
-      console.log("✅ PM2.5-only AQHI calculator initialized");
+      // Use shared Supabase client from lib/supabase.js
+      this.supabase = supabase;
     } catch (error) {
-      console.warn(
-        "⚠️ PM2.5-only AQHI calculator failed to initialize:",
-        error,
-      );
       this.supabase = null;
     }
   }
@@ -57,14 +40,10 @@ class PM25OnlySupabaseAQHI {
         .order("timestamp", { ascending: false });
 
       if (error) {
-        console.error("Error fetching PM2.5-only batch 3h averages:", error);
         return {};
       }
 
       if (!data || data.length === 0) {
-        console.log(
-          `ℹ️ No stored PM2.5 data for ${stationIds.length} stations`,
-        );
         return {};
       }
 
@@ -91,13 +70,8 @@ class PM25OnlySupabaseAQHI {
           };
         }
       });
-
-      console.log(
-        `📊 PM2.5-only batch processed ${Object.keys(stationAverages).length}/${stationIds.length} stations with data`,
-      );
       return stationAverages;
     } catch (error) {
-      console.error("Error in PM2.5-only getBatch3HourAverages:", error);
       return {};
     }
   }
@@ -156,10 +130,6 @@ class PM25OnlySupabaseAQHI {
           source: "stored_3h_avg_pm25_only",
           readingCount: averages.readingCount,
         });
-
-        console.log(
-          `🔄 PM2.5-only AQHI from 3h avg for ${stationId}: ${aqhiValue} (${averages.readingCount} readings)`,
-        );
         const aqhiLevel = getAQHILevel(aqhiValue);
         return {
           value: aqhiValue,
@@ -167,10 +137,6 @@ class PM25OnlySupabaseAQHI {
         };
       }
     } catch (error) {
-      console.warn(
-        `⚠️ Error calculating PM2.5-only AQHI for ${stationId}:`,
-        error,
-      );
     }
 
     // Fallback to current reading
@@ -215,10 +181,6 @@ class PM25OnlySupabaseAQHI {
         .single();
 
       if (aqicnError && aqicnError.code !== "PGRST116") {
-        console.warn(
-          `Error fetching AQICN 3h averages for PM2.5 AQHI ${stationId}:`,
-          aqicnError.message,
-        );
       }
 
       // Use AQICN data only
@@ -232,7 +194,6 @@ class PM25OnlySupabaseAQHI {
 
       return null;
     } catch (error) {
-      console.error("Error in get3HourPM25Averages:", error);
       return null;
     }
   }
@@ -242,9 +203,6 @@ class PM25OnlySupabaseAQHI {
    * Only calculates PM2.5-based AQHI (NO2 and O3 forced to 0)
    */
   async enhanceStationsWithPM25OnlyAQHI(stations) {
-    console.log(
-      `🔄 Processing ${stations.length} stations with PM2.5-only AQHI...`,
-    );
     const startTime = Date.now();
 
     // Extract all station IDs for batch query
@@ -323,9 +281,6 @@ class PM25OnlySupabaseAQHI {
 
     const duration = Date.now() - startTime;
     const storedCount = Object.keys(batchAverages).length;
-    console.log(
-      `✅ Enhanced ${enhancedStations.length} stations with PM2.5-only AQHI (${storedCount} from stored data) in ${duration}ms`,
-    );
     return enhancedStations;
   }
 

@@ -1,5 +1,5 @@
 // Browser-compatible AQHI calculation using Supabase data
-import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js";
+import { supabase } from "../lib/supabase.js";
 
 // Thai AQHI Parameters (Based on OPD/Morbidity from Thai Health Department)
 const THAI_AQHI_PARAMS = {
@@ -54,10 +54,6 @@ export const AQHI_LEVELS = {
  * Calculate Thai AQHI using official Thai Health Department formula
  */
 export function calculateThaiAQHI(pm25, no2, o3, pm10 = null) {
-  console.log(
-    `🧮 Calculating Thai AQHI with concentrations: PM2.5=${pm25}μg/m³, PM10=${pm10}μg/m³, NO2=${no2}ppb, O3=${o3}ppb`,
-  );
-
   // Calculate Percentage Excess Risk (%ER) for each pollutant
   // Formula: %ER_i = 100 * (exp(beta_i * x_i) - 1)
   const perErPM25 = pm25
@@ -76,11 +72,6 @@ export function calculateThaiAQHI(pm25, no2, o3, pm10 = null) {
 
   // Calculate AQHI: AQHI = (10 / C) * Total %ER
   const aqhi = (10 / THAI_AQHI_PARAMS.C) * totalPerER;
-
-  console.log(
-    `📊 Thai AQHI %ER: PM2.5=${perErPM25.toFixed(4)}%, PM10=${perErPM10.toFixed(4)}%, NO2=${perErNO2.toFixed(4)}%, O3=${perErO3.toFixed(4)}%, Total=${totalPerER.toFixed(4)}% → AQHI=${Math.round(aqhi)}`,
-  );
-
   return Math.max(1, Math.round(aqhi));
 }
 
@@ -211,28 +202,9 @@ class SupabaseAQHI {
 
   initSupabase() {
     try {
-      // Use the same credentials as configured in lib/supabase.js
-      const supabaseUrl =
-        window.SUPABASE_URL || "https://xqvjrovzhupdfwvdikpo.supabase.co";
-      const supabaseAnonKey =
-        window.SUPABASE_ANON_KEY ||
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxdmpyb3Z6aHVwZGZ3dmRpa3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NTQyMjMsImV4cCI6MjA3MzUzMDIyM30.rzJ8-LnZh2dITbh7HcIXJ32BQ1MN-F-O5hCmO0jzIDo";
-
-      console.log("🔗 Initializing Supabase connection for AQHI...");
-
-      this.supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        },
-      });
-
-      console.log("✅ Supabase AQHI calculator initialized successfully");
+      // Use shared Supabase client from lib/supabase.js
+      this.supabase = supabase;
     } catch (error) {
-      console.error(
-        "❌ Supabase AQHI calculator failed to initialize:",
-        error.message || error,
-      );
       this.supabase = null;
     }
   }
@@ -244,25 +216,15 @@ class SupabaseAQHI {
     if (!this.supabase || !stationIds.length) return {};
 
     try {
-      console.log(
-        `🔍 Fetching enhanced 3h averages for ${stationIds.length} stations...`,
-      );
-
       // First try to get enhanced averages using the new database function
       const enhancedAverages = await this.getBatchEnhancedAverages(stationIds);
 
       if (Object.keys(enhancedAverages).length > 0) {
-        console.log(
-          `📊 Enhanced averages: ${Object.keys(enhancedAverages).length} stations with mixed data sources`,
-        );
         // Also get standard averages for stations not in enhanced results
         const missingStations = stationIds.filter(
           (id) => !enhancedAverages[id],
         );
         if (missingStations.length > 0) {
-          console.log(
-            `🔄 Getting standard averages for ${missingStations.length} remaining stations...`,
-          );
           const standardAverages =
             await this.getBatchStandardAverages(missingStations);
           return { ...enhancedAverages, ...standardAverages };
@@ -271,12 +233,8 @@ class SupabaseAQHI {
       }
 
       // Fallback to original method if enhanced function not available
-      console.log(
-        `⚠️ Enhanced function not available, using fallback method...`,
-      );
       return await this.getBatchStandardAverages(stationIds);
     } catch (error) {
-      console.error("Error in getBatch3HourAverages:", error);
       // Fallback to standard method
       return await this.getBatchStandardAverages(stationIds);
     }
@@ -306,7 +264,6 @@ class SupabaseAQHI {
             throw new Error(`HTTP error! status: ${response.status}`);
           }
           aqicnData = await response.json();
-          console.log('📦 Proxy response type:', typeof aqicnData, 'isArray:', Array.isArray(aqicnData), 'length:', aqicnData?.length);
         } catch (error) {
           aqicnError = error;
         }
@@ -321,7 +278,6 @@ class SupabaseAQHI {
       }
 
       if (aqicnError) {
-        console.warn("Error fetching AQICN 3h averages:", aqicnError.message);
       }
 
       // Process AQICN data
@@ -344,14 +300,8 @@ class SupabaseAQHI {
           return acc;
         }, {});
       }
-
-      console.log(
-        `📊 Enhanced averages using views: ${Object.keys(stationAverages).length} total stations`,
-      );
-
       return stationAverages;
     } catch (error) {
-      console.error("Error in getBatchEnhancedAverages:", error.message);
       return {};
     }
   }
@@ -392,12 +342,10 @@ class SupabaseAQHI {
       }
 
       if (error) {
-        console.error("Error fetching standard 3h averages:", error.message);
         return {};
       }
 
       if (!data || !Array.isArray(data) || data.length === 0) {
-        console.log(`ℹ️ No 3h average data for ${stationIds.length} stations`);
         return {};
       }
 
@@ -419,13 +367,8 @@ class SupabaseAQHI {
           };
         }
       });
-
-      console.log(
-        `📊 Standard batch processed ${Object.keys(stationAverages).length}/${stationIds.length} stations with data`,
-      );
       return stationAverages;
     } catch (error) {
-      console.error("Error in getBatchStandardAverages:", error.message);
       return {};
     }
   }
@@ -466,10 +409,6 @@ class SupabaseAQHI {
         no2: googleData?.no2 || waqiData?.no2 || null,
       };
     } catch (error) {
-      console.warn(
-        `Error fetching latest readings for station ${stationId}:`,
-        error.message,
-      );
       return null;
     }
   }
@@ -510,10 +449,6 @@ class SupabaseAQHI {
       }
 
       if (aqicnError && aqicnError.code !== "PGRST116") {
-        console.warn(
-          `Error fetching AQICN 3h averages for detail panel ${stationId}:`,
-          aqicnError.message,
-        );
       }
 
       // Use combined WAQI+Google data
@@ -540,7 +475,6 @@ class SupabaseAQHI {
 
       return null;
     } catch (error) {
-      console.error("Error in get3HourAverages:", error);
       return null;
     }
   }
@@ -617,10 +551,6 @@ class SupabaseAQHI {
           source: "stored_3h_avg",
           readingCount: averages.readingCount,
         });
-
-        console.log(
-          `🔄 AQHI from 3h avg for ${stationId}: ${aqhi} (${averages.readingCount} readings)`,
-        );
         const aqhiLevel = getAQHILevel(aqhi);
         return {
           value: aqhi,
@@ -628,7 +558,6 @@ class SupabaseAQHI {
         };
       }
     } catch (error) {
-      console.warn(`⚠️ Error calculating stored AQHI for ${stationId}:`, error);
     }
 
     // Fallback to realistic calculation
@@ -657,14 +586,7 @@ class SupabaseAQHI {
    */
   async enhanceStationsWithAQHI(stations, options = {}) {
     const fastMode = options.fastMode === true; // Only true if explicitly set
-    console.log(
-      `🔄 Processing ${stations.length} stations ${fastMode ? '(fast mode - current readings only)' : '(with 3h averages from Supabase)'}...`,
-    );
-
     if (!this.supabase) {
-      console.error(
-        "❌ Supabase not initialized - falling back to realistic AQHI calculations",
-      );
       // Fallback to realistic calculations
       return Promise.all(
         stations.map(async (station) => {
@@ -688,7 +610,6 @@ class SupabaseAQHI {
 
     // FAST MODE: Skip database lookup, just calculate from current readings
     if (fastMode) {
-      console.log('⚡ Fast mode: Using current readings only');
       const enhancedStations = await Promise.all(
         stations.map(async (station) => {
           const aqhiValue = await calculateStationAQHI(station);
@@ -707,9 +628,6 @@ class SupabaseAQHI {
       );
 
       const duration = Date.now() - startTime;
-      console.log(
-        `✅ Enhanced ${enhancedStations.length} stations (fast mode) in ${duration}ms`,
-      );
       return enhancedStations;
     }
 
@@ -719,18 +637,8 @@ class SupabaseAQHI {
       const stationIds = stations
         .map((station) => station.uid?.toString())
         .filter((id) => id);
-
-      console.log(
-        `🔍 Fetching batch data for ${stationIds.length} stations...`,
-      );
-
       // Fetch all 3-hour averages in one batch query
       const batchAverages = await this.getBatch3HourAverages(stationIds);
-
-      console.log(
-        `📊 Got batch averages for ${Object.keys(batchAverages).length} stations`,
-      );
-
       // Process all stations in parallel with pre-fetched data
       const enhancedStations = await Promise.all(
         stations.map(async (station) => {
@@ -811,7 +719,6 @@ class SupabaseAQHI {
             } else {
               // No data available at all - return null
               aqhiValue = null;
-              console.warn(`⚠️ No data available for station ${stationId}`);
             }
           }
 
@@ -842,15 +749,8 @@ class SupabaseAQHI {
 
       const duration = Date.now() - startTime;
       const storedCount = Object.keys(batchAverages).length;
-      console.log(
-        `✅ Enhanced ${enhancedStations.length} stations (${storedCount} from stored data) in ${duration}ms`,
-      );
       return enhancedStations;
     } catch (error) {
-      console.error(
-        "❌ Error during AQHI enhancement:",
-        error.message || error,
-      );
       // Return stations with fallback AQHI calculations
       const fallbackStations = await Promise.all(
         stations.map(async (station) => {
@@ -870,9 +770,6 @@ class SupabaseAQHI {
       );
 
       const duration = Date.now() - startTime;
-      console.log(
-        `⚠️ Fallback AQHI calculations completed for ${fallbackStations.length} stations in ${duration}ms`,
-      );
       return fallbackStations;
     }
   }

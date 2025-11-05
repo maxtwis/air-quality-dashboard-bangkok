@@ -96,7 +96,6 @@ export const POLLUTANTS = {
     fullName: "Fine Particulate Matter",
     unit: "μg/m³",
     description: "Fine particles with diameter less than 2.5 micrometers",
-    icon: "🌫️",
     color: "#ef4444",
   },
   pm10: {
@@ -104,7 +103,6 @@ export const POLLUTANTS = {
     fullName: "Coarse Particulate Matter",
     unit: "μg/m³",
     description: "Particles with diameter less than 10 micrometers",
-    icon: "💨",
     color: "#f59e0b",
   },
   o3: {
@@ -112,7 +110,6 @@ export const POLLUTANTS = {
     fullName: "Ozone",
     unit: "μg/m³",
     description: "Ground-level ozone",
-    icon: "☀️",
     color: "#3b82f6",
   },
   no2: {
@@ -120,7 +117,6 @@ export const POLLUTANTS = {
     fullName: "Nitrogen Dioxide",
     unit: "μg/m³",
     description: "Nitrogen dioxide gas",
-    icon: "🏭",
     color: "#8b5cf6",
   },
   so2: {
@@ -128,7 +124,6 @@ export const POLLUTANTS = {
     fullName: "Sulfur Dioxide",
     unit: "μg/m³",
     description: "Sulfur dioxide gas",
-    icon: "🌋",
     color: "#f97316",
   },
   co: {
@@ -136,7 +131,6 @@ export const POLLUTANTS = {
     fullName: "Carbon Monoxide",
     unit: "mg/m³",
     description: "Carbon monoxide gas",
-    icon: "🚗",
     color: "#6b7280",
   },
 };
@@ -146,31 +140,26 @@ export const WEATHER_PARAMS = {
   t: {
     name: "Temperature",
     unit: "°C",
-    icon: "🌡️",
     color: "#f59e0b",
   },
   h: {
     name: "Humidity",
     unit: "%",
-    icon: "💧",
     color: "#3b82f6",
   },
   p: {
     name: "Pressure",
     unit: "hPa",
-    icon: "🌊",
     color: "#6b7280",
   },
   w: {
     name: "Wind Speed",
     unit: "m/s",
-    icon: "💨",
     color: "#10b981",
   },
   wd: {
     name: "Wind Direction",
     unit: "°",
-    icon: "🧭",
     color: "#8b5cf6",
   },
 };

@@ -21,7 +21,6 @@ export function saveHistoricalData(data) {
       }),
     );
   } catch (error) {
-    console.error("Error saving historical data:", error);
   }
 }
 
@@ -58,7 +57,6 @@ export function loadHistoricalData() {
 
     return map;
   } catch (error) {
-    console.error("Error loading historical data:", error);
     return new Map();
   }
 }
@@ -136,7 +134,6 @@ export function getDataQuality(stationId) {
 export function initializeDataStore() {
   // Load existing data on startup
   const existingData = loadHistoricalData();
-  console.log(`Loaded historical data for ${existingData.size} stations`);
 
   // Set up periodic save (every minute)
   setInterval(() => {

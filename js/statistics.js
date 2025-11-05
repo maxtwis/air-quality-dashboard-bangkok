@@ -54,8 +54,6 @@ function updateStatisticsPanelAQI(stations) {
 
   // Update category breakdown
   uiManager.updateCategoryBreakdown(stats.categories);
-
-  console.log("AQI statistics updated");
 }
 
 function updateStatisticsPanelAQHI(stations) {
@@ -114,12 +112,12 @@ function updateStatisticsPanelAQHI(stations) {
     if (totalDataStations > 0) {
       dataQualityInfo = `
                 <div class="info" style="margin-top: 12px; padding: 8px; background: var(--gray-100); border-radius: 6px; font-size: 0.875rem;">
-                    <div style="font-weight: 500; margin-bottom: 4px;">📊 AQHI Data Quality:</div>
-                    ${qualityBreakdown.excellent > 0 ? `<div>🎯 ${qualityBreakdown.excellent} stations with full 3+ hour average</div>` : ""}
-                    ${qualityBreakdown.good > 0 ? `<div>✅ ${qualityBreakdown.good} stations with 2+ hour average</div>` : ""}
-                    ${qualityBreakdown.fair > 0 ? `<div>⏳ ${qualityBreakdown.fair} stations with 1+ hour average</div>` : ""}
-                    ${qualityBreakdown.limited > 0 ? `<div>🔄 ${qualityBreakdown.limited} stations building data</div>` : ""}
-                    ${qualityBreakdown.estimated > 0 ? `<div>📊 ${qualityBreakdown.estimated} stations using estimation</div>` : ""}
+                    <div style="font-weight: 500; margin-bottom: 4px;">AQHI Data Quality:</div>
+                    ${qualityBreakdown.excellent > 0 ? `<div>${qualityBreakdown.excellent} stations with full 3+ hour average</div>` : ""}
+                    ${qualityBreakdown.good > 0 ? `<div>${qualityBreakdown.good} stations with 2+ hour average</div>` : ""}
+                    ${qualityBreakdown.fair > 0 ? `<div>${qualityBreakdown.fair} stations with 1+ hour average</div>` : ""}
+                    ${qualityBreakdown.limited > 0 ? `<div>${qualityBreakdown.limited} stations building data</div>` : ""}
+                    ${qualityBreakdown.estimated > 0 ? `<div>${qualityBreakdown.estimated} stations using estimation</div>` : ""}
                 </div>
             `;
     }
@@ -150,7 +148,7 @@ function updateStatisticsPanelAQHI(stations) {
           stats.stationsWithPartialData > 0
             ? `
             <div class="info" style="margin-top: 12px; padding: 8px; background: var(--gray-100); border-radius: 6px; font-size: 0.875rem;">
-                ⚠️ ${stats.stationsWithPartialData} stations missing pollutant sensors (NO₂, O₃, or SO₂)
+                ${stats.stationsWithPartialData} stations missing pollutant sensors (NO₂, O₃, or SO₂)
             </div>
         `
             : ""
@@ -161,8 +159,6 @@ function updateStatisticsPanelAQHI(stations) {
 
   // Update category breakdown for AQHI
   updateAQHICategoryBreakdown(stats.categoryCounts);
-
-  console.log("AQHI statistics updated");
 }
 
 function updateAQHICategoryBreakdown(categoryCounts) {
@@ -201,8 +197,6 @@ function updateAQHICategoryBreakdown(categoryCounts) {
       )
       .join("");
   }
-
-  console.log("Modern statistics updated");
 }
 
 export function createStatCard(label, value, cssClass = "", description = "") {

@@ -172,19 +172,16 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
     switch (apiType) {
       case "openweather":
         // return await fetchOpenWeatherHistorical(location, hours);
-        console.log("OpenWeatherMap API integration not implemented yet");
         return null;
 
       case "google":
         // return await fetchGoogleAirQuality(location, hours);
-        console.log("Google Air Quality API integration not implemented yet");
         return null;
 
       default:
         return null;
     }
   } catch (error) {
-    console.error(`Error fetching from ${apiType}:`, error);
     return null;
   }
 }
@@ -199,9 +196,6 @@ export async function fetchFromAlternativeAPI(location, options = {}) {
  * @returns {number} AQHI value (0-10+)
  */
 export function calculateRealisticAQHI(pm25, no2, o3, pm10 = null) {
-  console.log(
-    `🧮 Calculating AQHI with RAW concentrations: PM2.5=${pm25}μg/m³, PM10=${pm10}μg/m³, NO2=${no2}ppb, O3=${o3}ppb`,
-  );
 
   // Calculate Percentage Excess Risk (%ER) for each pollutant
   // Formula: %ER_i = 100 * (exp(beta_i * x_i) - 1)
@@ -220,9 +214,6 @@ export function calculateRealisticAQHI(pm25, no2, o3, pm10 = null) {
   // Calculate AQHI: AQHI = (10 / C) * Total %ER
   const aqhi = (10 / AQHI_PARAMS.C) * totalPerER;
 
-  console.log(
-    `📊 AQHI %ER: PM2.5=${perErPM25.toFixed(4)}%, PM10=${perErPM10.toFixed(4)}%, NO2=${perErNO2.toFixed(4)}%, O3=${perErO3.toFixed(4)}%, Total=${totalPerER.toFixed(4)}% → AQHI=${Math.round(aqhi)}`,
-  );
 
   return Math.max(1, Math.round(aqhi));
 }
@@ -247,9 +238,6 @@ export function calculateStationAQHIRealistic(station) {
   const stationId = station.uid || station.station?.name || "unknown";
 
   // CRITICAL FIX: Convert AQI values to concentrations in AQHI-required units
-  console.log(
-    `🔄 Converting station ${stationId} AQI values to AQHI-required units...`,
-  );
   const stationWithConcentrations = convertStationToRawConcentrations(station);
 
   // Extract concentrations in AQHI-required units: PM2.5 in μg/m³, O3 and NO2 in ppb
@@ -259,9 +247,6 @@ export function calculateStationAQHIRealistic(station) {
     o3: getConcentrationForAQHI(stationWithConcentrations, "o3") || 0,
   };
 
-  console.log(
-    `📊 AQHI-ready concentrations for ${stationId}: PM2.5=${currentConcentrations.pm25}μg/m³, NO2=${currentConcentrations.no2}ppb, O3=${currentConcentrations.o3}ppb`,
-  );
 
   // Store current reading for building our own moving average (now with raw concentrations)
   const dataPoints = collectCurrentReading(stationId, currentConcentrations);
@@ -357,11 +342,6 @@ export function formatAQHI(aqhi) {
  * Initialize the realistic AQHI system
  */
 export function initializeRealisticAQHI() {
-  console.log("🌍 Initializing Realistic AQHI System");
-  console.log("📊 Building 3-hour moving averages from 10-minute intervals");
-  console.log(
-    "⚠️ Note: True 3-hour averages will be available after 3 hours of operation",
-  );
 
   // Clean old data on startup
   const now = new Date();

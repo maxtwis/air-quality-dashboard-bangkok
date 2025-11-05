@@ -12,27 +12,14 @@ import { storeGoogleDataInSupabase } from "./google-data-storage.js";
  * @returns {Promise<Array>} Enhanced stations with Google data for missing pollutants
  */
 export async function enhanceWAQIWithGooglePollutants(waqiStations) {
-  console.log(
-    `🔄 Analyzing ${waqiStations.length} WAQI stations for missing pollutants...`,
-  );
 
   // Step 1: Identify which stations are missing O3 or NO2
   const stationsNeedingData = analyzeStationsForMissingPollutants(waqiStations);
 
   if (stationsNeedingData.length === 0) {
-    console.log(
-      "✅ All WAQI stations have complete O3 and NO2 data - no Google API needed!",
-    );
     return waqiStations;
   }
 
-  console.log(`📊 Found ${stationsNeedingData.length} stations missing O3/NO2`);
-  console.log(
-    `   Missing O3: ${stationsNeedingData.filter((s) => s.missingPollutants.includes("o3")).length}`,
-  );
-  console.log(
-    `   Missing NO2: ${stationsNeedingData.filter((s) => s.missingPollutants.includes("no2")).length}`,
-  );
 
   // Step 2: For each station needing data, fetch from nearest Google grid point
   const googleDataCache = {}; // Cache to avoid duplicate API calls
@@ -53,13 +40,7 @@ export async function enhanceWAQIWithGooglePollutants(waqiStations) {
       let googleData;
       if (googleDataCache[cacheKey]) {
         googleData = googleDataCache[cacheKey];
-        console.log(
-          `   ♻️  Using cached Google data for station ${station.uid}`,
-        );
       } else {
-        console.log(
-          `   🌐 Fetching Google data for station ${station.uid} (${needsData.missingPollutants.join(", ")})`,
-        );
         googleData = await fetchGoogleAirQualityPoint(
           nearestPoint.lat,
           nearestPoint.lng,
@@ -68,9 +49,6 @@ export async function enhanceWAQIWithGooglePollutants(waqiStations) {
       }
 
       if (!googleData) {
-        console.warn(
-          `   ⚠️  Failed to get Google data for station ${station.uid}`,
-        );
         return station;
       }
 
@@ -84,12 +62,6 @@ export async function enhanceWAQIWithGooglePollutants(waqiStations) {
   );
 
   const uniqueApiCalls = Object.keys(googleDataCache).length;
-  console.log(
-    `✅ Enhanced ${stationsNeedingData.length} stations using ${uniqueApiCalls} Google API calls`,
-  );
-  console.log(
-    `   💰 Cost savings: ${stationsNeedingData.length - uniqueApiCalls} API calls saved by caching`,
-  );
 
   // Store the Google supplement data in Supabase
   const googleSupplements = Object.entries(googleDataCache).map(
@@ -108,9 +80,6 @@ export async function enhanceWAQIWithGooglePollutants(waqiStations) {
   );
 
   if (googleSupplements.length > 0) {
-    console.log(
-      `💾 Storing ${googleSupplements.length} Google supplement points in Supabase...`,
-    );
     await storeGoogleDataInSupabase(googleSupplements);
   }
 
@@ -209,9 +178,6 @@ function mergeGooglePollutants(waqiStation, googleData, missingPollutants) {
         _source: "google", // Mark as Google-sourced
         _sourceType: "supplement", // Indicate it's supplementary data
       };
-      console.log(
-        `     ✓ Added ${pollutant.toUpperCase()} from Google: ${googlePollutants[pollutant].v}`,
-      );
     }
   }
 

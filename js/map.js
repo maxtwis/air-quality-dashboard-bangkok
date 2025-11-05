@@ -12,8 +12,6 @@ export function initializeMap() {
   L.tileLayer(CONFIG.TILE_LAYER.url, {
     attribution: CONFIG.TILE_LAYER.attribution,
   }).addTo(map);
-
-  console.log("Map initialized");
   return map;
 }
 

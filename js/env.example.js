@@ -9,7 +9,3 @@ window.SUPABASE_URL = "your_supabase_url_here";
 window.SUPABASE_ANON_KEY = "your_supabase_anon_key_here";
 
 // Debug info
-console.log("🔧 Environment variables loaded:", {
-  hasWAQI: !!window.WAQI_API_TOKEN && !window.WAQI_API_TOKEN.includes("your_"),
-  hasSupabase: !!window.SUPABASE_URL && !window.SUPABASE_URL.includes("your_"),
-});

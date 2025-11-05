@@ -15,9 +15,6 @@ import { getGoogle3HourAverages } from "./google-data-storage.js";
  * @returns {Promise<Array>} Stations with AQHI data
  */
 export async function enhanceGoogleStationsWithAQHI(googleStations) {
-  console.log(
-    `🔄 Enhancing ${googleStations.length} Google stations with AQHI...`,
-  );
 
   if (!googleStations || googleStations.length === 0) {
     return [];
@@ -30,9 +27,6 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
     // Fetch 3-hour averages for Google stations from Supabase
     const averagesMap = await getGoogle3HourAverages(stationUids);
 
-    console.log(
-      `📊 Got 3-hour averages for ${Object.keys(averagesMap).length} Google stations`,
-    );
 
     // Enhance each station with AQHI
     const enhancedStations = googleStations.map((station) => {
@@ -77,9 +71,6 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
           },
         };
 
-        console.log(
-          `✅ Station ${stationId}: AQHI=${aqhiValue} (${dataQuality.level}, ${readingCount} readings)`,
-        );
       } else {
         // No 3-hour averages yet - use current reading
         const currentPM25 = station.iaqi?.pm25?.v || 0;
@@ -104,9 +95,6 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
             note: "Using current reading - 3-hour average not yet available",
           };
 
-          console.log(
-            `⏳ Station ${stationId}: AQHI=${aqhiValue} (current reading, building history)`,
-          );
         } else {
           // No data at all
           aqhiData = {
@@ -120,7 +108,6 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
             note: "No pollutant data available",
           };
 
-          console.log(`❌ Station ${stationId}: No pollutant data available`);
         }
       }
 
@@ -133,13 +120,9 @@ export async function enhanceGoogleStationsWithAQHI(googleStations) {
     const validCount = enhancedStations.filter(
       (s) => s.aqhi?.value !== null,
     ).length;
-    console.log(
-      `✅ Enhanced ${validCount}/${googleStations.length} Google stations with AQHI`,
-    );
 
     return enhancedStations;
   } catch (error) {
-    console.error("❌ Error enhancing Google stations with AQHI:", error);
 
     // Return stations with error indicator
     return googleStations.map((station) => ({

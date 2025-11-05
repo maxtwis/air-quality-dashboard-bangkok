@@ -11,17 +11,12 @@ export async function fetchAirQualityData(includeAQHI = false) {
   try {
     // Use proxy endpoint to hide API keys
     const url = `/api/waqi-proxy?endpoint=bounds`;
-
-    console.log("Fetching data from proxy:", url);
-
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log("API Response:", data);
-
     if (data.status !== "ok") {
       throw new Error(`API Error: ${data.data || "Unknown error"}`);
     }
@@ -31,29 +26,17 @@ export async function fetchAirQualityData(includeAQHI = false) {
     if (includeAQHI) {
       // Initialize Thai AQHI on first call
       if (!fetchAirQualityData._initialized) {
-        console.log("🔄 Initialized Thai AQHI calculation system");
         fetchAirQualityData._initialized = true;
       }
 
       // Enhanced AQHI calculations using stored data
-      console.log(
-        "🔄 Calculating enhanced AQHI using stored 3-hour averages...",
-      );
       const enhancedStations =
         await supabaseAQHI.enhanceStationsWithAQHI(stations);
-
-      console.log("📊 Server-side collection active - client storage disabled");
-      console.log(
-        `✅ Enhanced AQHI calculated for ${enhancedStations.length} stations`,
-      );
-
       return enhancedStations;
     }
 
-    console.log(`✅ Fetched ${stations.length} stations (AQI only, fast mode)`);
     return stations;
   } catch (error) {
-    console.error("Error fetching air quality data:", error);
     throw error;
   }
 }
@@ -63,20 +46,12 @@ export async function enhanceStationsWithAQHI(stations) {
   try {
     // Initialize Thai AQHI on first call
     if (!fetchAirQualityData._initialized) {
-      console.log("🔄 Initialized Thai AQHI calculation system");
       fetchAirQualityData._initialized = true;
     }
-
-    console.log("🔄 Enhancing existing stations with AQHI calculations...");
     const enhancedStations =
       await supabaseAQHI.enhanceStationsWithAQHI(stations);
-    console.log(
-      `✅ Enhanced ${enhancedStations.length} stations with AQHI calculations`,
-    );
-
     return enhancedStations;
   } catch (error) {
-    console.error("Error enhancing stations with AQHI:", error);
     throw error;
   }
 }
@@ -84,18 +59,10 @@ export async function enhanceStationsWithAQHI(stations) {
 // Add PM2.5-only AQHI calculations to existing station data
 export async function enhanceStationsWithPM25OnlyAQHI(stations) {
   try {
-    console.log(
-      "🔄 Enhancing existing stations with PM2.5-only AQHI calculations...",
-    );
     const enhancedStations =
       await pm25OnlySupabaseAQHI.enhanceStationsWithPM25OnlyAQHI(stations);
-    console.log(
-      `✅ Enhanced ${enhancedStations.length} stations with PM2.5-only AQHI calculations`,
-    );
-
     return enhancedStations;
   } catch (error) {
-    console.error("Error enhancing stations with PM2.5-only AQHI:", error);
     throw error;
   }
 }
@@ -105,8 +72,6 @@ export async function fetchStationDetails(stationUID) {
   try {
     // Use proxy endpoint to hide API keys
     const url = `/api/waqi-proxy?endpoint=station&uid=${stationUID}`;
-    console.log("Fetching station details from proxy:", url);
-
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -123,7 +88,6 @@ export async function fetchStationDetails(stationUID) {
     const stationData = data.data;
     return stationData;
   } catch (error) {
-    console.error("Error fetching station details:", error);
     return null;
   }
 }
@@ -147,7 +111,6 @@ export async function fetchCurrentLocationData() {
     }
     return null;
   } catch (error) {
-    console.error("Error fetching current location data:", error);
     return null;
   }
 }
@@ -165,7 +128,6 @@ export async function fetchCurrentLocationDataDirect() {
     const data = await response.json();
     return data.status === "ok" ? data.data : null;
   } catch (error) {
-    console.error("Error fetching current location data:", error);
     return null;
   }
 }

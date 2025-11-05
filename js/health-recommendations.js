@@ -26,15 +26,8 @@ class HealthRecommendationsService {
       const csvText = await response.text();
       this.recommendations = this._parseCSV(csvText);
       this.loaded = true;
-
-      console.log(
-        "✅ Health recommendations loaded:",
-        this.recommendations.length,
-        "entries",
-      );
       return this.recommendations;
     } catch (error) {
-      console.error("❌ Error loading health recommendations:", error);
       return [];
     }
   }
@@ -149,22 +142,10 @@ class HealthRecommendationsService {
     return titleMap[groupType] || groupType;
   }
 
-  // Get shortened English description
+  // Get Thai description (use original Thai from CSV)
   getShortDescription(description) {
-    const shortMap = {
-      "กลุ่มเด็กเล็ก (0-5 ปี)": "Young Children",
-      "กลุ่มเด็กวัยเรียนและวัยรุ่น (6-18 ปี)": "School Age",
-      "กลุ่มผู้ใหญ่ (19-60 ปี)": "Adults",
-      "กลุ่มผู้สูงอายุ (60 ปี ขึ้นไป)": "Elderly",
-      โรคระบบทางเดินหายใจ: "Respiratory",
-      โรคระบบหัวใจและหลอดเลือด: "Cardiovascular",
-      หญิงตั้งครรภ์: "Pregnant Women",
-      ผู้ที่ทำงานกลางแจ้งเป็นประจำ: "Outdoor Workers",
-      ผู้ที่ทำงานในสภาพแวดล้อมที่มีการสัมผัสกับฝุ่นหรือควัน:
-        "Dust/Smoke Workers",
-    };
-
-    return shortMap[description] || description;
+    // Return the Thai description as-is from the CSV
+    return description;
   }
 }
 
@@ -172,4 +153,4 @@ class HealthRecommendationsService {
 export const healthRecommendations = new HealthRecommendationsService();
 
 // Initialize on module load
-healthRecommendations.loadRecommendations().catch(console.error);
+healthRecommendations.loadRecommendations().catch(() => {});

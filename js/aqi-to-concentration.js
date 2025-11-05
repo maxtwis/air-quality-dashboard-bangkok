@@ -123,7 +123,6 @@ const CONVERSION_FACTORS = {
 function aqiToConcentration(aqi, pollutant, avgPeriod = "8hr") {
   // Validate inputs
   if (typeof aqi !== "number" || aqi < 0) {
-    console.warn(`Invalid AQI value: ${aqi}`);
     return null;
   }
 
@@ -135,7 +134,6 @@ function aqiToConcentration(aqi, pollutant, avgPeriod = "8hr") {
 
   const breakpoints = EPA_AQI_BREAKPOINTS[pollutantKey];
   if (!breakpoints) {
-    console.warn(`Unknown pollutant: ${pollutant}`);
     return null;
   }
 
@@ -150,7 +148,6 @@ function aqiToConcentration(aqi, pollutant, avgPeriod = "8hr") {
   }
 
   if (!selectedBreakpoint) {
-    console.warn(`AQI value ${aqi} out of range for ${pollutant}`);
     return null;
   }
 
@@ -191,7 +188,6 @@ function aqiToConcentration(aqi, pollutant, avgPeriod = "8hr") {
  */
 export function convertStationToRawConcentrations(station) {
   if (!station?.iaqi) {
-    console.warn("Station missing iaqi data:", station?.uid || "unknown");
     return station;
   }
 
@@ -230,12 +226,9 @@ export function convertStationToRawConcentrations(station) {
   });
 
   const stationName = station.station?.name || station.uid || "unknown";
-  console.log(`🔄 AQI→Concentration conversion for station ${stationName}:`);
   if (conversionLog.length > 0) {
-    console.log(`   Converted: ${conversionLog.join(", ")}`);
   }
   if (skippedParams.length > 0) {
-    console.log(`   Skipped: ${skippedParams.join(", ")}`);
   }
 
   return {
@@ -324,25 +317,14 @@ export function validateConversions() {
     ["no2", 100, 188, 5], // NO2 (100 ppb * 1.88)
     ["so2", 50, 91.7, 5], // SO2 (35 ppb * 2.62)
   ];
-
-  console.log("🧪 Running AQI conversion validation tests...");
   let allPassed = true;
 
   testCases.forEach(([pollutant, aqi, expected, tolerance]) => {
     const result = aqiToConcentration(aqi, pollutant);
     const diff = Math.abs(result - expected);
     const passed = diff <= tolerance;
-
-    console.log(
-      `${passed ? "✅" : "❌"} ${pollutant.toUpperCase()} AQI ${aqi} → ${result} μg/m³ (expected: ${expected}, diff: ${diff.toFixed(2)})`,
-    );
-
     if (!passed) allPassed = false;
   });
-
-  console.log(
-    `🧪 Validation ${allPassed ? "PASSED" : "FAILED"} - Conversion accuracy verified`,
-  );
   return allPassed;
 }
 
@@ -360,6 +342,4 @@ if (typeof window !== "undefined") {
     EPA_AQI_BREAKPOINTS,
     CONVERSION_FACTORS,
   };
-
-  console.log("🔧 AQI Converter loaded globally as window.aqiConverter");
 }

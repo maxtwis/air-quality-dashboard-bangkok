@@ -8,10 +8,6 @@ async function loadSupabase() {
     AirQualityDB = supabaseModule.AirQualityDB;
     return true;
   } catch (error) {
-    console.warn(
-      "⚠️ Supabase module not available, storage disabled:",
-      error.message,
-    );
     return false;
   }
 }
@@ -29,7 +25,6 @@ export class AirQualityStorage {
       // Try to load Supabase module
       const supabaseLoaded = await loadSupabase();
       if (!supabaseLoaded || !AirQualityDB) {
-        console.warn("⚠️ Storage service disabled - Supabase not available");
         this.isEnabled = false;
         return;
       }
@@ -37,20 +32,14 @@ export class AirQualityStorage {
       // Test database connection
       this.isEnabled = await AirQualityDB.testConnection();
       if (this.isEnabled) {
-        console.log("✅ Storage service initialized successfully");
 
         // Get and log database stats
         const stats = await AirQualityDB.getDBStats();
         if (stats) {
-          console.log("📊 Database stats:", stats);
         }
       } else {
-        console.warn(
-          "⚠️ Storage service disabled - database connection failed",
-        );
       }
     } catch (error) {
-      console.error("❌ Storage service initialization failed:", error);
       this.isEnabled = false;
     }
   }
@@ -69,7 +58,6 @@ export class AirQualityStorage {
       this.lastStorageTime &&
       now - this.lastStorageTime < this.storageInterval
     ) {
-      console.log("⏳ Skipping storage - too soon since last save");
       return false;
     }
 
@@ -97,10 +85,6 @@ export class AirQualityStorage {
           !stationData.latitude ||
           !stationData.longitude
         ) {
-          console.warn(
-            "⚠️ Skipping station with missing essential data:",
-            station,
-          );
           continue;
         }
 
@@ -108,12 +92,6 @@ export class AirQualityStorage {
 
         // Debug: Log the first station's data structure
         if (readings.length === 0) {
-          console.log("🔍 Sample station data structure:", {
-            uid: station.uid,
-            aqi: station.aqi,
-            iaqi: station.iaqi,
-            station: station.station,
-          });
         }
 
         // Prepare reading data
@@ -155,7 +133,6 @@ export class AirQualityStorage {
         if (reading.station_uid && reading.timestamp) {
           readings.push(reading);
         } else {
-          console.warn("⚠️ Skipping invalid reading:", reading);
         }
       }
 
@@ -166,7 +143,6 @@ export class AirQualityStorage {
       if (readings.length > 0) {
         await AirQualityDB.insertReadings(readings);
         this.lastStorageTime = now;
-        console.log(`✅ Stored ${readings.length} air quality readings`);
 
         // Cleanup old data occasionally (every 10th storage)
         if (Math.random() < 0.1) {
@@ -175,11 +151,9 @@ export class AirQualityStorage {
 
         return true;
       } else {
-        console.warn("⚠️ No valid readings to store");
         return false;
       }
     } catch (error) {
-      console.error("❌ Error storing air quality data:", error);
       return false;
     }
   }
@@ -211,7 +185,6 @@ export class AirQualityStorage {
 
       return null;
     } catch (error) {
-      console.warn(`⚠️ Error extracting ${pollutant}:`, error);
       return null;
     }
   }
@@ -232,12 +205,9 @@ export class AirQualityStorage {
         });
 
       if (error) {
-        console.error("Error upserting stations:", error);
       } else {
-        console.log(`✅ Upserted ${stations.length} stations`);
       }
     } catch (error) {
-      console.error("Error in upsert operation:", error);
     }
   }
 
@@ -252,7 +222,6 @@ export class AirQualityStorage {
     try {
       return await AirQualityDB.get3HourAverages(stationId);
     } catch (error) {
-      console.error("Error fetching 3-hour averages:", error);
       return null;
     }
   }
@@ -268,7 +237,6 @@ export class AirQualityStorage {
     try {
       return await AirQualityDB.getStationReadings(stationId, hours);
     } catch (error) {
-      console.error("Error fetching station history:", error);
       return null;
     }
   }
@@ -310,7 +278,6 @@ export class AirQualityStorage {
 
       return Math.max(1, Math.round(aqhi)); // Round to whole number, minimum 1
     } catch (error) {
-      console.error("Error calculating AQHI from storage:", error);
       return null;
     }
   }
@@ -326,7 +293,6 @@ export class AirQualityStorage {
     try {
       await AirQualityDB.cleanupOldData();
     } catch (error) {
-      console.error("Error cleaning up old data:", error);
     }
   }
 

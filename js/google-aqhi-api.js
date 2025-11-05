@@ -3,19 +3,10 @@
  * For the 15 community monitoring locations
  */
 
-import { createClient } from 'https://cdn.skypack.dev/@supabase/supabase-js';
+import { supabase } from '../lib/supabase.js';
 
-// Initialize Supabase client lazily (only when needed)
-let supabase = null;
-
+// Use shared Supabase client
 function getSupabaseClient() {
-  if (!supabase) {
-    const supabaseUrl = window.SUPABASE_URL || 'https://xqvjrovzhupdfwvdikpo.supabase.co';
-    const supabaseAnonKey = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhxdmpyb3Z6aHVwZGZ3dmRpa3BvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NTQyMjMsImV4cCI6MjA3MzUzMDIyM30.rzJ8-LnZh2dITbh7HcIXJ32BQ1MN-F-O5hCmO0jzIDo';
-
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
-    console.log('✅ Supabase client initialized for Google AQHI');
-  }
   return supabase;
 }
 
@@ -25,11 +16,8 @@ function getSupabaseClient() {
  */
 export async function fetchGoogleAQHIStations() {
   try {
-    console.log('🔄 Fetching Google AQHI data from Supabase...');
-
     const supabase = getSupabaseClient();
     if (!supabase) {
-      console.error('❌ Supabase client not available');
       return [];
     }
 
@@ -42,12 +30,10 @@ export async function fetchGoogleAQHIStations() {
       .limit(15); // Get latest 15 records (one per location)
 
     if (error) {
-      console.error('❌ Supabase error:', error);
       throw error;
     }
 
     if (!data || data.length === 0) {
-      console.log('⚠️ No Google AQHI data found in database');
       return [];
     }
 
@@ -146,12 +132,9 @@ export async function fetchGoogleAQHIStations() {
         }
       };
     });
-
-    console.log(`✅ Fetched ${stations.length} Google AQHI stations from Supabase`);
     return stations;
 
   } catch (error) {
-    console.error('❌ Error fetching Google AQHI data:', error);
     return [];
   }
 }
@@ -166,7 +149,6 @@ export async function fetchGoogleAQHIHistory(locationId, hours = 24) {
   try {
     const supabase = getSupabaseClient();
     if (!supabase) {
-      console.error('❌ Supabase client not available');
       return [];
     }
 
@@ -182,12 +164,10 @@ export async function fetchGoogleAQHIHistory(locationId, hours = 24) {
       .order('hour_timestamp', { ascending: true });
 
     if (error) {
-      console.error('❌ Error fetching AQHI history:', error);
       return [];
     }
 
     if (!data || data.length === 0) {
-      console.log(`⚠️  No history found for location ${locationId} (${hours}h)`);
       return [];
     }
 
@@ -208,11 +188,9 @@ export async function fetchGoogleAQHIHistory(locationId, hours = 24) {
       no2_3h_avg: row.no2_3h_avg
     }));
 
-    console.log(`✅ Fetched ${history.length} AQHI history points for location ${locationId} (${hours}h)`);
     return history;
 
   } catch (error) {
-    console.error('❌ Error fetching Google AQHI history:', error);
     return [];
   }
 }

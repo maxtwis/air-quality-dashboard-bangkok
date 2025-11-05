@@ -281,7 +281,7 @@ export class UIManager {
         legendTitle.textContent = "ดัชนีคุณภาพอากาศด้านสุขภาพ (AQHI)";
       }
       if (sidebarTitle) {
-        sidebarTitle.textContent = "📊 คำอธิบาย AQHI";
+        sidebarTitle.textContent = "คำอธิบาย AQHI";
       }
       // Update BOTH map and sidebar legend items
       if (mapLegendItems) mapLegendItems.innerHTML = aqhiLegendHTML;
@@ -292,7 +292,7 @@ export class UIManager {
         legendTitle.textContent = "ดัชนีคุณภาพอากาศ (US AQI)";
       }
       if (sidebarTitle) {
-        sidebarTitle.textContent = "📊 คำอธิบาย AQI";
+        sidebarTitle.textContent = "คำอธิบาย AQI";
       }
       // Update BOTH map and sidebar legend items
       if (mapLegendItems) mapLegendItems.innerHTML = aqiLegendHTML;
@@ -416,7 +416,6 @@ export class UIManager {
               station.uid?.toString(),
             );
           } catch (avgError) {
-            console.warn("Could not fetch 3-hour averages:", avgError);
           }
         }
 
@@ -430,9 +429,6 @@ export class UIManager {
       } else {
         // Fallback for AQI mode - use basic station data if detailed fetch fails
         if (!isAQHI) {
-          console.warn(
-            "⚠️ Detailed station data unavailable, using basic station data for AQI mode",
-          );
           await this.updateStationInfoWithDetails(
             { iaqi: { pm25: { v: station.aqi || 0 } } }, // Mock structure with basic AQI
             false, // Not AQHI mode
@@ -445,7 +441,6 @@ export class UIManager {
         }
       }
     } catch (error) {
-      console.error("Error loading station details:", error);
       this.showErrorInStationInfo("Error loading details");
     }
   }
@@ -514,7 +509,6 @@ export class UIManager {
 
       if (isAQHI && averageData) {
         // For AQHI mode with averages, process the average data structure
-        console.log("🔄 AQHI mode: Using 3-hour averages (already in μg/m³)");
         const hasGoogleData = averageData.googleReadings > 0;
 
         Object.entries(averageData).forEach(([key, value]) => {
@@ -548,17 +542,10 @@ export class UIManager {
               isConverted: true,
               isGoogleSupplemented,
             });
-            console.log(
-              `   ✅ ${key.toUpperCase()}: ${Math.round(displayValue * 10) / 10} ${unit} (3h avg)${isGoogleSupplemented ? " *Google" : ""}`,
-            );
           }
         });
       } else if (isGoogleStation) {
         // Google stations - values are already in correct units (μg/m³ or ppb)
-        console.log(
-          `🔄 Google AQHI station: Using raw concentration values (already in μg/m³/ppb)`,
-        );
-
         Object.entries(detailsData.iaqi).forEach(([key, data]) => {
           if (POLLUTANTS[key]) {
             // Values are already concentrations - just determine display unit
@@ -580,9 +567,6 @@ export class UIManager {
               value: Math.round(displayValue * 10) / 10,
               isConverted: false, // No conversion needed
             });
-            console.log(
-              `   ✅ ${key.toUpperCase()}: ${Math.round(displayValue * 10) / 10} ${unit} (Google raw)`,
-            );
           } else if (WEATHER_PARAMS[key]) {
             weatherData.push({
               key,
@@ -593,9 +577,6 @@ export class UIManager {
         });
       } else {
         // WAQI stations - CONVERT AQI TO CONCENTRATIONS
-        console.log(
-          `🔄 Detail panel mode: ${isAQHI ? "AQHI" : "AQI"} - Converting AQI values to concentrations...`,
-        );
         const convertedStation = convertStationToRawConcentrations(detailsData);
 
         Object.entries(detailsData.iaqi).forEach(([key, data]) => {
@@ -628,9 +609,6 @@ export class UIManager {
                 value: Math.round(displayValue * 10) / 10,
                 isConverted: true,
               });
-              console.log(
-                `   ✅ ${key.toUpperCase()}: ${data.v} AQI → ${Math.round(displayValue * 10) / 10} ${unit}`,
-              );
             } else {
               // Fallback to AQI if conversion failed
               pollutantData.push({
@@ -639,9 +617,6 @@ export class UIManager {
                 value: data.v,
                 isConverted: false,
               });
-              console.log(
-                `   ⚠️  ${key.toUpperCase()}: ${data.v} AQI (conversion failed)`,
-              );
             }
           } else if (WEATHER_PARAMS[key]) {
             weatherData.push({
@@ -667,7 +642,7 @@ export class UIManager {
         pollutantHTML = `
                     <div class="pollutant-section">
                         <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; color: var(--gray-700);">
-                            🌫️ Pollutants (${dataLabel})
+                            Pollutants (${dataLabel})
                         </h4>
                         <div class="pollutant-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                             ${pollutantData
@@ -680,7 +655,6 @@ export class UIManager {
                                     border-left: 3px solid ${item.config.color};
                                 ">
                                     <div style="display: flex; align-items: center; gap: 4px;">
-                                        <span style="font-size: 0.75rem;">${item.config.icon}</span>
                                         <span style="font-size: 0.75rem; font-weight: 500;">${item.config.name}</span>
                                     </div>
                                     <div style="font-size: 0.875rem; font-weight: 600; color: ${item.config.color};">
@@ -701,7 +675,7 @@ export class UIManager {
         weatherHTML = `
                     <div class="weather-section" style="margin-top: 16px;">
                         <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; color: var(--gray-700);">
-                            🌤️ Weather
+                            Weather
                         </h4>
                         <div class="weather-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                             ${weatherData
@@ -713,7 +687,6 @@ export class UIManager {
                                     border-radius: 6px;
                                 ">
                                     <div style="display: flex; align-items: center; gap: 4px;">
-                                        <span style="font-size: 0.75rem;">${item.config.icon}</span>
                                         <span style="font-size: 0.75rem; font-weight: 500;">${item.config.name}</span>
                                     </div>
                                     <div style="font-size: 0.875rem; font-weight: 600; color: var(--gray-700);">
@@ -790,7 +763,7 @@ export class UIManager {
       let healthHTML = `
                 <div class="health-recommendations-section" style="margin-top: 16px;">
                     <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 12px; color: var(--gray-700);">
-                        🏥 คำแนะนำ
+                        คำแนะนำ
                     </h4>
             `;
 
@@ -882,7 +855,6 @@ export class UIManager {
       healthHTML += `</div>`;
       return healthHTML;
     } catch (error) {
-      console.error("Error generating health recommendations:", error);
       return "";
     }
   }
@@ -930,11 +902,9 @@ export class UIManager {
   toggleFullscreen() {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch((err) => {
-        console.log("Error attempting to enable fullscreen:", err);
       });
     } else {
       document.exitFullscreen().catch((err) => {
-        console.log("Error attempting to exit fullscreen:", err);
       });
     }
   }

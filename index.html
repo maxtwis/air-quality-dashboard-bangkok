@@ -27,87 +27,57 @@
     <link rel="stylesheet" href="css/styles.css" />
   </head>
   <body>
+    <!-- Top Navigation Bar -->
+    <header class="top-navbar">
+      <div class="navbar-brand">
+        <h1 class="app-title">Breathe Bangkok</h1>
+        <p class="app-subtitle">ตรวจสอบคุณภาพอากาศแบบเรียลไทม์</p>
+      </div>
+      <nav class="nav-tabs">
+        <button class="nav-tab active" data-page="map">
+          <i class="material-icons">map</i>
+          <span>แผนที่คุณภาพอากาศ</span>
+        </button>
+        <button class="nav-tab" data-page="about">
+          <i class="material-icons">info</i>
+          <span>เกี่ยวกับ AQHI</span>
+        </button>
+        <button class="nav-tab" data-page="health">
+          <i class="material-icons">health_and_safety</i>
+          <span>คำแนะนำสุขภาพ</span>
+        </button>
+      </nav>
+    </header>
+
     <div class="app-container">
       <!-- Sidebar -->
       <div class="sidebar">
-        <div class="sidebar-header">
-          <h1 class="app-title">🌬️ Breathe Bangkok</h1>
-          <p class="app-subtitle">ตรวจสอบคุณภาพอากาศแบบเรียลไทม์</p>
-        </div>
-
-        <div class="current-location">
-          <div class="location-header">
-            <span>📍</span>
-            <span>ตำแหน่งปัจจุบัน</span>
-          </div>
-          <div class="location-name">กรุงเทพมหานคร ประเทศไทย</div>
-
+        <!-- Page: Air Quality Map -->
+        <div class="page-content active" id="page-map">
           <!-- Indicator Toggle -->
-          <div class="indicator-toggle">
-            <label class="toggle-label">
-              <input type="radio" name="indicator" value="AQHI" checked />
-              <span class="toggle-btn">AQHI</span>
-            </label>
-            <label class="toggle-label">
-              <input type="radio" name="indicator" value="AQI" />
-              <span class="toggle-btn">AQI</span>
-            </label>
-          </div>
-
-          <!-- Data Source Toggle - REMOVED
-               AQI: Always uses WAQI
-               AQHI: Always uses merged WAQI+Google (from combined_3h_averages)
-               Google API: Background job that supplements O3/NO2 to WAQI stations
-          -->
-
-          <div class="current-aqi">
-            <div class="aqi-circle aqi-good" id="main-aqi-circle">
-              <div class="aqi-value" id="main-aqi-value">--</div>
-              <div class="aqi-label">US AQI</div>
+          <div class="indicator-section">
+            <h3 class="section-title">เลือกดัชนีคุณภาพอากาศ</h3>
+            <div class="indicator-toggle">
+              <label class="toggle-label">
+                <input type="radio" name="indicator" value="AQHI" checked />
+                <span class="toggle-btn">AQHI</span>
+              </label>
+              <label class="toggle-label">
+                <input type="radio" name="indicator" value="AQI" />
+                <span class="toggle-btn">AQI</span>
+              </label>
             </div>
-            <div class="aqi-details">
-              <div class="aqi-category" id="main-aqi-category">กำลังโหลด...</div>
-              <div class="aqi-description" id="main-aqi-description">
-                กำลังดึงข้อมูลคุณภาพอากาศ...
-              </div>
+            <div class="indicator-description">
+              <p style="font-size: 0.875rem; color: var(--gray-600); margin-top: 8px; line-height: 1.5;">
+                <strong>AQHI</strong>: ดัชนีคุณภาพอากาศด้านสุขภาพ (ใช้ค่าเฉลี่ย 3 ชั่วโมง)<br>
+                <strong>AQI</strong>: ดัชนีคุณภาพอากาศแบบสหรัฐฯ (ข้อมูลปัจจุบัน)
+              </p>
             </div>
           </div>
 
-          <div class="weather-info">
-            <div class="weather-item">
-              <span class="weather-icon">🌡️</span>
-              <div>
-                <div class="weather-value" id="temperature">--°C</div>
-                <div class="weather-label">อุณหภูมิ</div>
-              </div>
-            </div>
-            <div class="weather-item">
-              <span class="weather-icon">💧</span>
-              <div>
-                <div class="weather-value" id="humidity">--%</div>
-                <div class="weather-label">ความชื้น</div>
-              </div>
-            </div>
-            <div class="weather-item">
-              <span class="weather-icon">💨</span>
-              <div>
-                <div class="weather-value" id="wind">-- km/h</div>
-                <div class="weather-label">ความเร็วลม</div>
-              </div>
-            </div>
-            <div class="weather-item">
-              <span class="weather-icon">🔄</span>
-              <div>
-                <div class="weather-value" id="last-update">--</div>
-                <div class="weather-label">อัปเดตล่าสุด</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="stats-section">
-          <h3 class="section-title">📊 คำอธิบาย</h3>
-          <div class="map-legend-sidebar">
+          <div class="stats-section">
+            <h3 class="section-title">คำอธิบาย</h3>
+            <div class="map-legend-sidebar">
             <div class="legend-items">
               <div class="legend-item">
                 <div class="legend-dot" style="background-color: #10b981"></div>
@@ -136,6 +106,113 @@
             </div>
           </div>
         </div>
+        </div>
+
+      </div>
+
+      <!-- Main Content Area (for About and Health pages) -->
+      <div class="main-content">
+        <!-- Page: About AQHI -->
+        <div class="page-content" id="page-about">
+          <div class="content-section">
+            <h2 class="page-title">เกี่ยวกับ AQHI</h2>
+            <p class="page-subtitle">ดัชนีคุณภาพอากาศด้านสุขภาพ (Air Quality Health Index)</p>
+
+            <div class="info-card">
+              <h3>AQHI คืออะไร?</h3>
+              <p>ดัชนีสุขภาพอันเนื่องมาจากคุณภาพอากาศ (AQHI) เกิดจากผลรวมของความเสี่ยงสัมพัทธ์ของการเข้ารับบริการแผนกผู้ป่วยนอกด้วยโรคระบบทางเดินหายใจและโรคระบบหัวใจและหลอดเลือด หรือความเสี่ยงสัมพัทธ์ของการเสียชีวิตที่สัมพันธ์กับการรับสัมผัสมลพิษอากาศแต่ละชนิด (NO₂, O₃, PM10 และ PM2.5)</p>
+              <p>โดยระดับดัชนีจะมีค่าอยู่ระหว่าง 0 – 10+ (0 หมายถึงมีความเสี่ยงต่อสุขภาพจากมลพิษอากาศต่ำ ในขณะที่ 10+ หมายถึงมีความเสี่ยงต่อสุขภาพจากมลพิษอากาศสูงมาก)</p>
+            </div>
+
+            <div class="info-card">
+              <h3>AQHI แตกต่างจาก AQI ในปัจจุบันอย่างไร?</h3>
+              <p>ดัชนีคุณภาพอากาศ (Air Quality Index: AQI) ที่ประเทศไทยใช้อยู่ในปัจจุบันเป็นค่าที่แสดงถึงมลพิษอากาศเพียงชนิดเดียว (PM10, PM2.5, NO₂, SO₂, O₃ หรือ CO) ที่มีค่า AQI สูงที่สุดในเวลานั้น ๆ ซึ่งทุกคนไม่ได้หายใจเฉพาะมลพิษอากาศชนิดใดชนิดหนึ่ง แต่มีการสูดหายใจมลพิษอากาศทุกชนิดที่มีอยู่ในบรรยากาศขณะนั้น</p>
+              <p>ดังนั้น ค่า AQI จึงไม่ได้บ่งบอกปริมาณสารมลพิษทั้งหมดที่สูดเข้าไปในร่างกาย อีกทั้งการนำค่า AQI ของมลพิษอากาศทุกตัวมารวมกันก็ยังมีความคลาดเคลื่อนสูงเนื่องจากมลพิษอากาศแต่ละตัวมีความรุนแรงต่อสุขภาพแตกต่างกัน</p>
+              <p><strong>ข้อแตกต่างสำคัญ:</strong> ทั้ง AQI และ AQHI ต่างก็สามารถบ่งชี้ความเสี่ยงต่อสุขภาพได้ แต่เมื่อพิจารณาค่าความเสี่ยงสัมพัทธ์จาก AQHI มีค่าแตกต่างจาก AQI อย่างมีนัยสำคัญทางสถิติ โดยค่าความเสี่ยงจาก AQHI มีค่าสูงกว่า AQI ดังนั้นการใช้ AQI เพื่อบ่งชี้ความเสี่ยงต่อสุขภาพอาจมีค่าน้อยกว่าที่ควรจะเป็น</p>
+              <p>ทั้งนี้การใช้ AQHI ที่เกิดจากผลรวมของความเสี่ยงจากมลพิษอากาศทุกตัว (NO₂, O₃, และ PM10 หรือ PM2.5) จึงอาจจะเป็นดัชนีที่ดีกว่าในการสื่อสารความเสี่ยงต่อสุขภาพอันเนื่องมาจากการรับสัมผัสมลพิษอากาศ</p>
+            </div>
+
+            <div class="info-card">
+              <h3>ระดับ AQHI และความหมาย</h3>
+              <div class="aqhi-levels">
+                <div class="level-item" style="border-left-color: #10b981;">
+                  <div class="level-value" style="color: #10b981;">1-3</div>
+                  <div class="level-label">ต่ำ (Low Risk)</div>
+                  <div class="level-desc">คุณภาพอากาศดี สามารถทำกิจกรรมกลางแจ้งได้ตามปกติ</div>
+                </div>
+                <div class="level-item" style="border-left-color: #f59e0b;">
+                  <div class="level-value" style="color: #f59e0b;">4-6</div>
+                  <div class="level-label">ปานกลาง (Moderate Risk)</div>
+                  <div class="level-desc">กลุ่มเสี่ยงควรระมัดระวัง ลดกิจกรรมกลางแจ้งที่หนัก</div>
+                </div>
+                <div class="level-item" style="border-left-color: #ef4444;">
+                  <div class="level-value" style="color: #ef4444;">7-10</div>
+                  <div class="level-label">สูง (High Risk)</div>
+                  <div class="level-desc">ประชาชนทั่วไปควรลดกิจกรรมกลางแจ้ง กลุ่มเสี่ยงหลีกเลี่ยง</div>
+                </div>
+                <div class="level-item" style="border-left-color: #991b1b;">
+                  <div class="level-value" style="color: #991b1b;">10+</div>
+                  <div class="level-label">สูงมาก (Very High Risk)</div>
+                  <div class="level-desc">ทุกคนควรหลีกเลี่ยงกิจกรรมกลางแจ้ง อยู่ในที่ร่ม</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="info-card">
+              <h3>วิธีการคำนวณ AQHI</h3>
+              <p>AQHI ถูกคำนวณโดยใช้สูตรของกรมอนามัย กระทรวงสาธารณสุข:</p>
+              <div class="formula-box">
+                <p><strong>AQHI = (10 / C) × (∑ %ER<sub>i</sub>)</strong></p>
+                <p style="margin-top: 8px;">โดยที่:</p>
+                <ul style="margin-left: 20px; margin-top: 8px;">
+                  <li>C = 105.19 (ค่าคงที่จากการศึกษาของกรมอนามัย)</li>
+                  <li>%ER<sub>i</sub> = Percentage Excess Risk ของมลพิษแต่ละชนิด</li>
+                  <li>%ER<sub>i</sub> = 100 × (e<sup>β×X</sup> - 1)</li>
+                  <li>β = ค่าสัมประสิทธิ์ความเสี่ยง (PM2.5: 0.000490, PM10: 0.000165, NO₂: 0.0129, O₃: 0.0049)</li>
+                  <li>X = ความเข้มข้นของมลพิษ (μg/m³ หรือ ppb)</li>
+                </ul>
+              </div>
+              <p style="margin-top: 12px;"><strong>หมายเหตุ:</strong> ระบบใช้ค่าเฉลี่ย 3 ชั่วโมงของมลพิษแต่ละชนิดเพื่อความแม่นยำ</p>
+            </div>
+
+            <div class="info-card">
+              <h3>แหล่งข้อมูล</h3>
+              <ul style="margin-left: 20px;">
+                <li>WAQI (World Air Quality Index) - ข้อมูล PM2.5 และ PM10</li>
+                <li>Google Air Quality API - ข้อมูล NO₂ และ O₃</li>
+                <li>ฐานข้อมูล Supabase - จัดเก็บข้อมูลย้อนหลังและคำนวณค่าเฉลี่ย 3 ชั่วโมง</li>
+              </ul>
+            </div>
+
+            <div class="info-card">
+              <h3>แหล่งอ้างอิง</h3>
+              <p style="margin-bottom: 12px;">การคำนวณ AQHI และข้อมูลทางวิทยาศาสตร์อ้างอิงจาก:</p>
+              <div style="padding: 16px; background: var(--gray-50); border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                <p style="font-weight: 600; margin-bottom: 8px;">รายงานการศึกษาผลกระทบและคาดการณ์ผลกระทบต่อสุขภาพจากมลพิษทางอากาศและการพัฒนาดัชนีสุขภาพอันเนื่องมาจากคุณภาพอากาศของประเทศไทย</p>
+                <p style="font-size: 0.875rem; color: var(--gray-700); margin-bottom: 8px;">กองประเมินผลกระทบต่อสุขภาพ กรมอนามัย กระทรวงสาธารณสุข</p>
+                <a href="https://hia.anamai.moph.go.th/web-upload/12xb1c83353535e43f224a05e184d8fd75a/202204/m_news/35155/208776/file_download/1672f9c8d27ae54c2eab314c1ff0afd0.pdf" target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 4px; color: var(--primary-color); text-decoration: none; font-size: 0.875rem; font-weight: 500;">
+                  <i class="material-icons" style="font-size: 16px;">open_in_new</i>
+                  ดาวน์โหลดรายงานฉบับเต็ม (PDF)
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Page: Health Advice -->
+        <div class="page-content" id="page-health">
+          <div class="content-section">
+            <h2 class="page-title">คำแนะนำสุขภาพ</h2>
+            <p class="page-subtitle">คำแนะนำการดูแลสุขภาพตามระดับ AQHI สำหรับกลุ่มประชากรต่างๆ</p>
+
+            <div id="health-advice-content">
+              <!-- Content will be loaded by JavaScript -->
+              <div style="text-align: center; padding: 40px; color: var(--gray-500);">
+                กำลังโหลดข้อมูล...
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Map Container -->
@@ -145,14 +222,14 @@
         <!-- Map Controls -->
         <div class="map-controls">
           <button class="control-button" id="refresh-btn" title="รีเฟรชข้อมูล">
-            🔄
+            <i class="material-icons">refresh</i>
           </button>
           <button
             class="control-button"
             id="fullscreen-btn"
             title="เปิดแบบเต็มจอ"
           >
-            ⛶
+            <i class="material-icons">fullscreen</i>
           </button>
         </div>
 
@@ -226,6 +303,7 @@
     <script type="module" src="js/markers.js"></script>
     <script type="module" src="js/aqhi-supabase.js"></script>
     <script type="module" src="js/health-recommendations.js"></script>
+    <script type="module" src="js/navigation.js"></script>
     <script type="module" src="js/station-history.js"></script>
     <script type="module" src="js/ui.js"></script>
     <script type="module" src="js/statistics.js"></script>

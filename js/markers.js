@@ -46,7 +46,6 @@ export function createModernMarkerIcon(value, color) {
 export function addMarkersToMap(stations) {
   const map = getMap();
   if (!map) {
-    console.error("Map not initialized");
     return [];
   }
 
@@ -93,8 +92,6 @@ export function addMarkersToMap(stations) {
     marker.stationData = station;
     markers.push(marker);
   });
-
-  console.log(`Added ${markers.length} modern markers to map`);
   return markers;
 }
 

@@ -19,7 +19,11 @@
       "Bash(test:*)",
       "Bash(rm:*)",
       "Bash(time curl:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(powershell:*)",
+      "Bash(del remove-console.ps1)",
+      "Bash(git checkout:*)",
+      "Bash(start http://localhost:3000)"
     ],
     "deny": [],
     "ask": []

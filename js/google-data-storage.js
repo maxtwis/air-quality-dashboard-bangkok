@@ -10,14 +10,10 @@ import { supabase } from "../lib/supabase.js";
  */
 export async function storeGoogleDataInSupabase(googleStations) {
   if (!supabase) {
-    console.warn("⚠️ Supabase not configured, skipping Google data storage");
     return { stored: false, reason: "Supabase not configured" };
   }
 
   try {
-    console.log(
-      `🔄 Storing ${googleStations.length} Google stations in Supabase...`,
-    );
 
     const timestamp = new Date().toISOString();
     const stationsToStore = [];
@@ -37,7 +33,6 @@ export async function storeGoogleDataInSupabase(googleStations) {
       };
 
       if (!station.station_uid || !station.latitude || !station.longitude) {
-        console.warn(`⚠️ Skipping invalid Google station:`, googleStation);
         continue;
       }
 
@@ -79,12 +74,10 @@ export async function storeGoogleDataInSupabase(googleStations) {
         });
 
       if (error) {
-        console.error("❌ Error storing Google stations:", error);
         throw error;
       }
 
       stationsResult = { stored: stationsToStore.length };
-      console.log(`✅ Stored ${stationsToStore.length} Google stations`);
     }
 
     // Store readings
@@ -95,12 +88,10 @@ export async function storeGoogleDataInSupabase(googleStations) {
         .insert(readings);
 
       if (error) {
-        console.error("❌ Error storing Google readings:", error);
         throw error;
       }
 
       readingsResult = { stored: readings.length };
-      console.log(`✅ Stored ${readings.length} Google readings`);
     }
 
     const result = {
@@ -110,10 +101,8 @@ export async function storeGoogleDataInSupabase(googleStations) {
       readings: readingsResult?.stored || 0,
     };
 
-    console.log("✅ Google data storage complete:", result);
     return result;
   } catch (error) {
-    console.error("❌ Error storing Google data in Supabase:", error);
     return {
       stored: false,
       error: error.message,
@@ -139,7 +128,6 @@ function extractGoogleConcentrations(googleStation) {
 
   // Google data is in iaqi object (formatted like WAQI)
   if (!googleStation.iaqi) {
-    console.warn("⚠️ No iaqi data in Google station:", googleStation.uid);
     return concentrations;
   }
 
@@ -167,7 +155,6 @@ function extractGoogleConcentrations(googleStation) {
  */
 export async function getGoogle3HourAverages(stationUids) {
   if (!supabase) {
-    console.warn("⚠️ Supabase not configured");
     return {};
   }
 
@@ -197,12 +184,8 @@ export async function getGoogle3HourAverages(stationUids) {
       };
     }
 
-    console.log(
-      `✅ Retrieved 3-hour averages for ${Object.keys(averagesMap).length} Google stations`,
-    );
     return averagesMap;
   } catch (error) {
-    console.error("❌ Error getting Google 3-hour averages:", error);
     return {};
   }
 }
@@ -228,10 +211,8 @@ export async function cleanupOldGoogleData() {
 
     if (error) throw error;
 
-    console.log(`✅ Cleaned up old Google data (older than 7 days)`);
     return { cleaned: true, deletedCount: data?.length || 0 };
   } catch (error) {
-    console.error("❌ Error cleaning up old Google data:", error);
     return { cleaned: false, error: error.message };
   }
 }

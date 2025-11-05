@@ -13,9 +13,6 @@ export async function fetchGoogleAirQualityData(storeData = true) {
     // Create a grid of points across Bangkok
     const bangkokGrid = generateBangkokGrid();
 
-    console.log(
-      `🌐 Fetching Google Air Quality data for ${bangkokGrid.length} locations...`,
-    );
 
     // Fetch data for all grid points in parallel
     const promises = bangkokGrid.map((point) =>
@@ -30,31 +27,17 @@ export async function fetchGoogleAirQualityData(storeData = true) {
         formatGoogleDataAsStation(data, bangkokGrid[index]),
       );
 
-    console.log(
-      `✅ Fetched Google Air Quality data for ${stations.length} locations`,
-    );
 
     // Store data in Supabase for 3-hour averages and AQHI calculations
     if (storeData && stations.length > 0) {
-      console.log(
-        "💾 Storing Google data in Supabase for AQHI calculations...",
-      );
       const storeResult = await storeGoogleDataInSupabase(stations);
       if (storeResult.stored) {
-        console.log(
-          `✅ Stored ${storeResult.readings} Google readings in database`,
-        );
       } else {
-        console.warn(
-          "⚠️ Failed to store Google data:",
-          storeResult.reason || storeResult.error,
-        );
       }
     }
 
     return stations;
   } catch (error) {
-    console.error("Error fetching Google Air Quality data:", error);
     throw error;
   }
 }
@@ -68,16 +51,12 @@ export async function fetchGoogleAirQualityPoint(lat, lng) {
 
     const response = await fetch(url);
     if (!response.ok) {
-      console.warn(
-        `Failed to fetch Google data for ${lat},${lng}: ${response.status}`,
-      );
       return null;
     }
 
     const data = await response.json();
     return data;
   } catch (error) {
-    console.error(`Error fetching Google data for ${lat},${lng}:`, error);
     return null;
   }
 }
@@ -226,7 +205,6 @@ export async function compareDataSources(lat, lng) {
       timestamp: new Date().toISOString(),
     };
   } catch (error) {
-    console.error("Error comparing data sources:", error);
     return null;
   }
 }

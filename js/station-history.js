@@ -84,13 +84,11 @@ function aggregateByHour(data) {
  */
 export async function renderStationHistoryChart(stationUid, hours = 24) {
   try {
-    console.log(`📊 Loading ${hours}h history for station ${stationUid}`);
 
     // Get chart container
     const chartContainer = document.getElementById("station-history-chart");
 
     if (!chartContainer) {
-      console.error("Chart container not found");
       return;
     }
 
@@ -107,16 +105,12 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
     if (isGoogleStation) {
       // Extract location ID from uid (e.g., "google-8" -> 8)
       const locationId = parseInt(stationUid.toString().replace('google-', ''));
-      console.log(`📊 Fetching Google AQHI history for location ${locationId}`);
       historyData = await fetchGoogleAQHIHistory(locationId, hours);
     } else {
       // Fetch WAQI station history
       historyData = await AirQualityDB.getStationHistory(stationUid, hours);
     }
 
-    console.log(
-      `✅ Loaded ${historyData ? historyData.length : 0} data points for ${hours}h`,
-    );
 
     if (!historyData || historyData.length === 0) {
       chartContainer.innerHTML = `
@@ -133,7 +127,6 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
 
     // Aggregate data by hour to reduce noise
     const aggregatedData = aggregateByHour(historyData);
-    console.log(`📊 Aggregated to ${aggregatedData.length} hourly points`);
 
     // Restore canvas
     chartContainer.innerHTML = `
@@ -154,11 +147,6 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
     chartContainer.style.visibility = 'visible';
 
     // Log container dimensions
-    console.log('Chart container dimensions:', {
-      width: chartContainer.offsetWidth,
-      height: chartContainer.offsetHeight,
-      display: window.getComputedStyle(chartContainer).display
-    });
 
     // Setup toggle buttons
     const toggleButtons = chartContainer.querySelectorAll(".history-btn");
@@ -196,19 +184,9 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
     // Get canvas context
     const ctx = document.getElementById("history-chart-canvas");
     if (!ctx) {
-      console.error("Canvas not found after restoration");
       return;
     }
 
-    console.log(
-      `📊 Creating chart with ${timestamps.length} data points for ${hours}h view`,
-    );
-    console.log(
-      "Date range:",
-      timestamps[0],
-      "to",
-      timestamps[timestamps.length - 1],
-    );
 
     // Create chart
     try {
@@ -387,28 +365,17 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
           },
         },
       });
-      console.log("✅ Chart created successfully");
 
       // Force a small delay to ensure DOM is updated
       setTimeout(() => {
         const canvasCheck = document.getElementById('history-chart-canvas');
         const containerCheck = document.getElementById('chart-canvas-container');
-        console.log('Post-creation check:', {
-          canvasExists: !!canvasCheck,
-          containerExists: !!containerCheck,
-          canvasDisplay: canvasCheck?.style.display,
-          containerDisplay: containerCheck?.style.display,
-          canvasParent: canvasCheck?.parentElement,
-          chartInstance: currentChart ? 'exists' : 'null'
-        });
 
         if (!canvasCheck) {
-          console.error('❌ Canvas disappeared after creation!');
         }
       }, 100);
 
     } catch (chartError) {
-      console.error("❌ Error creating chart:", chartError);
       chartContainer.innerHTML = `
         <div class="error" style="padding: 20px; text-align: center;">
           Failed to create chart: ${chartError.message}
@@ -417,7 +384,6 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
       return;
     }
   } catch (error) {
-    console.error("Error rendering station history chart:", error);
     const chartContainer = document.getElementById("station-history-chart");
     if (chartContainer) {
       chartContainer.innerHTML = `

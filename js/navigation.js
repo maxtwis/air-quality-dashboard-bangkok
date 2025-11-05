@@ -1,10 +1,12 @@
 // Navigation and Page Management
 import { healthRecommendations } from './health-recommendations.js';
 import { getMap } from './map.js';
+import { initializeCommunityMap, getCommunityMap } from './community-map.js';
 
 class NavigationManager {
   constructor() {
     this.currentPage = 'map';
+    this.communityMapInitialized = false;
     this.init();
   }
 
@@ -94,6 +96,24 @@ class NavigationManager {
       // Activate appropriate page in main content
       const targetPage = document.querySelector(`.main-content #page-${pageName}`);
       if (targetPage) targetPage.classList.add('active');
+
+      // Initialize community map if needed
+      if (pageName === 'community' && !this.communityMapInitialized) {
+        setTimeout(async () => {
+          await initializeCommunityMap();
+          this.communityMapInitialized = true;
+        }, 100);
+      }
+
+      // Fix community map rendering after showing it
+      if (pageName === 'community' && this.communityMapInitialized) {
+        setTimeout(() => {
+          const communityMap = getCommunityMap();
+          if (communityMap) {
+            communityMap.invalidateSize();
+          }
+        }, 100);
+      }
     }
   }
 

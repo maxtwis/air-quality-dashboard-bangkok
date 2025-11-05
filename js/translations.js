@@ -3,6 +3,7 @@ export const translations = {
   th: {
     nav: {
       map: 'แผนที่คุณภาพอากาศ',
+      community: 'ข้อมูลชุมชน',
       about: 'เกี่ยวกับ AQHI',
       health: 'คำแนะนำสุขภาพ',
     },
@@ -70,10 +71,21 @@ export const translations = {
       veryUnhealthy: 'อันตรายต่อสุขภาพ',
       hazardous: 'อันตราย',
     },
+    community: {
+      title: 'ข้อมูลชุมชน',
+      subtitle: 'ชุมชนที่มีการติดตาม AQHI',
+      selectCommunity: 'เลือกชุมชนบนแผนที่เพื่อดูข้อมูล',
+      instruction: 'คลิกที่ขอบเขตชุมชนเพื่อดูข้อมูลประชากร สถานีตรวจวัด และข้อมูลเพิ่มเติม',
+      statsTitle: 'สถิติชุมชนทั้งหมด',
+      totalCommunities: 'ชุมชนทั้งหมด',
+      totalPopulation: 'ประชากรรวม',
+      monitoringStations: 'สถานีตรวจวัด AQHI',
+    },
   },
   en: {
     nav: {
       map: 'Air Quality Map',
+      community: 'Community Data',
       about: 'About AQHI',
       health: 'Health Advice',
     },
@@ -141,6 +153,16 @@ export const translations = {
       unhealthy: 'Unhealthy',
       veryUnhealthy: 'Very Unhealthy',
       hazardous: 'Hazardous',
+    },
+    community: {
+      title: 'Community Data',
+      subtitle: 'Communities with AQHI Monitoring',
+      selectCommunity: 'Select a community on the map to view data',
+      instruction: 'Click on a community boundary to see population data, monitoring stations, and more information',
+      statsTitle: 'Overall Community Statistics',
+      totalCommunities: 'Total Communities',
+      totalPopulation: 'Total Population',
+      monitoringStations: 'AQHI Monitoring Stations',
     },
   },
 };

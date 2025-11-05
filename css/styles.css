@@ -1178,6 +1178,9 @@ body {
     max-height: 500px;
     order: 1;
     width: 100%;
+  }
+
+  .map-container:not(.hidden) {
     display: block !important;
   }
 
@@ -1549,4 +1552,218 @@ body {
 .footer-logo {
   height: 60px;
   width: auto;
+}
+
+/* Community Data Page Styles */
+.community-map-section {
+  display: flex;
+  gap: 24px;
+  margin: 24px 0;
+  min-height: 600px;
+  position: relative;
+}
+
+.community-map {
+  flex: 2;
+  height: 600px;
+  max-height: 600px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  background: var(--gray-100);
+  position: relative;
+}
+
+/* Community Popup Styles */
+.community-leaflet-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 0;
+  font-family: 'Noto Sans Thai Looped', sans-serif;
+}
+
+.community-leaflet-popup .leaflet-popup-content {
+  margin: 0;
+  min-width: 200px;
+  font-family: 'Noto Sans Thai Looped', sans-serif;
+}
+
+.community-popup {
+  padding: 16px;
+  font-family: 'Noto Sans Thai Looped', sans-serif;
+}
+
+.community-popup h4 {
+  margin: 0 0 12px 0;
+  color: var(--primary-color);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: 'Noto Sans Thai Looped', sans-serif;
+}
+
+.community-popup p {
+  margin: 6px 0;
+  font-size: 0.875rem;
+  color: var(--gray-700);
+  line-height: 1.5;
+  font-family: 'Noto Sans Thai Looped', sans-serif;
+}
+
+.community-popup strong {
+  color: var(--gray-900);
+  font-weight: 500;
+  font-family: 'Noto Sans Thai Looped', sans-serif;
+}
+
+.community-info-panel {
+  flex: 1;
+  background: white;
+  padding: 24px;
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-md);
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.community-info-panel h3 {
+  color: var(--gray-900);
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
+.community-info-panel p {
+  color: var(--gray-600);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.community-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--gray-50);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-200);
+}
+
+.stat-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  color: white;
+}
+
+.stat-icon i {
+  font-size: 24px;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--gray-900);
+  line-height: 1.2;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--gray-600);
+  margin-top: 4px;
+}
+
+/* Community Detail View */
+.community-detail {
+  padding: 16px 0;
+}
+
+.community-detail h4 {
+  color: var(--primary-color);
+  margin: 16px 0 8px;
+  font-size: 1rem;
+}
+
+.community-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.community-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.community-detail-label {
+  font-size: 0.75rem;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.community-detail-value {
+  font-size: 1rem;
+  color: var(--gray-900);
+  font-weight: 600;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  #page-community .content-section {
+    padding: 16px;
+  }
+
+  #page-community .page-title,
+  #page-community .page-subtitle {
+    padding: 0 0;
+  }
+
+  .community-map-section {
+    flex-direction: column;
+    min-height: auto;
+    margin: 0;
+    gap: 16px;
+  }
+
+  .community-map {
+    height: 50vh;
+    max-height: 50vh;
+    min-height: 300px;
+    width: 100%;
+    border-radius: 0;
+    position: relative;
+  }
+
+  .community-info-panel {
+    max-height: none;
+    margin: 0 16px;
+  }
+
+  .community-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .community-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  #page-community .info-card {
+    margin: 0 16px;
+  }
 }

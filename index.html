@@ -39,6 +39,10 @@
           <i class="material-icons">map</i>
           <span data-i18n="nav.map">แผนที่คุณภาพอากาศ</span>
         </button>
+        <button class="nav-tab" data-page="community">
+          <i class="material-icons">groups</i>
+          <span data-i18n="nav.community">ข้อมูลชุมชน</span>
+        </button>
         <button class="nav-tab" data-page="about">
           <i class="material-icons">info</i>
           <span data-i18n="nav.about">เกี่ยวกับ AQHI</span>
@@ -72,6 +76,10 @@
           <button class="mobile-nav-item active" data-page="map">
             <i class="material-icons">map</i>
             <span data-i18n="nav.map">แผนที่คุณภาพอากาศ</span>
+          </button>
+          <button class="mobile-nav-item" data-page="community">
+            <i class="material-icons">groups</i>
+            <span data-i18n="nav.community">ข้อมูลชุมชน</span>
           </button>
           <button class="mobile-nav-item" data-page="about">
             <i class="material-icons">info</i>
@@ -149,6 +157,59 @@
 
       <!-- Main Content Area (for About and Health pages) -->
       <div class="main-content">
+        <!-- Page: Community Data -->
+        <div class="page-content" id="page-community">
+          <div class="content-section">
+            <h2 class="page-title" data-i18n="community.title">ข้อมูลชุมชน</h2>
+            <p class="page-subtitle" data-i18n="community.subtitle">ชุมชนที่มีการติดตาม AQHI</p>
+
+            <!-- Community Map Container -->
+            <div class="community-map-section">
+              <div id="community-map" class="community-map"></div>
+
+              <!-- Community Info Panel -->
+              <div class="community-info-panel" id="community-info-panel">
+                <h3 data-i18n="community.selectCommunity">เลือกชุมชนบนแผนที่เพื่อดูข้อมูล</h3>
+                <p data-i18n="community.instruction">คลิกที่ขอบเขตชุมชนเพื่อดูข้อมูลประชากร สถานีตรวจวัด และข้อมูลเพิ่มเติม</p>
+              </div>
+            </div>
+
+            <!-- Community Statistics -->
+            <div class="info-card">
+              <h3 data-i18n="community.statsTitle">สถิติชุมชนทั้งหมด</h3>
+              <div class="community-stats-grid">
+                <div class="stat-card">
+                  <div class="stat-icon">
+                    <i class="material-icons">groups</i>
+                  </div>
+                  <div class="stat-content">
+                    <div class="stat-value" id="total-communities">15</div>
+                    <div class="stat-label" data-i18n="community.totalCommunities">ชุมชนทั้งหมด</div>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon">
+                    <i class="material-icons">people</i>
+                  </div>
+                  <div class="stat-content">
+                    <div class="stat-value" id="total-population">-</div>
+                    <div class="stat-label" data-i18n="community.totalPopulation">ประชากรรวม</div>
+                  </div>
+                </div>
+                <div class="stat-card">
+                  <div class="stat-icon">
+                    <i class="material-icons">sensors</i>
+                  </div>
+                  <div class="stat-content">
+                    <div class="stat-value" id="total-stations">15</div>
+                    <div class="stat-label" data-i18n="community.monitoringStations">สถานีตรวจวัด AQHI</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Page: About AQHI -->
         <div class="page-content" id="page-about">
           <div class="content-section">
@@ -395,6 +456,7 @@
     <script type="module" src="js/aqi-to-concentration.js"></script>
     <script type="module" src="js/api.js"></script>
     <script type="module" src="js/map.js"></script>
+    <script type="module" src="js/community-map.js"></script>
     <script type="module" src="js/markers.js"></script>
     <script type="module" src="js/aqhi-supabase.js"></script>
     <script type="module" src="js/health-recommendations.js"></script>

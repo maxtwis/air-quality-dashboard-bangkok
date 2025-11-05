@@ -23,7 +23,11 @@
       "Bash(powershell:*)",
       "Bash(del remove-console.ps1)",
       "Bash(git checkout:*)",
-      "Bash(start http://localhost:3000)"
+      "Bash(start http://localhost:3000)",
+      "Bash(claude mcp call playwright browser_navigate '{\"\"url\"\": \"\"http://localhost:3000\"\"}')",
+      "Bash(claude mcp:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(if exist \"C:\\Users\\Maxtwis\\AppData\\Local\\ms-playwright\\__dirlock\" rmdir /s /q \"C:\\Users\\Maxtwis\\AppData\\Local\\ms-playwright\\__dirlock\")"
     ],
     "deny": [],
     "ask": []

@@ -1,5 +1,6 @@
 // Navigation and Page Management
 import { healthRecommendations } from './health-recommendations.js';
+import { getMap } from './map.js';
 
 class NavigationManager {
   constructor() {
@@ -56,6 +57,14 @@ class NavigationManager {
       // Activate map page content in sidebar
       const mapPage = document.querySelector('.sidebar #page-map');
       if (mapPage) mapPage.classList.add('active');
+
+      // Fix map rendering after showing it
+      setTimeout(() => {
+        const map = getMap();
+        if (map) {
+          map.invalidateSize();
+        }
+      }, 100);
     } else {
       // Show main content, hide map
       if (mapContainer) mapContainer.classList.add('hidden');

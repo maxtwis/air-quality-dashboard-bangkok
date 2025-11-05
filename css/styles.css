@@ -36,7 +36,7 @@
 
 body {
   font-family:
-    "Inter",
+    "IBM Plex Sans Thai Looped",
     -apple-system,
     BlinkMacSystemFont,
     "Segoe UI",
@@ -556,6 +556,7 @@ body {
   flex: 1;
   position: relative;
   display: block;
+  background: #e5e7eb;
 }
 
 .map-container.hidden {
@@ -565,6 +566,9 @@ body {
 #map {
   width: 100%;
   height: 100%;
+  min-height: 400px;
+  z-index: 1;
+  background: #e5e7eb;
 }
 
 /* Map Controls */
@@ -875,21 +879,94 @@ body {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-  .app-container {
+  /* Top Navigation Bar - Mobile */
+  .top-navbar {
     flex-direction: column;
+    height: auto;
+    padding: 16px;
+    gap: 12px;
+    align-items: flex-start;
   }
 
+  .navbar-brand .app-title {
+    font-size: 1.25rem;
+  }
+
+  .navbar-brand .app-subtitle {
+    font-size: 0.7rem;
+  }
+
+  .top-navbar .nav-tabs {
+    width: 100%;
+    overflow-x: auto;
+    justify-content: flex-start;
+  }
+
+  .top-navbar .nav-tab {
+    padding: 12px 16px;
+    font-size: 0.8rem;
+    flex-shrink: 0;
+  }
+
+  .top-navbar .nav-tab i.material-icons {
+    font-size: 18px;
+  }
+
+  /* App Container - Mobile */
+  .app-container {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 140px);
+  }
+
+  /* Sidebar - Mobile (Full Width) */
   .sidebar {
     width: 100%;
-    height: 50vh;
+    height: auto;
+    min-height: 40vh;
+    max-height: 60vh;
     order: 2;
   }
 
+  /* Map Container - Mobile */
   .map-container {
-    height: 50vh;
+    height: 60vh;
+    min-height: 300px;
+    max-height: 500px;
     order: 1;
+    width: 100%;
+    display: block !important;
   }
 
+  .map-container.hidden {
+    display: none !important;
+  }
+
+  #map {
+    height: 100%;
+    min-height: 300px;
+  }
+
+  /* Main Content - Mobile (Full Width) */
+  .main-content {
+    width: 100%;
+    height: auto;
+    min-height: calc(100vh - 140px);
+  }
+
+  .content-section {
+    padding: 24px 16px;
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.875rem;
+  }
+
+  /* Station Info Panel - Mobile */
   .station-info {
     position: fixed;
     top: 50%;
@@ -897,8 +974,11 @@ body {
     transform: translate(-50%, -50%);
     width: 90%;
     max-width: 350px;
+    max-height: 80vh;
+    overflow-y: auto;
   }
 
+  /* Stats Grid - Mobile */
   .stats-grid {
     grid-template-columns: 1fr;
   }
@@ -906,20 +986,81 @@ body {
   .weather-info {
     grid-template-columns: 1fr;
   }
+
+  /* Info Cards - Mobile */
+  .info-card {
+    padding: 16px;
+  }
+
+  .info-card h3 {
+    font-size: 1rem;
+  }
+
+  /* AQHI Levels - Mobile */
+  .aqhi-levels {
+    gap: 8px;
+  }
+
+  .level-item {
+    padding: 10px 12px;
+  }
+
+  .level-value {
+    font-size: 1rem;
+  }
 }
 
 @media (max-width: 480px) {
-  .sidebar-header {
-    padding: 20px 15px;
+  .top-navbar {
+    padding: 12px;
   }
 
-  .app-title {
-    font-size: 1.25rem;
+  .navbar-brand .app-title {
+    font-size: 1.1rem;
+  }
+
+  .top-navbar .nav-tab {
+    padding: 10px 12px;
+    font-size: 0.75rem;
+  }
+
+  .top-navbar .nav-tab span {
+    display: none;
+  }
+
+  .top-navbar .nav-tab i.material-icons {
+    font-size: 20px;
   }
 
   .indicator-section,
   .stats-section {
-    padding: 20px 15px;
+    padding: 16px 12px;
+  }
+
+  .section-title {
+    font-size: 0.9rem;
+  }
+
+  .content-section {
+    padding: 20px 12px;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  /* Advice Table - Mobile */
+  .advice-row {
+    flex-direction: column;
+  }
+
+  .advice-level {
+    min-width: 100%;
+    padding: 8px 12px;
+  }
+
+  .advice-text {
+    padding: 12px;
   }
 
   .map-controls {
@@ -954,6 +1095,25 @@ body {
 
   .history-toggle {
     gap: 12px; /* More space between buttons on mobile */
+  }
+
+  /* Very small screens - ensure map is visible */
+  .map-container {
+    min-height: 250px;
+  }
+}
+
+/* Extra small screens and landscape phones */
+@media (max-width: 480px) and (max-height: 600px) {
+  .map-container {
+    height: 50vh;
+    min-height: 200px;
+    max-height: 350px;
+  }
+
+  .sidebar {
+    max-height: 50vh;
+    overflow-y: auto;
   }
 }
 

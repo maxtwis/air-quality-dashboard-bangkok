@@ -988,7 +988,17 @@ body {
 .station-history {
   margin-top: 20px;
   padding-top: 20px;
+  padding-bottom: 20px;
   border-top: 1px solid var(--gray-200);
+}
+
+#chart-canvas-container {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+#station-history-chart {
+  padding-bottom: 60px;
 }
 
 .history-toggle {
@@ -1727,6 +1737,17 @@ body {
   /* Prevent body scroll when station panel is open */
   body.station-panel-open {
     overflow: hidden;
+  }
+
+  /* Ensure chart legend is visible on desktop */
+  #station-history-chart {
+    min-height: 450px;
+    padding-bottom: 80px !important;
+  }
+
+  #chart-canvas-container {
+    min-height: 400px;
+    margin-bottom: 30px !important;
   }
 }
 

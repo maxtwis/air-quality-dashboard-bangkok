@@ -91,11 +91,19 @@ export default async function handler(req, res) {
     // Note: Google O3/NO2 supplements are now handled by a separate cron job
     // (api/collect-google-supplements.js runs every 60 minutes)
     let storeResult = null;
+    let dbErrorDetails = null;
     try {
       storeResult = await storeHistoricalData(enhancedStations);
       console.log("✅ Database storage successful:", storeResult);
     } catch (dbError) {
       console.error("❌ Database storage failed:", dbError.message);
+      console.error("❌ Full error:", JSON.stringify(dbError, null, 2));
+      dbErrorDetails = {
+        message: dbError.message,
+        details: dbError.details || null,
+        hint: dbError.hint || null,
+        code: dbError.code || null,
+      };
       // Continue without database storage
     }
 
@@ -107,6 +115,7 @@ export default async function handler(req, res) {
       message: `Successfully fetched ${stations.length} stations (${detailedStations.length} with detailed pollutant data)${storeResult ? " and stored to database" : " (database storage failed)"}`,
       databaseWorking: !!storeResult,
       storeResult: storeResult,
+      dbError: dbErrorDetails,
     };
 
     console.log("✅ Data collection completed:", result);

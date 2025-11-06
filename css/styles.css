@@ -44,7 +44,7 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #f3f4f6;
   color: var(--gray-800);
   min-height: 100vh;
   height: 100vh;
@@ -53,6 +53,8 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  margin: 0;
+  padding: 0;
 }
 
 /* Top Navigation Bar */
@@ -261,8 +263,10 @@ body {
 
 .app-container {
   display: flex;
+  height: calc(100vh - 70px);
   min-height: calc(100vh - 70px);
-  overflow: visible;
+  max-height: calc(100vh - 70px);
+  overflow: hidden;
   flex: 1;
 }
 
@@ -760,11 +764,13 @@ body {
 .main-content {
   flex: 1;
   position: relative;
-  overflow-y: visible;
-  background: var(--gray-50);
+  overflow-y: auto;
+  background: white;
   display: none;
   width: 100%;
+  height: calc(100vh - 70px);
   min-height: calc(100vh - 70px);
+  max-height: calc(100vh - 70px);
 }
 
 .main-content.active {
@@ -1153,9 +1159,9 @@ body {
     display: block;
   }
 
-  /* Hide language switcher on mobile navbar */
+  /* Show language switcher on mobile navbar */
   .navbar-right .language-switcher {
-    display: none;
+    display: flex;
   }
 
   /* App Container - Mobile */
@@ -1164,7 +1170,6 @@ body {
     height: calc(100vh - 60px);
     min-height: calc(100vh - 60px);
     max-height: calc(100vh - 60px);
-    overflow: hidden;
   }
 
   /* Sidebar - Mobile (Full Width) */
@@ -1175,7 +1180,9 @@ body {
     max-height: 50vh;
     order: 2;
     overflow-y: auto;
+    overflow-x: hidden;
     background: white;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Map Container - Mobile */
@@ -1186,6 +1193,7 @@ body {
     order: 1;
     width: 100%;
     overflow: hidden;
+    position: relative;
   }
 
   .map-container:not(.hidden) {
@@ -1197,10 +1205,13 @@ body {
   }
 
   #map {
-    width: 100%;
-    height: 100%;
-    min-height: 100%;
-    max-height: 100%;
+    width: 100% !important;
+    height: 50vh !important;
+    min-height: 50vh !important;
+    max-height: 50vh !important;
+    position: absolute;
+    top: 0;
+    left: 0;
   }
 
   /* Main Content - Mobile (Full Width) */
@@ -1388,6 +1399,17 @@ body {
     height: 50vh;
     min-height: 50vh;
     max-height: 50vh;
+    position: relative;
+  }
+
+  #map {
+    width: 100% !important;
+    height: 50vh !important;
+    min-height: 50vh !important;
+    max-height: 50vh !important;
+    position: absolute;
+    top: 0;
+    left: 0;
   }
 
   /* Sidebar - Small Mobile */
@@ -1396,6 +1418,9 @@ body {
     min-height: 50vh;
     max-height: 50vh;
     background: white;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 
   .indicator-section,
@@ -1495,10 +1520,124 @@ body {
 }
 
 /* Landscape orientation fixes */
-@media (max-width: 932px) and (orientation: landscape) {
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Compact navbar for landscape */
   .top-navbar {
-    height: 56px;
-    min-height: 56px;
+    height: auto;
+    min-height: 50px;
+    max-height: 120px;
+    padding: 6px 12px;
+    flex-wrap: wrap;
+  }
+
+  .navbar-brand .app-title {
+    font-size: 0.95rem;
+  }
+
+  .navbar-brand .app-subtitle {
+    display: none;
+  }
+
+  /* Hide desktop nav tabs in tight landscape */
+  .desktop-nav {
+    display: none !important;
+  }
+
+  /* Show mobile menu button */
+  .mobile-menu-btn {
+    display: block !important;
+  }
+
+  /* Enable mobile menu */
+  .mobile-menu {
+    display: block !important;
+  }
+
+  /* Language switcher - keep visible and functional */
+  .language-switcher {
+    display: flex !important;
+    transform: scale(0.9);
+  }
+
+  .lang-btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+  }
+
+  .app-container {
+    height: calc(100vh - 50px);
+    min-height: calc(100vh - 50px);
+    max-height: calc(100vh - 50px);
+    flex-direction: row;
+  }
+
+  .map-container {
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
+    width: 65% !important;
+    order: 1;
+    position: relative;
+  }
+
+  #map {
+    width: 100% !important;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+  }
+
+  .sidebar {
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
+    width: 35% !important;
+    order: 2;
+    background: white;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .indicator-section,
+  .stats-section {
+    padding: 12px;
+    background: white;
+  }
+
+  .section-title {
+    font-size: 0.8rem;
+  }
+
+  .indicator-toggle {
+    padding: 3px;
+  }
+
+  .toggle-btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .map-legend-sidebar .legend-item {
+    font-size: 0.75rem;
+  }
+
+  /* Main content for other pages */
+  .main-content {
+    height: calc(100vh - 50px) !important;
+    min-height: calc(100vh - 50px) !important;
+    max-height: calc(100vh - 50px) !important;
+  }
+}
+
+/* Landscape for larger devices (tablets) */
+@media (orientation: landscape) and (min-height: 500px) and (max-width: 1024px) {
+  .top-navbar {
+    height: 60px;
+    min-height: 60px;
     padding: 8px 16px;
   }
 
@@ -1510,33 +1649,54 @@ body {
     display: none;
   }
 
+  /* Ensure mobile menu works in landscape */
+  .mobile-menu-btn {
+    display: none;
+  }
+
+  .mobile-menu {
+    display: none;
+  }
+
+  /* Keep language switcher visible */
+  .language-switcher {
+    display: flex !important;
+  }
+
   .app-container {
-    height: calc(100vh - 56px);
-    min-height: calc(100vh - 56px);
-    max-height: calc(100vh - 56px);
+    height: calc(100vh - 60px);
+    min-height: calc(100vh - 60px);
+    max-height: calc(100vh - 60px);
     flex-direction: row;
   }
 
   .map-container {
-    height: 100%;
-    min-height: 100%;
-    max-height: 100%;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
     width: 60%;
     order: 1;
+    position: relative;
+  }
+
+  #map {
+    width: 100% !important;
+    height: 100% !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
   }
 
   .sidebar {
-    height: 100%;
-    min-height: 100%;
-    max-height: 100%;
+    height: 100% !important;
+    min-height: 100% !important;
+    max-height: 100% !important;
     width: 40%;
     order: 2;
     background: white;
     overflow-y: auto;
-  }
-
-  #map {
-    height: 100%;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 
   .indicator-section,
@@ -1547,6 +1707,12 @@ body {
 
   .section-title {
     font-size: 0.875rem;
+  }
+
+  .main-content {
+    height: calc(100vh - 60px);
+    min-height: calc(100vh - 60px);
+    max-height: calc(100vh - 60px);
   }
 }
 

@@ -113,13 +113,24 @@ export async function renderStationHistoryChart(stationUid, hours = 24) {
 
 
     if (!historyData || historyData.length === 0) {
+      const isGoogleStation = stationUid.toString().startsWith('google-');
+
       chartContainer.innerHTML = `
-        <div class="info" style="padding: 20px; text-align: center;">
-          ยังไม่มีข้อมูลย้อนหลังสำหรับสถานีนี้
-          <br><br>
-          ข้อมูลจะถูกเก็บรวบรวมทุกชั่วโมงและเก็บไว้ 7 วัน
-          <br>
-          ช่วงเวลาที่ขอ: ${hours} ชั่วโมง
+        <div class="info" style="padding: 20px; text-align: center; background: #f3f4f6; border-radius: 8px;">
+          <div style="font-size: 48px; margin-bottom: 12px;">📊</div>
+          <div style="font-weight: 600; font-size: 1.1rem; margin-bottom: 8px;">
+            ${isGoogleStation ? 'ยังไม่มีข้อมูลย้อนหลัง' : 'กำลังรวบรวมข้อมูล'}
+          </div>
+          <div style="color: #6b7280; font-size: 0.9rem; line-height: 1.6;">
+            ${isGoogleStation
+              ? 'ข้อมูลย้อนหลังสำหรับสถานีชุมชนจะพร้อมใช้งานในเร็วๆ นี้<br>ระบบกำลังเก็บรวบรวมข้อมูล AQHI ทุก 10 นาที'
+              : 'ระบบเก็บข้อมูล WAQI ทุก 10 นาที และเก็บไว้ 7 วัน<br>กรุณารอสักครู่เพื่อให้ระบบเก็บรวบรวมข้อมูลเพียงพอ'
+            }
+          </div>
+          <div style="margin-top: 16px; padding: 12px; background: white; border-radius: 6px; font-size: 0.85rem;">
+            <strong>เวลาที่ขอ:</strong> ${hours === 24 ? '24 ชั่วโมง' : '7 วัน'}<br>
+            <strong>จุดข้อมูลที่มี:</strong> ${historyData ? historyData.length : 0} จุด
+          </div>
         </div>
       `;
       return;

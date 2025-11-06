@@ -130,14 +130,15 @@ export default async function handler(req, res) {
   }
 }
 
-// Option C: Supabase (Updated to match your schema)
+// Option C: Supabase (Using REST API directly to avoid bundling issues)
 async function storeHistoricalDataSupabase(stations) {
-  const { createClient } = await import("@supabase/supabase-js");
+  // Use direct REST API instead of JS client (fixes Vercel bundling issues)
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY,
-  );
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Supabase URL and key are required');
+  }
 
   const timestamp = new Date().toISOString();
   const stationsToStore = [];
@@ -266,13 +267,28 @@ async function storeHistoricalDataSupabase(stations) {
   // Note: No separate stations table needed anymore
   // All station info is stored with each reading in waqi_data table
 
-  // Store readings in new waqi_data table
+  // Store readings using REST API (avoids Supabase client bundling issues)
   if (readings.length > 0) {
-    const { error: readingsError } = await supabase
-      .from("waqi_data")
-      .insert(readings);
+    console.log(`📤 Inserting ${readings.length} readings via REST API...`);
 
-    if (readingsError) throw readingsError;
+    const response = await fetch(`${supabaseUrl}/rest/v1/waqi_data`, {
+      method: 'POST',
+      headers: {
+        'apikey': supabaseKey,
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(readings)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Supabase REST API error:', errorText);
+      throw new Error(`Supabase insert failed: ${response.status} ${errorText}`);
+    }
+
+    console.log(`✅ Successfully inserted ${readings.length} readings`);
   }
 
   return {

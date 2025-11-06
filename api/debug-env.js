@@ -19,27 +19,30 @@ export default async function handler(req, res) {
       : 'NOT SET',
   };
 
-  // Test Supabase connection
+  // Test Supabase connection using REST API
   let connectionTest = { connected: false, error: null };
 
   try {
-    const { createClient } = await import("@supabase/supabase-js");
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY,
-    );
-
-    // Try a simple query
-    const { data, error } = await supabase
-      .from("waqi_data")
-      .select("count")
-      .limit(1);
-
-    if (error) {
-      connectionTest = { connected: false, error: error.message };
+    if (!supabaseUrl || !supabaseKey) {
+      connectionTest = { connected: false, error: 'Missing Supabase credentials' };
     } else {
-      connectionTest = { connected: true, error: null };
+      // Try a simple query using REST API
+      const response = await fetch(`${supabaseUrl}/rest/v1/waqi_data?select=count&limit=1`, {
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        }
+      });
+
+      if (response.ok) {
+        connectionTest = { connected: true, error: null, status: response.status };
+      } else {
+        const errorText = await response.text();
+        connectionTest = { connected: false, error: errorText, status: response.status };
+      }
     }
   } catch (err) {
     connectionTest = { connected: false, error: err.message };

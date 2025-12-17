@@ -107,10 +107,10 @@ CREATE OR REPLACE FUNCTION calculate_thai_aqhi(
 ) RETURNS DECIMAL AS $$
 DECLARE
     C CONSTANT DECIMAL := 105.19;
-    beta_pm25 CONSTANT DECIMAL := 0.0022;  -- for μg/m³
-    beta_pm10 CONSTANT DECIMAL := 0.0009;  -- for μg/m³
-    beta_o3 CONSTANT DECIMAL := 0.001;     -- for ppb
-    beta_no2 CONSTANT DECIMAL := 0.003;    -- for ppb
+    beta_pm25 CONSTANT DECIMAL := 0.0012;  -- for μg/m³
+    beta_pm10 CONSTANT DECIMAL := 0.0012;  -- for μg/m³
+    beta_o3 CONSTANT DECIMAL := 0.0010;    -- for ppb
+    beta_no2 CONSTANT DECIMAL := 0.0052;   -- for ppb
 
     per_er_pm25 DECIMAL := 0;
     per_er_pm10 DECIMAL := 0;
@@ -324,6 +324,12 @@ $$ LANGUAGE plpgsql;
 -- =============================================================================
 -- ROW LEVEL SECURITY
 -- =============================================================================
+
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow public read community_locations" ON public.community_locations;
+DROP POLICY IF EXISTS "Allow public read google_aqhi" ON public.google_aqhi_hourly;
+DROP POLICY IF EXISTS "Allow service write community_locations" ON public.community_locations;
+DROP POLICY IF EXISTS "Allow service write google_aqhi" ON public.google_aqhi_hourly;
 
 ALTER TABLE public.community_locations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.google_aqhi_hourly ENABLE ROW LEVEL SECURITY;

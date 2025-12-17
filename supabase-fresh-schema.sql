@@ -82,26 +82,38 @@ CREATE OR REPLACE FUNCTION calculate_aqhi(
 DECLARE
     aqhi_value DECIMAL;
     pm25_contribution DECIMAL := 0;
+    pm10_contribution DECIMAL := 0;
     o3_contribution DECIMAL := 0;
     no2_contribution DECIMAL := 0;
+    so2_contribution DECIMAL := 0;
 BEGIN
-    -- AQHI calculation based on Health Canada formula
-    -- AQHI = (10/10.4) * 100 * [(exp(0.000487 * PM2.5) - 1) + (exp(0.000537 * NO2) - 1) + (exp(0.000871 * O3) - 1)]
+    -- AQHI calculation based on Thai Health Department formula
+    -- AQHI = (10/105.19) * Total %ER
+    -- %ER_i = 100 * (exp(βi * xi) - 1)
+    -- β coefficients: PM2.5: 0.0012, PM10: 0.0012, NO₂: 0.0052, O₃: 0.0010
 
     IF pm25_val IS NOT NULL AND pm25_val > 0 THEN
-        pm25_contribution := EXP(0.000487 * pm25_val) - 1;
+        pm25_contribution := 100 * (EXP(0.0012 * pm25_val) - 1);
     END IF;
 
-    IF no2_val IS NOT NULL AND no2_val > 0 THEN
-        no2_contribution := EXP(0.000537 * no2_val) - 1;
+    IF pm10_val IS NOT NULL AND pm10_val > 0 THEN
+        pm10_contribution := 100 * (EXP(0.0012 * pm10_val) - 1);
     END IF;
 
     IF o3_val IS NOT NULL AND o3_val > 0 THEN
-        o3_contribution := EXP(0.000871 * o3_val) - 1;
+        o3_contribution := 100 * (EXP(0.0010 * o3_val) - 1);
     END IF;
 
-    -- Calculate AQHI
-    aqhi_value := (10.0/10.4) * 100 * (o3_contribution + no2_contribution + pm25_contribution);
+    IF no2_val IS NOT NULL AND no2_val > 0 THEN
+        no2_contribution := 100 * (EXP(0.0052 * no2_val) - 1);
+    END IF;
+
+    IF so2_val IS NOT NULL AND so2_val > 0 THEN
+        so2_contribution := 100 * (EXP(0.0 * so2_val) - 1);
+    END IF;
+
+    -- Calculate AQHI: (10/C) * Total %ER
+    aqhi_value := (10.0/105.19) * (pm25_contribution + pm10_contribution + o3_contribution + no2_contribution + so2_contribution);
 
     -- Round to 1 decimal place and ensure it's positive
     RETURN GREATEST(ROUND(aqhi_value, 1), 0);

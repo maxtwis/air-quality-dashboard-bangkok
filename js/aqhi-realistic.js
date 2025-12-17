@@ -15,10 +15,10 @@ import {
 const AQHI_PARAMS = {
   C: 105.19, // Scaling factor (Maximum MWEC for PM2.5 AQHI/OPD)
   beta: {
-    pm25: 0.0022, // Beta coefficient for PM2.5 (µg/m³)
-    pm10: 0.0009, // Beta coefficient for PM10 (µg/m³)
-    o3: 0.001, // Beta coefficient for O3 (ppb)
-    no2: 0.003, // Beta coefficient for NO2 (ppb)
+    pm25: 0.0012, // Beta coefficient for PM2.5 (µg/m³)
+    pm10: 0.0012, // Beta coefficient for PM10 (µg/m³)
+    o3: 0.0010, // Beta coefficient for O3 (ppb)
+    no2: 0.0052, // Beta coefficient for NO2 (ppb)
   },
 };
 

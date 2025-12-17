@@ -113,13 +113,14 @@ BEGIN
     o3_val := COALESCE(o3_val, 0);
     so2_val := COALESCE(so2_val, 0);
     
-    -- AQHI formula components
+    -- AQHI formula components using Thai Health Department coefficients
+    -- β coefficients: PM2.5: 0.0012, PM10: 0.0012, NO₂: 0.0052, O₃: 0.0010
     pm25_component := 100 * (EXP(0.0012 * pm25_val) - 1);
-    no2_component := EXP(0.0052 * no2_val) - 1;
-    o3_component := EXP(0.001 * o3_val) - 1;
-    so2_component := EXP(0.0038 * so2_val) - 1;
-    
-    -- Calculate final AQHI
+    no2_component := 100 * (EXP(0.0052 * no2_val) - 1);
+    o3_component := 100 * (EXP(0.0010 * o3_val) - 1);
+    so2_component := 100 * (EXP(0.0 * so2_val) - 1);
+
+    -- Calculate final AQHI: (10/C) * Total %ER
     aqhi_result := (10.0 / 105.19) * (pm25_component + no2_component + o3_component + so2_component);
     
     -- Round to 1 decimal place

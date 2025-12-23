@@ -1,0 +1,94 @@
+{
+  "communities": [
+    {
+      "id": 1,
+      "name": "Phra Nakhon",
+      "name_th": "พระนคร",
+      "stations": ["bangkok-phra-nakhon-district"]
+    },
+    {
+      "id": 2,
+      "name": "Thon Buri",
+      "name_th": "ธนบุรี",
+      "stations": ["bangkok-thon-buri-district"]
+    },
+    {
+      "id": 3,
+      "name": "Bangkok Yai",
+      "name_th": "บางกอกใหญ่",
+      "stations": ["bangkok-bangkok-yai-district"]
+    },
+    {
+      "id": 4,
+      "name": "Khlong San",
+      "name_th": "คลองสาน",
+      "stations": ["bangkok-khlong-san-district"]
+    },
+    {
+      "id": 5,
+      "name": "Bangkok Noi",
+      "name_th": "บางกอกน้อย",
+      "stations": ["bangkok-ministry-of-natural-resources-and-environment", "bangkok-noi-district"]
+    },
+    {
+      "id": 6,
+      "name": "Nong Khaem",
+      "name_th": "หนองแขม",
+      "stations": ["bangkok-nong-khaem-district"]
+    },
+    {
+      "id": 7,
+      "name": "Rat Burana",
+      "name_th": "ราษฎร์บูรณะ",
+      "stations": ["bangkok-rat-burana-district"]
+    },
+    {
+      "id": 8,
+      "name": "Din Daeng",
+      "name_th": "ดินแดง",
+      "stations": ["bangkok-din-daeng-district"]
+    },
+    {
+      "id": 9,
+      "name": "Phra Khanong",
+      "name_th": "พระโขนง",
+      "stations": ["bangkok-phra-khanong-district"]
+    },
+    {
+      "id": 10,
+      "name": "Nong Chok",
+      "name_th": "หนองจอก",
+      "stations": ["bangkok-nong-chok-district"]
+    },
+    {
+      "id": 11,
+      "name": "Pathum Wan",
+      "name_th": "ปทุมวัน",
+      "stations": ["bangkok-us-embassy", "bangkok-pathumwan-district"]
+    },
+    {
+      "id": 12,
+      "name": "Pom Prap Sattru Phai",
+      "name_th": "ป้อมปราบศัตรูพ่าย",
+      "stations": ["bangkok-pom-prap-sattru-phai-district"]
+    },
+    {
+      "id": 13,
+      "name": "Samphanthawong",
+      "name_th": "สัมพันธวงศ์",
+      "stations": ["bangkok-samphanthawong-district"]
+    },
+    {
+      "id": 14,
+      "name": "Bang Phlat",
+      "name_th": "บางพลัด",
+      "stations": ["bangkok-bang-phlat-district"]
+    },
+    {
+      "id": 15,
+      "name": "Chatuchak",
+      "name_th": "จตุจักร",
+      "stations": ["bangkok-chatuchak-district"]
+    }
+  ]
+}
